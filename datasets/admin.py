@@ -54,7 +54,7 @@ class DataRequestAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'dataset', 'project_title', 'institution', 'status', 'request_date')
     list_filter = ('status', 'request_date')
     search_fields = ('user__username', 'dataset__title', 'project_title', 'institution')
-    readonly_fields = ('request_date', 'approved_date', 'last_download')
+    readonly_fields = ('request_date', 'approved_date', 'last_download', 'download_count')
     list_per_page = 20
     
     fieldsets = (
@@ -62,16 +62,22 @@ class DataRequestAdmin(admin.ModelAdmin):
             'fields': ('user', 'dataset', 'status')
         }),
         ('Project Details', {
-            'fields': ('project_title', 'institution', 'project_details', 'project_description')
+            'fields': ('project_title', 'institution', 'project_description')
         }),
         ('Documents', {
-            'fields': ('form_submission', 'document')
+            'fields': ('form_submission',)
         }),
         ('Review & Tracking', {
             'fields': ('data_manager_comment', 'director_comment', 
-                      'download_count', 'last_download', 'manager', 'director')
+                      'manager', 'director')
         }),
         ('Dates', {
-            'fields': ('request_date', 'approved_date')
+            'fields': ('request_date', 'approved_date', 'last_download')
         })
     )
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.groups.filter(name='Data Managers').exists():
+            return qs.filter(status__in=['pending', 'manager_review'])
+        return qs
