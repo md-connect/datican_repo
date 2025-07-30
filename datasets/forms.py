@@ -8,9 +8,7 @@ class DataRequestForm(forms.ModelForm):
         fields = [
             'institution',
             'project_title', 
-            'project_details',
             'project_description',
-            'document',
             'form_submission'
         ]
         widgets = {

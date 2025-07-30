@@ -14,15 +14,32 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_active', True)
         return self.create_user(email, password, **extra_fields)
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    profile_picture = models.URLField(blank=True, null=True)
+    
+    # Add these new fields
+    profile_picture = models.ImageField(
+        upload_to='profile_pics/',
+        blank=True,
+        null=True,
+        help_text="Upload a profile picture"
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
+    last_login = models.DateTimeField(
+        blank=True,
+        null=True,
+        verbose_name="last login"
+    )
+    date_joined = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="date joined"
+    )
 
     objects = CustomUserManager()
 

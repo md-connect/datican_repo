@@ -104,16 +104,24 @@ def dataset_detail(request, pk):
     if not primary_thumbnail and thumbnails:
         primary_thumbnail = thumbnails[0]
     
-    # Check if user has download access
-    can_download = False
-    download_request = None
+    # Check for existing request and determine view behavior
+    data_request = None
+    show_request_form = True
     if request.user.is_authenticated:
-        download_request = DataRequest.objects.filter(
+        data_request = DataRequest.objects.filter(
             user=request.user,
-            dataset=dataset,
-            status='approved'
+            dataset=dataset
         ).first()
-        can_download = download_request.can_download() if download_request else False
+        
+        if data_request:
+            show_request_form = False
+            # Redirect to status page if request exists
+            return redirect('request_status', pk=data_request.pk)
+    
+    # Check download access only if request exists and is approved
+    can_download = False
+    if data_request and data_request.status == 'approved':
+        can_download = data_request.can_download()
     
     # Get similar datasets with their primary thumbnails
     similar_datasets = Dataset.objects.filter(
@@ -129,12 +137,13 @@ def dataset_detail(request, pk):
     return render(request, 'datasets/detail.html', {
         'dataset': dataset,
         'can_download': can_download,
-        'download_request': download_request,
+        'data_request': data_request,
+        'show_request_form': show_request_form,
         'similar_datasets': similar_datasets,
         'thumbnails': thumbnails,
         'primary_thumbnail': primary_thumbnail
     })
-
+    
 @login_required
 def dataset_request(request, pk):
     dataset = get_object_or_404(Dataset, pk=pk)
@@ -264,6 +273,7 @@ def dataset_request(request, pk):
 @login_required
 def request_status(request, pk):
     data_request = get_object_or_404(DataRequest, pk=pk)
+    remaining_downloads = data_request.max_downloads - data_request.download_count
     if data_request.user != request.user and not request.user.has_perm('datasets.review_datarequest'):
         return HttpResponseForbidden()
     
@@ -302,7 +312,8 @@ def request_status(request, pk):
         'data_request': data_request,
         'can_download': data_request.can_download(),
         'status_stages': status_stages,
-        'progress': progress
+        'progress': progress,
+        'remaining_downloads': remaining_downloads
     })
 
 @login_required
@@ -409,3 +420,99 @@ def dataset_download(request, pk):
             return response
     
     return render(request, 'datasets/download_denied.html', status=403)
+
+@login_required
+@permission_required('datasets.review_datarequest', raise_exception=True)
+def review_request(request, pk):
+    data_request = get_object_or_404(DataRequest, pk=pk)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        comment = request.POST.get('comment', '')
+        
+        if action == 'approve':
+            data_request.status = 'director_review'
+            data_request.manager = request.user
+            data_request.data_manager_comment = comment
+            messages.success(request, 'Request recommended for director approval.')
+            
+            # Notify directors
+            directors = User.objects.filter(groups__name='Directors')
+            for director in directors:
+                send_mail(
+                    "Request Needs Final Approval",
+                    f"Request ID: {data_request.id} needs your approval.",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [director.email],
+                    fail_silently=True,
+                )
+                
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            data_request.manager = request.user
+            data_request.data_manager_comment = comment
+            messages.success(request, 'Request has been rejected.')
+            
+            # Notify user
+            send_mail(
+                "Your Data Request Status",
+                f"Your request for {data_request.dataset.title} has been rejected.",
+                settings.DEFAULT_FROM_EMAIL,
+                [data_request.user.email],
+                fail_silently=True,
+            )
+        
+        data_request.save()
+        return redirect('admin:datasets_datarequest_changelist')
+    
+    return render(request, 'datasets/admin/review_request.html', {
+        'data_request': data_request
+    })
+    
+
+@login_required
+@permission_required('datasets.approve_datarequest', raise_exception=True)
+def approve_request(request, pk):
+    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        comment = request.POST.get('comment', '')
+        
+        if action == 'approve':
+            data_request.status = 'approved'
+            data_request.approved_date = timezone.now()
+            data_request.director = request.user
+            data_request.director_comment = comment
+            messages.success(request, 'Request approved successfully!')
+            
+            # Notify user
+            send_mail(
+                "Your Data Request Approved",
+                f"Your request for {data_request.dataset.title} has been approved.",
+                settings.DEFAULT_FROM_EMAIL,
+                [data_request.user.email],
+                fail_silently=True,
+            )
+            
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            data_request.director = request.user
+            data_request.director_comment = comment
+            messages.success(request, 'Request has been rejected.')
+            
+            # Notify user
+            send_mail(
+                "Your Data Request Status",
+                f"Your request for {data_request.dataset.title} has been rejected.",
+                settings.DEFAULT_FROM_EMAIL,
+                [data_request.user.email],
+                fail_silently=True,
+            )
+        
+        data_request.save()
+        return redirect('admin:datasets_datarequest_changelist')
+    
+    return render(request, 'datasets/admin/approve_request.html', {
+        'data_request': data_request
+    })

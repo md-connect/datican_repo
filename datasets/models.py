@@ -148,7 +148,6 @@ class Thumbnail(models.Model):
             Thumbnail.objects.filter(dataset=self.dataset, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
         
         super().save(*args, **kwargs)
- 
 class DataRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -163,14 +162,10 @@ class DataRequest(models.Model):
     request_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
-    # Updated fields to match new form
-    institution = models.CharField(max_length=255, blank=True, null=True)
-    project_title = models.CharField(max_length=255, blank=True, null=True)
-    project_details = models.TextField(blank=True, null=True)
-    project_description = models.TextField(max_length=500, blank=True, null=True)  # Approximately 100 words
-    
-    # File fields
-    document = models.FileField(upload_to='requests/documents/')
+    # Fields after removal
+    institution = models.CharField(max_length=255)
+    project_title = models.CharField(max_length=255)
+    project_description = models.TextField(max_length=500)  # Removed project_details
     form_submission = models.FileField(upload_to='requests/forms/')
     
     # Review fields
@@ -210,56 +205,9 @@ class DataRequest(models.Model):
         return f"Request #{self.id} - {self.dataset.title}"
     
     def can_download(self):
-        return (
-            self.status == 'approved' and 
-            self.download_count < self.max_downloads
-        )
+        return self.status == 'approved' and self.download_count < self.max_downloads
     
     def record_download(self):
         self.download_count += 1
         self.last_download = timezone.now()
         self.save()
-    
-    def send_status_notification(self):
-        from django.core.mail import send_mail
-        from django.template.loader import render_to_string
-        from django.utils.html import strip_tags
-        
-        subject = f"Data Request Update: {self.get_status_display()}"
-        
-        # Email to requester
-        html_message = render_to_string('datasets/email/status_update.html', {
-            'request': self,
-            'user': self.user
-        })
-        plain_message = strip_tags(html_message)
-        send_mail(
-            subject,
-            plain_message,
-            settings.DEFAULT_FROM_EMAIL,
-            [self.user.email],
-            html_message=html_message
-        )
-        
-        # Email to managers/directors if needed
-        if self.status in ['manager_review', 'director_review']:
-            recipients = []
-            if self.status == 'manager_review':
-                managers = User.objects.filter(groups__name='Data Managers')
-                recipients = [m.email for m in managers if m.email]
-            elif self.status == 'director_review':
-                directors = User.objects.filter(groups__name='Data Directors')
-                recipients = [d.email for d in directors if d.email]
-            
-            if recipients:
-                html_message = render_to_string('datasets/email/review_request.html', {
-                    'request': self
-                })
-                plain_message = strip_tags(html_message)
-                send_mail(
-                    f"Review Required: Data Request #{self.id}",
-                    plain_message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    recipients,
-                    html_message=html_message
-                )

@@ -9,100 +9,164 @@
             {% if data_request.status == 'approved' %}
                 <i data-lucide="check-circle" class="w-12 h-12 text-green-500 mb-4"></i>
                 <h2 class="text-xl font-semibold text-primary mb-2">Request Approved</h2>
-                <p class="text-secondary text-center">Your request has been approved on {{ data_request.approved_date|date:"F j, Y" }}</p>
+                <p class="text-secondary text-center">Approved on {{ data_request.approved_date|date:"F j, Y" }}</p>
+                {% if data_request.director_comment %}
+                    <p class="text-secondary text-center mt-2">"{{ data_request.director_comment }}"</p>
+                {% endif %}
             {% elif data_request.status == 'rejected' %}
                 <i data-lucide="x-circle" class="w-12 h-12 text-red-500 mb-4"></i>
                 <h2 class="text-xl font-semibold text-primary mb-2">Request Rejected</h2>
-                <p class="text-secondary text-center">Your request was not approved</p>
+                {% if data_request.director_comment %}
+                    <p class="text-secondary text-center">"{{ data_request.director_comment }}"</p>
+                {% elif data_request.data_manager_comment %}
+                    <p class="text-secondary text-center">"{{ data_request.data_manager_comment }}"</p>
+                {% else %}
+                    <p class="text-secondary text-center">Your request was not approved</p>
+                {% endif %}
             {% else %}
                 <i data-lucide="clock" class="w-12 h-12 text-accent mb-4"></i>
-                <h2 class="text-xl font-semibold text-primary mb-2">Request Status</h2>
-                <p class="text-secondary text-center">Your submission is being reviewed</p>
+                <h2 class="text-xl font-semibold text-primary mb-2">
+                    {% if data_request.status == 'manager_review' %}
+                        Under Manager Review
+                    {% elif data_request.status == 'director_review' %}
+                        Under Director Review
+                    {% else %}
+                        Request Submitted
+                    {% endif %}
+                </h2>
+                <p class="text-secondary text-center">
+                    Submitted on {{ data_request.request_date|date:"F j, Y" }}
+                </p>
             {% endif %}
         </div>
 
+        <!-- Status Progress Visualization -->
         <div class="relative pt-8 pb-12">
             <div class="flex justify-between mb-4">
-                {% for stage in status_stages %}
                 <div class="w-1/3 text-center">
                     <div class="process-step mx-auto w-10 h-10 rounded-full 
-                                {% if stage.active %}bg-accent{% else %}bg-secondary/20{% endif %} 
+                                {% if data_request.status != 'pending' %}bg-accent{% else %}bg-secondary/20{% endif %} 
                                 flex items-center justify-center">
-                        <i data-lucide="{{ stage.icon }}" class="w-5 h-5 
-                            {% if stage.active %}text-white{% else %}text-secondary{% endif %}"></i>
+                        <i data-lucide="clipboard-check" class="w-5 h-5 
+                            {% if data_request.status != 'pending' %}text-white{% else %}text-secondary{% endif %}"></i>
                     </div>
                     <div class="mt-2 text-sm font-medium 
-                              {% if stage.active %}text-primary{% else %}text-secondary{% endif %}">
-                        {{ stage.name }}
+                              {% if data_request.status != 'pending' %}text-primary{% else %}text-secondary{% endif %}">
+                        Submitted
                     </div>
-                    {% if stage.date %}
-                    <div class="text-xs text-secondary">{{ stage.date|date:"Y-m-d H:i" }}</div>
+                    <div class="text-xs text-secondary">{{ data_request.request_date|date:"Y-m-d" }}</div>
+                </div>
+                
+                <div class="w-1/3 text-center">
+                    <div class="process-step mx-auto w-10 h-10 rounded-full 
+                    {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}bg-accent{% else %}bg-secondary/20{% endif %}
+                                flex items-center justify-center">
+                        <i data-lucide="user-check" class="w-5 h-5 
+                            {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}text-white{% else %}text-secondary{% endif %}"></i>
+                    </div>
+                    <div class="mt-2 text-sm font-medium 
+                              {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}text-primary{% else %}text-secondary{% endif %}">
+                        Manager Review
+                    </div>
+                    {% if data_request.data_manager_comment %}
+                        <div class="text-xs text-secondary">{{ data_request.data_manager_comment|truncatechars:20 }}</div>
                     {% endif %}
                 </div>
-                {% endfor %}
+                
+                <div class="w-1/3 text-center">
+                    <div class="process-step mx-auto w-10 h-10 rounded-full 
+                                {% if data_request.status == 'approved' or data_request.status == 'rejected' %}bg-accent{% else %}bg-secondary/20{% endif %} 
+                                flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-5 h-5 
+                            {% if data_request.status == 'approved' or data_request.status == 'rejected' %}text-white{% else %}text-secondary{% endif %}"></i>
+                    </div>
+                    <div class="mt-2 text-sm font-medium 
+                              {% if data_request.status == 'approved' or data_request.status == 'rejected' %}text-primary{% else %}text-secondary{% endif %}">
+                        Final Decision
+                    </div>
+                    {% if data_request.approved_date %}
+                        <div class="text-xs text-secondary">{{ data_request.approved_date|date:"Y-m-d" }}</div>
+                    {% endif %}
+                </div>
             </div>
             <div class="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 transform -translate-y-1/2">
                 <div class="progress-bar h-full bg-accent transition-all duration-500" 
-                     style="width: {{ progress }}%"></div>
+                    style="width: 
+                    {% if data_request.status == 'approved' or data_request.status == 'rejected' %}100%
+                    {% elif data_request.status == 'director_review' %}66%  <!-- Fixed 'director_review' -->
+                    {% elif data_request.status == 'manager_review' %}33%  <!-- Fixed 'manager_review' -->
+                    {% else %}0%{% endif %}">
+                </div>
             </div>
         </div>
 
+        <!-- Request Details -->
         <div class="mt-8 space-y-4">
-            <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Dataset</h3>
-                <p>{{ data_request.dataset.title }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <h3 class="text-md font-semibold text-primary mb-2">Dataset</h3>
+                    <p>{{ data_request.dataset.title }}</p>
+                </div>
+                <div>
+                    <h3 class="text-md font-semibold text-primary mb-2">Institution</h3>
+                    <p>{{ data_request.institution }}</p>
+                </div>
             </div>
             
             <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Research Purpose</h3>
-                <p class="whitespace-pre-line">{{ data_request.purpose }}</p>
+                <h3 class="text-md font-semibold text-primary mb-2">Project Title</h3>
+                <p>{{ data_request.project_title }}</p>
             </div>
             
-            {% if data_request.methodology %}
             <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Methodology</h3>
-                <p class="whitespace-pre-line">{{ data_request.methodology }}</p>
+                <h3 class="text-md font-semibold text-primary mb-2">Project Description</h3>
+                <p class="whitespace-pre-line">{{ data_request.project_description }}</p>
             </div>
-            {% endif %}
             
-            {% if data_request.data_manager_comment %}
+            {% if data_request.form_submission %}
             <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Manager Comments</h3>
-                <p class="whitespace-pre-line">{{ data_request.data_manager_comment }}</p>
-            </div>
-            {% endif %}
-            
-            {% if data_request.director_comment %}
-            <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Director Comments</h3>
-                <p class="whitespace-pre-line">{{ data_request.director_comment }}</p>
+                <h3 class="text-md font-semibold text-primary mb-2">Submitted Form</h3>
+                <a href="{{ data_request.form_submission.url }}" 
+                   class="text-accent hover:underline flex items-center gap-1">
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    Download Submitted Form
+                </a>
             </div>
             {% endif %}
         </div>
     </div>
 
-    {% if data_request.can_download %}
+    <!-- Download Section -->
+    {% if data_request.status == 'approved' %}
     <div class="bg-white rounded-lg shadow-sm p-6 text-center">
+        {% if data_request.can_download %}
         <div class="mb-4">
             <i data-lucide="download" class="w-8 h-8 text-accent mx-auto"></i>
-            <p class="text-secondary mt-2">You have {{ data_request.max_downloads|subtract:data_request.download_count }} download(s) remaining</p>
+            <p class="text-secondary mt-2">
+                You have {{ remaining_downloads }} download(s) remaining
+                download(s) remaining
+            </p>
         </div>
         <a href="{% url 'dataset_download' data_request.dataset.id %}" 
            class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2 mx-auto">
             <i data-lucide="download" class="w-5 h-5"></i>
             Download Dataset
         </a>
-    </div>
-    {% elif data_request.status == 'approved' %}
-    <div class="bg-white rounded-lg shadow-sm p-6 text-center">
+        {% else %}
         <div class="mb-4">
             <i data-lucide="alert-circle" class="w-8 h-8 text-yellow-500 mx-auto"></i>
             <p class="text-secondary mt-2">Your download limit has been reached</p>
+            {% if request.user.is_staff %}
+            <p class="text-sm text-gray-500 mt-1">
+                (Admin note: User has downloaded {{ data_request.download_count }} times)
+            </p>
+            {% endif %}
         </div>
         <button disabled class="bg-secondary/20 text-secondary px-6 py-3 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 mx-auto">
             <i data-lucide="download" class="w-5 h-5"></i>
             Download Dataset
         </button>
+        {% endif %}
     </div>
     {% endif %}
 </div>
