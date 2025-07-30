@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Request Access - {{ dataset.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <!-- Information Section -->
+    <div class="bg-secondary/10 rounded-lg p-6 mb-8 border border-secondary/20">
+        <h2 class="text-xl font-semibold text-primary mb-4 flex items-center gap-2">
+            <i data-lucide="info" class="w-6 h-6 text-accent"></i>
+            Application Guidelines
+        </h2>
+        <div class="space-y-3 text-sm text-secondary">
+            <p class="text-primary font-medium">Required documents:</p>
+            <ul class="list-disc list-inside space-y-2 pl-4">
+                <li>Completed request form (download template below)</li>
+                <li>Signed data usage agreement</li>
+                <li>Institutional review board approval</li>
+            </ul>
+            
+            <div class="pt-4 border-t border-secondary/20">
+                <p class="text-primary font-medium mt-2">Submission steps:</p>
+                <ol class="list-decimal list-inside space-y-2 pl-4">
+                    <li>Download and complete the request form template</li>
+                    <li>Have the form signed by your department head</li>
+                    <li>Scan all required documents as a single PDF</li>
+                    <li>Upload the PDF using the form below</li>
+                </ol>
+            </div>
+
+            <div class="mt-4 flex items-center gap-2">
+                <a href="{% url 'download_request_form' %}" class="text-accent hover:text-accent/80 font-medium flex items-center gap-1" download>
+                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                    Dataset_Request_Form_Template.pdf
+                </a>
+                <span class="text-gray-500 text-sm">(Last updated: {% now "Y-m-d" %})</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Section -->
+    <div id="formSection">
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h2 class="text-xl font-semibold text-primary mb-6">Dataset Access Request Form</h2>
+            <form method="post" enctype="multipart/form-data" class="space-y-6">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Researcher Information</label>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <input type="text" value="{{ user.first_name }}" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+                        <input type="text" value="{{ user.last_name }}" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+                        <input type="email" value="{{ user.email }}" disabled class="w-full px-3 py-2 border rounded-lg bg-gray-100">
+                        <input type="text" placeholder="Institution" required name="institution" 
+       value="{{ institution|default:'' }}"
+       class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Project Title</label>
+                    <input type="text" placeholder="Enter project title" required name="project_title"
+       value="{{ project_title|default:'' }}"
+       class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Project Details</label>
+                    <textarea name="project_details" rows="4" placeholder="Describe your project details..."
+          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent">{{ project_details|default:'' }}</textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Project Description (Max. 100 words)</label>
+                    <textarea name="project_description" rows="4" 
+          placeholder="A short description of the project (Max. 100 words)"
+          maxlength="500"
+          class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent">{{ project_description|default:'' }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">Maximum 100 words (about 500 characters)</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Attach Completed Form</label>
+                    <div class="border-2 border-dashed border-secondary/20 rounded-lg p-6 text-center">
+                        <input type="file" name="form_submission" id="id_form_submission" 
+                               accept=".pdf" required class="hidden">
+                        <label for="id_form_submission" class="cursor-pointer">
+                            <div class="flex flex-col items-center text-secondary">
+                                <i data-lucide="upload-cloud" class="w-8 h-8 mb-2 text-accent"></i>
+                                <span class="text-accent font-medium">Click to upload PDF</span>
+                                <span class="text-sm">(Max file size: 25MB)</span>
+                            </div>
+                        </label>
+                        <div id="formSubmissionFileName" class="mt-2 text-sm text-primary hidden"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-primary mb-2">Attach Supporting Documents</label>
+                    <div class="border-2 border-dashed border-secondary/20 rounded-lg p-6 text-center">
+                        <input type="file" name="document" id="id_document" 
+                               accept=".pdf" required class="hidden">
+                        <label for="id_document" class="cursor-pointer">
+                            <div class="flex flex-col items-center text-secondary">
+                                <i data-lucide="upload-cloud" class="w-8 h-8 mb-2 text-accent"></i>
+                                <span class="text-accent font-medium">Click to upload PDF</span>
+                                <span class="text-sm">(Max file size: 25MB)</span>
+                            </div>
+                        </label>
+                        <div id="documentFileName" class="mt-2 text-sm text-primary hidden"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-accent text-white py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium">
+                    Submit Request
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // For form submission file
+        document.getElementById('id_form_submission').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            const displayDiv = document.createElement('div');
+            displayDiv.className = 'file-name-display mt-2 text-sm text-primary';
+            displayDiv.textContent = `Selected: ${fileName}`;
+            
+            // Remove previous display if exists
+            const prevDisplay = this.parentNode.querySelector('.file-name-display');
+            if (prevDisplay) prevDisplay.remove();
+            
+            this.parentNode.appendChild(displayDiv);
+        });
+    
+        // For document file
+        document.getElementById('id_document').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'No file selected';
+            const displayDiv = document.createElement('div');
+            displayDiv.className = 'file-name-display mt-2 text-sm text-primary';
+            displayDiv.textContent = `Selected: ${fileName}`;
+            
+            const prevDisplay = this.parentNode.querySelector('.file-name-display');
+            if (prevDisplay) prevDisplay.remove();
+            
+            this.parentNode.appendChild(displayDiv);
+        });
+    });
+</script>
+
+
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends 'base.html' %} 
+{% load static %} 
+{% block title %}{{ dataset.title }} - Datican{% endblock %} 
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/cornerstone-core"></script>
+<script src="https://cdn.jsdelivr.net/npm/cornerstone-web-image-loader"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  .thumbnail-gallery img {
+    transition: all 0.3s ease;
+  }
+  .thumbnail-gallery img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+  .thumbnail-active {
+    border-color: #3B82F6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  }
+</style>
+{% endblock %} 
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="flex flex-col md:flex-row justify-between mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-primary mb-2">{{ dataset.title }}</h1>
+      <div class="flex items-center space-x-4 text-gray-600">
+        <span>Updated {{ dataset.update_date|timesince }} ago</span>
+      </div>
+    </div>
+
+    {% if can_download %}
+    <div class="relative mt-4 md:mt-0">
+      <a
+        href="{% url 'dataset_download' dataset.id %}"
+        class="bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 flex items-center gap-2"
+      >
+        <i data-lucide="download" class="w-5 h-5"></i>
+        Download
+      </a>
+    </div>
+    {% else %}
+    <div class="relative mt-4 md:mt-0">
+      <a
+        href="{% url 'dataset_request' dataset.id %}"
+        class="bg-accent text-white px-6 py-3 rounded-full hover:bg-red-600 flex items-center gap-2"
+      >
+        <i data-lucide="lock" class="w-5 h-5"></i>
+        Request Access
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Activities Overview -->
+  <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+    <h2 class="text-xl font-semibold text-primary mb-4">
+      📊 Activities Overview
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="text-center p-4 border rounded-lg">
+        <div class="text-2xl font-bold text-primary">
+          {{ dataset.download_count }}
+        </div>
+        <div class="text-gray-600">Downloads</div>
+      </div>
+      <!-- Other stats... -->
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-8">
+    <!-- Files Section -->
+    <div class="md:col-span-1 bg-white rounded-lg shadow-sm p-4">
+      <h3 class="text-lg font-semibold text-primary mb-4">📁 Files</h3>
+      <ul class="space-y-2">
+        {% for file in dataset.files.all %}
+        <li
+          class="flex items-center justify-between p-2 hover:bg-gray-100 rounded"
+        >
+          <span>{{ file.name }}</span>
+          <span class="text-gray-500 text-sm"
+            >{{ file.size|filesizeformat }}</span
+          >
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="md:col-span-2">
+      <div class="flex border-b mb-4">
+        <button
+          id="imageTab"
+          class="preview-tab px-4 py-2 border-b-2 text-primary border-primary"
+        >
+          📷 Image Preview
+        </button>
+        <button
+          id="csvTab"
+          class="preview-tab px-4 py-2 text-gray-500 hover:text-primary"
+        >
+          📄 CSV Preview
+        </button>
+      </div>
+
+      <!-- Main Image Preview -->
+      <div
+        id="imageViewer"
+        class="bg-gray-100 rounded-lg aspect-video mb-4 flex items-center justify-center"
+      >
+        {% if primary_thumbnail %}
+          <img 
+            src="{{ primary_thumbnail.image.url }}" 
+            id="mainPreview"
+            class="max-w-full max-h-full object-contain"
+            alt="{{ dataset.title }} preview"
+          />
+        {% else %}
+          <div class="text-gray-500">No preview available</div>
+        {% endif %}
+      </div>
+
+      <!-- Thumbnail Gallery -->
+      {% if thumbnails|length > 0 %}
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-700 mb-2">Additional Views</h3>
+        <div class="thumbnail-gallery grid grid-cols-4 md:grid-cols-5 gap-2">
+          {% for thumb in thumbnails %}
+          <img 
+            src="{{ thumb.image.url }}" 
+            class="w-full h-24 object-cover rounded border-2 cursor-pointer 
+                   {% if thumb.id == primary_thumbnail.id %}border-primary thumbnail-active{% else %}border-gray-200{% endif %}"
+            data-thumb-id="{{ thumb.id }}"
+            onclick="setMainPreview(this)"
+            alt="{{ dataset.title }} thumbnail {{ forloop.counter }}"
+          />
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Description -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mt-4">
+        <h3 class="text-lg font-semibold text-primary mb-2">📝 Description</h3>
+        <p class="text-gray-600">{{ dataset.description }}</p>
+      </div>
+    </div>
+  </div>
+
+<!-- Similar Datasets -->
+<div class="mt-12">
+  <h2 class="text-2xl font-semibold text-primary mb-6">
+    🧠 Similar Datasets
+  </h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    {% for similar in similar_datasets %}
+      <a href="{% url 'dataset_detail' similar.id %}">
+        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
+          <div class="aspect-video bg-gray-100 rounded-lg mb-4 overflow-hidden">
+            {% if similar.primary_thumbnail %}
+              <img
+                src="{{ similar.primary_thumbnail.image.url }}"
+                class="w-full h-full object-cover"
+                alt="{{ similar.title }} thumbnail"
+              />
+            {% else %}
+              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-500">No image</span>
+              </div>
+            {% endif %}
+          </div>
+          <h3 class="font-semibold text-primary">{{ similar.title }}</h3>
+          <div class="flex items-center text-sm text-gray-600 mt-2">
+            <span>📦 {{ similar.size }}</span>
+          </div>
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+</div>
+{% endblock %} 
+
+{% block extra_scripts %}
+<script>
+  // Tab switching functionality
+  const imageTab = document.getElementById("imageTab");
+  const csvTab = document.getElementById("csvTab");
+  const imageViewer = document.getElementById("imageViewer");
+  const csvPreview = document.getElementById("csvPreview");
+
+  if (imageTab && csvTab) {
+    imageTab.addEventListener("click", () => {
+      imageTab.classList.add("border-primary", "text-primary");
+      csvTab.classList.remove("border-primary", "text-primary");
+      imageViewer.classList.remove("hidden");
+      if (csvPreview) csvPreview.classList.add("hidden");
+    });
+
+    csvTab.addEventListener("click", () => {
+      csvTab.classList.add("border-primary", "text-primary");
+      imageTab.classList.remove("border-primary", "text-primary");
+      if (csvPreview) csvPreview.classList.remove("hidden");
+      imageViewer.classList.add("hidden");
+    });
+  }
+
+  // Set main preview image
+  function setMainPreview(element) {
+    const mainPreview = document.getElementById("mainPreview");
+    if (mainPreview) {
+      mainPreview.src = element.src;
+      
+      // Update active thumbnail
+      document.querySelectorAll('.thumbnail-gallery img').forEach(thumb => {
+        thumb.classList.remove('border-primary', 'thumbnail-active');
+      });
+      element.classList.add('border-primary', 'thumbnail-active');
+    }
+  }
+
+  // Initialize Lucide icons
+  lucide.createIcons();
+</script>
+{% endblock %}

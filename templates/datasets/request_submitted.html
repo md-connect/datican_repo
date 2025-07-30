@@ -1,0 +1,18 @@
+{% extends 'base.html' %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="bg-white rounded-lg shadow-sm p-6 text-center">
+    <h2 class="text-xl font-semibold text-primary mb-4">Request Submitted</h2>
+    <p>
+      Your request for access to
+      <strong>{{ data_request.dataset.title }}</strong> has been submitted.
+    </p>
+    <p>Request ID: {{ data_request.id }}</p>
+    <a
+      href="{% url 'home' %}"
+      class="mt-4 inline-block bg-accent text-white px-6 py-2 rounded-lg"
+    >
+      Return Home
+    </a>
+  </div>
+</div>
+{% endblock %}

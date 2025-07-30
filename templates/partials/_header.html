@@ -1,0 +1,123 @@
+{% load static %}
+
+<nav class="bg-white fixed w-full top-0 left-0 right-0 z-50 shadow-md" x-data="{ isOpen: false }">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <a href="{% url 'home' %}" class="flex-shrink-0">
+        <img src="{% static 'images/datican_logo1.png' %}" alt="Datican Logo" class="h-8 w-auto">
+      </a>
+
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex flex-1 justify-center space-x-8">
+        <a href="{% url 'dataset_list' %}" class="text-dark hover:text-accent transition-colors font-medium">Datasets</a>
+        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Models</a>
+        
+        <!-- Fixed Dropdown -->
+        <div class="relative group" x-data="{ aboutOpen: false }">
+          <button
+            @mouseenter="aboutOpen = true"
+            @mouseleave="aboutOpen = false"
+            class="text-dark hover:text-accent transition-colors font-medium"
+          >
+            About Us ▾
+          </button>
+          <div
+            x-show="aboutOpen"
+            @mouseenter="aboutOpen = true"
+            @mouseleave="aboutOpen = false"
+            class="absolute top-full left-0 w-48 bg-white shadow-lg rounded-lg py-2 mt-1 z-50"
+            x-cloak
+            style="display: none;"
+          >
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Our Mission</a>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Team</a>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Partners</a>
+          </div>
+        </div>
+
+        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Courses</a>
+        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Discussions</a>
+      </div>
+
+      <!-- User Actions -->
+      <div class="flex items-center space-x-4">
+        <div class="hidden md:flex items-center space-x-4">
+          <input type="text" placeholder="Search..." class="px-3 py-1 rounded-lg text-sm w-48">
+
+          {% if user.is_authenticated %}
+          <div class="relative group" x-data="{ profileOpen: false }">
+            {% if user.profile.avatar %}
+            <img
+              src="{{ user.profile.avatar.url }}"
+              class="h-8 w-8 rounded-full cursor-pointer"
+              @mouseenter="profileOpen = true"
+            />
+            {% else %}
+            <div
+              class="bg-gray-300 border-2 border-dashed rounded-full w-8 h-8 flex items-center justify-center cursor-pointer"
+              @mouseenter="profileOpen = true"
+            >
+              <span class="text-gray-600 text-sm">?</span>
+            </div>
+            {% endif %}
+            <div
+              x-show="profileOpen"
+              @mouseenter="profileOpen = true"
+              @mouseleave="profileOpen = false"
+              class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50"
+              x-cloak
+              style="display: none;"
+            >
+              <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100">My Profile</a>
+              <a href="{% url 'account_change_password' %}" class="block px-4 py-2 hover:bg-gray-100">Change Password</a>
+              <form action="{% url 'account_logout' %}" method="POST" class="block">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left px-4 py-2 hover:bg-gray-100">
+                  Logout
+                </button>
+              </form>
+            </div>
+          </div>
+          {% else %}
+          <a href="{% url 'login' %}" class="text-dark hover:text-accent transition-colors">Sign In</a>
+          <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">Register</a>
+          {% endif %}
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button @click="isOpen = !isOpen" class="md:hidden p-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div class="md:hidden" x-show="isOpen" @click.away="isOpen = false" x-cloak>
+      <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
+        <a href="{% url 'dataset_list' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Datasets</a>
+        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Models</a>
+        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">About Us</a>
+        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Courses</a>
+        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Discussions</a>
+        {% if user.is_authenticated %}
+        <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Profile</a>
+        <form action="{% url 'account_logout' %}" method="POST" class="block">
+          {% csrf_token %}
+          <button type="submit" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">
+            Logout
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+        </form>
+        {% else %}
+        <a href="{% url 'login' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Sign In</a>
+        <a href="{% url 'signup' %}" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-accent hover:bg-red-600">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</nav>

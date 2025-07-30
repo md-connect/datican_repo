@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% load static %}
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Datican | Open Data Repository{% endblock %}</title>
+
+    <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{% static 'images/datican_logo_io.png' %}">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#2C3E50",
+              secondary: "#1A252F",
+              accent: "#E74C3C",
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- AlpineJS -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+
+    {% block extra_head %}{% endblock %}
+  </head>
+  <body class="bg-gray-50 overflow-x-hidden">
+    {% include 'partials/_header.html' %}
+
+    <div class="pt-16">{% block content %}{% endblock %}</div>
+
+    {% include 'partials/_footer.html' %} {% include 'partials/_scripts.html' %}
+    {% block extra_scripts %}{% endblock %}
+  </body>
+</html>

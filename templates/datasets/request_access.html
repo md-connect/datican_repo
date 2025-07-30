@@ -1,0 +1,61 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Request Access - {{
+dataset.title }}{% endblock %} {% block extra_head %}
+<script src="https://unpkg.com/lucide@latest"></script>
+{% endblock %} {% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+  <div class="bg-secondary/10 rounded-lg p-6 mb-8 border border-secondary/20">
+    <h2 class="text-xl font-semibold text-primary mb-4 flex items-center gap-2">
+      <i data-lucide="info" class="w-6 h-6 text-accent"></i>
+      Application Guidelines
+    </h2>
+    <!-- Guidelines content... -->
+  </div>
+
+  <div id="formSection">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+      <h2 class="text-xl font-semibold text-primary mb-6">
+        Dataset Access Request Form
+      </h2>
+      <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Form fields -->
+        <div>
+          <label class="block text-sm font-medium text-primary mb-2"
+            >Researcher Information</label
+          >
+          <div class="grid gap-4 md:grid-cols-2">
+            {{ form.first_name }} {{ form.last_name }} {{ form.email }} {{
+            form.affiliation }}
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-primary mb-2"
+            >Research Details</label
+          >
+          {{ form.purpose }}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-primary mb-2"
+            >Attach Documents</label
+          >
+          {{ form.document }}
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-accent text-white py-3 rounded-lg hover:bg-accent/90 font-medium"
+        >
+          Submit Request
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  lucide.createIcons();
+</script>
+{% endblock %}

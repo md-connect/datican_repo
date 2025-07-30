@@ -1,0 +1,12 @@
+<!-- Add any global scripts here -->
+<script>
+    // Initialize Alpine.js for mobile menu
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('header', () => ({
+        mobileMenuOpen: false,
+        toggleMenu() {
+          this.mobileMenuOpen = !this.mobileMenuOpen;
+        }
+      }));
+    });
+    </script>
