@@ -16,4 +16,7 @@ urlpatterns = [
     # Admin review URLs
     path('admin/requests/<int:pk>/review/', views.review_request, name='review_request'),
     path('admin/requests/<int:pk>/approve/', views.approve_request, name='approve_request'),
+    path('request/review/<int:pk>/', views.review_request, name='review_request'),
+    path('request/director-review/<int:pk>/', views.director_review, name='director_review'),
+
 ]

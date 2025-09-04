@@ -1,0 +1,146 @@
+<!-- templates/datasets/director_review.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Director Review - {{ data_request.project_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <h2 class="text-2xl font-semibold text-primary mb-6">Director Review</h2>
+        
+        <!-- Request Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <h3 class="text-lg font-medium text-primary mb-2">Researcher Information</h3>
+                <p><strong>Name:</strong> {{ data_request.user.first_name }} {{ data_request.user.last_name }}</p>
+                <p><strong>Email:</strong> {{ data_request.user.email }}</p>
+                <p><strong>Institution:</strong> {{ data_request.institution }}</p>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-primary mb-2">Request Details</h3>
+                <p><strong>Dataset:</strong> {{ data_request.dataset.title }}</p>
+                <p><strong>Project Title:</strong> {{ data_request.project_title }}</p>
+                <p><strong>Status:</strong> 
+                    <span class="text-blue-600 font-medium">{{ data_request.get_status_display }}</span>
+                </p>
+                <p><strong>Requested:</strong> {{ data_request.request_date|date:"M d, Y" }}</p>
+                
+                {% if data_request.manager %}
+                <p><strong>Manager:</strong> {{ data_request.manager.get_display_name }} ({{ data_request.manager.email }})</p>
+                <p><strong>Manager Review Date:</strong> {{ data_request.manager_review_date|date:"M d, Y H:i" }}</p>
+                {% endif %}
+                
+                {% if data_request.approved_date %}
+                <p><strong>Approval Date:</strong> {{ data_request.approved_date|date:"M d, Y H:i" }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Manager Review Section -->
+        {% if data_request.manager %}
+        <div class="mb-8 border-l-4 border-blue-500 pl-4">
+            <h3 class="text-lg font-medium text-primary mb-2">Manager Review</h3>
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="mb-3">
+                    <p><strong>Reviewed by:</strong> {{ data_request.manager.get_display_name}}</p>
+                    <p><strong>Review date:</strong> {{ data_request.manager_review_date|date:"M d, Y H:i" }}</p>
+                </div>
+                
+                {% if data_request.data_manager_comment %}
+                <div>
+                    <h4 class="font-medium text-primary mb-2">Manager Comments:</h4>
+                    <div class="bg-white p-4 rounded border">
+                        <p class="whitespace-pre-line">{{ data_request.data_manager_comment }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-gray-500">No comments provided by manager.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Project Description -->
+        <div class="mb-8">
+            <h3 class="text-lg font-medium text-primary mb-2">Project Description</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="whitespace-pre-line">{{ data_request.project_description }}</p>
+            </div>
+        </div>
+
+        <!-- Uploaded Files -->
+        <div class="mb-8">
+            <h3 class="text-lg font-medium text-primary mb-4">Uploaded Documents</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-medium text-primary mb-2">Request Form</h4>
+                    {% if data_request.form_submission %}
+                    <p class="text-sm text-gray-600 mb-2">{{ data_request.form_submission.name }}</p>
+                    <a href="{{ data_request.form_submission.url }}" 
+                       target="_blank" 
+                       class="text-accent hover:underline flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download PDF
+                    </a>
+                    {% else %}
+                    <p class="text-gray-500">No form submitted</p>
+                    {% endif %}
+                </div>
+                
+                {% if data_request.document %}
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-medium text-primary mb-2">Supporting Document</h4>
+                    <p class="text-sm text-gray-600 mb-2">{{ data_request.document.name }}</p>
+                    <a href="{{ data_request.document.url }}" 
+                       target="_blank" 
+                       class="text-accent hover:underline flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download PDF
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Review Form -->
+        <div class="border-t pt-6">
+            <h3 class="text-lg font-medium text-primary mb-4">Final Decision</h3>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="director_comment" class="block text-sm font-medium text-primary mb-2">
+                        Director Notes
+                    </label>
+                    <textarea name="director_comment" id="director_comment" rows="4" 
+                              placeholder="Enter your final decision comments..."
+                              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">{{ data_request.director_comment|default:'' }}</textarea>
+                    <p class="text-sm text-gray-500 mt-1">Please provide feedback for the researcher and any specific conditions for data usage.</p>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button type="submit" name="action" value="approve" 
+                            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Approve Request
+                    </button>
+                    
+                    <button type="submit" name="action" value="reject" 
+                            class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        Reject Request
+                    </button>
+                    
+                    <a href="{% url 'admin:datasets_datarequest_changelist' %}" 
+                       class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                        Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

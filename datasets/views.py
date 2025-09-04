@@ -12,6 +12,13 @@ from .models import Dataset, DataRequest, Thumbnail
 from .forms import DataRequestForm
 import os
 from datetime import datetime
+from .utils import data_manager_required, director_required
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+
+
+User = get_user_model()
+
 
 def download_request_form(request):
     form_path = os.path.join(settings.STATIC_ROOT, 'forms', 'Dataset_Request_Form_Template.pdf')
@@ -213,7 +220,7 @@ def dataset_request(request, pk):
                     user_full_name = f"{first_name} {last_name}".strip()
                 else:
                     user_full_name = request.user.username
-                    
+
             # Send notification emails
             subject = f"New Data Request: {dataset.title}"
             message = f"""
@@ -277,9 +284,18 @@ def dataset_request(request, pk):
 @login_required
 def request_status(request, pk):
     data_request = get_object_or_404(DataRequest, pk=pk)
-    remaining_downloads = data_request.max_downloads - data_request.download_count
-    if data_request.user != request.user and not request.user.has_perm('datasets.review_datarequest'):
+    
+    # Check if user has permission to view this request
+    can_view = (
+        data_request.user == request.user or  # User owns the request
+        request.user.is_superuser or          # Superuser can view all
+        request.user.role in ['data_manager', 'director']  # Managers and directors can view
+    )
+    
+    if not can_view:
         return HttpResponseForbidden()
+    
+    remaining_downloads = data_request.max_downloads - data_request.download_count
     
     # Prepare status stages for visualization
     status_stages = [
@@ -330,30 +346,126 @@ def download_request_form(request):
     return redirect('dataset_list')
 
 @login_required
-@permission_required('datasets.review_datarequest', raise_exception=True)
+@data_manager_required
 def review_request(request, pk):
     data_request = get_object_or_404(DataRequest, pk=pk)
     
+    # Check if this data manager can review this request
+    if data_request.status not in ['pending', 'manager_review']:
+        messages.error(request, 'This request is not available for review.')
+        return redirect('admin:datasets_datarequest_changelist')
+    
     if request.method == 'POST':
         action = request.POST.get('action')
-        comment = request.POST.get('comment', '')
+        manager_comment = request.POST.get('manager_comment', '').strip()
         
         if action == 'approve':
             data_request.status = 'director_review'
             data_request.manager = request.user
-            data_request.data_manager_comment = comment
+            data_request.data_manager_comment = manager_comment
+            data_request.manager_review_date = timezone.now()  # Set manager review date
             messages.success(request, 'Request approved and sent to director for final review.')
+            
+            # Notify directors
+            directors = CustomUser.objects.filter(role='director', is_active=True)
+            for director in directors:
+                send_mail(
+                    "Request Needs Final Approval",
+                    f"Request ID: {data_request.id} for '{data_request.project_title}' needs your approval.\n\n"
+                    f"Researcher: {data_request.user.first_name} {data_request.user.last_name} ({data_request.user.email})\n"
+                    f"Institution: {data_request.institution}\n"
+                    f"Manager Notes: {manager_comment}\n"
+                    f"Manager Review Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+                    f"Please review the request in the admin panel.",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [director.email],
+                    fail_silently=True,
+                )
+                
         elif action == 'reject':
             data_request.status = 'rejected'
             data_request.manager = request.user
-            data_request.data_manager_comment = comment
+            data_request.data_manager_comment = manager_comment
+            data_request.manager_review_date = timezone.now()  # Set manager review date
             messages.success(request, 'Request has been rejected.')
+            
+            # Notify user
+            send_mail(
+                "Your Data Request Status",
+                f"Your request for '{data_request.dataset.title}' has been reviewed.\n\n"
+                f"Status: Rejected\n"
+                f"Manager Notes: {manager_comment}\n"
+                f"Review Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+                f"Request ID: {data_request.id}",
+                settings.DEFAULT_FROM_EMAIL,
+                [data_request.user.email],
+                fail_silently=True,
+            )
         
         data_request.save()
-        data_request.send_status_notification()
-        return redirect(reverse('admin:datasets_datarequest_changelist'))
+        return redirect('admin:datasets_datarequest_changelist')
     
-    return render(request, 'datasets/admin/review_request.html', {
+    return render(request, 'datasets/review_request.html', {
+        'data_request': data_request
+    })
+
+@login_required
+@director_required
+def director_review(request, pk):
+    # Use select_related to optimize database queries
+    data_request = get_object_or_404(
+        DataRequest.objects.select_related('user', 'dataset', 'manager'), 
+        pk=pk, 
+        status='director_review'
+    )
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        director_comment = request.POST.get('director_comment', '').strip()
+        
+        if action == 'approve':
+            data_request.status = 'approved'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.approved_date = timezone.now()
+            messages.success(request, 'Request approved successfully!')
+            
+            # Notify user
+            send_mail(
+                "Your Data Request Approved",
+                f"Your request for '{data_request.dataset.title}' has been approved.\n\n"
+                f"Director Notes: {director_comment}\n"
+                f"Approval Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+                f"Request ID: {data_request.id}\n"
+                f"You can now download the dataset from your request status page.",
+                settings.DEFAULT_FROM_EMAIL,
+                [data_request.user.email],
+                fail_silently=True,
+            )
+            
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            messages.success(request, 'Request has been rejected.')
+            
+            # Notify user
+            send_mail(
+                "Your Data Request Status",
+                f"Your request for '{data_request.dataset.title}' has been reviewed.\n\n"
+                f"Status: Rejected\n"
+                f"Director Notes: {director_comment}\n"
+                f"Decision Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+                f"Request ID: {data_request.id}",
+                settings.DEFAULT_FROM_EMAIL,
+                [data_request.user.email],
+                fail_silently=True,
+            )
+        
+        data_request.save()
+        return redirect('admin:datasets_datarequest_changelist')
+    
+    return render(request, 'datasets/director_review.html', {
         'data_request': data_request
     })
 
@@ -469,7 +581,7 @@ def review_request(request, pk):
         data_request.save()
         return redirect('admin:datasets_datarequest_changelist')
     
-    return render(request, 'datasets/admin/review_request.html', {
+    return render(request, 'datasets/review_request.html', {
         'data_request': data_request
     })
     

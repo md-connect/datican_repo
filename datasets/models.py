@@ -186,6 +186,9 @@ class DataRequest(models.Model):
         blank=True,
         related_name='managed_requests'
     )
+    data_manager_comment = models.TextField(blank=True, null=True, verbose_name="Manager Notes")
+    manager_review_date = models.DateTimeField(blank=True, null=True)
+    
     director = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -193,6 +196,8 @@ class DataRequest(models.Model):
         blank=True,
         related_name='directed_requests'
     )
+    director_comment = models.TextField(blank=True, null=True, verbose_name="Director Notes")
+    approved_date = models.DateTimeField(blank=True, null=True)
     
     class Meta:
         ordering = ['-request_date']
@@ -211,3 +216,15 @@ class DataRequest(models.Model):
         self.download_count += 1
         self.last_download = timezone.now()
         self.save()
+    
+    def get_form_submission_filename(self):
+        """Extract filename from form_submission path"""
+        if self.form_submission:
+            return os.path.basename(self.form_submission.name)
+        return None
+    
+    def get_document_filename(self):
+        """Extract filename from document path"""
+        if self.document:
+            return os.path.basename(self.document.name)
+        return None

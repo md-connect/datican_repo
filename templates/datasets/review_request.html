@@ -1,0 +1,100 @@
+<!-- datasets/templates/datasets/review_request.html -->
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Review Request - {{ data_request.project_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+        <h2 class="text-2xl font-semibold text-primary mb-6">Review Data Request</h2>
+        
+        <!-- Request Details -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <h3 class="text-lg font-medium text-primary mb-2">Researcher Information</h3>
+                <p><strong>Name:</strong> {{ data_request.user.get_full_name|default:data_request.user.email }}</p>
+                <p><strong>Email:</strong> {{ data_request.user.email }}</p>
+                <p><strong>Institution:</strong> {{ data_request.institution }}</p>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-medium text-primary mb-2">Request Details</h3>
+                <p><strong>Dataset:</strong> {{ data_request.dataset.title }}</p>
+                <p><strong>Project Title:</strong> {{ data_request.project_title }}</p>
+                <p><strong>Status:</strong> 
+                    <span class="{% if data_request.status == 'pending' %}text-yellow-600
+                                 {% elif data_request.status == 'manager_review' %}text-blue-600
+                                 {% elif data_request.status == 'director_review' %}text-purple-600
+                                 {% elif data_request.status == 'approved' %}text-green-600
+                                 {% elif data_request.status == 'rejected' %}text-red-600{% endif %}">
+                        {{ data_request.get_status_display }}
+                    </span>
+                </p>
+                <p><strong>Requested:</strong> {{ data_request.request_date|date:"M d, Y" }}</p>
+            </div>
+        </div>
+
+        <!-- Project Description -->
+        <div class="mb-8">
+            <h3 class="text-lg font-medium text-primary mb-2">Project Description</h3>
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p class="whitespace-pre-line">{{ data_request.project_description }}</p>
+            </div>
+        </div>
+
+        <!-- Uploaded Files -->
+        <div class="mb-8">
+            <h3 class="text-lg font-medium text-primary mb-4">Uploaded Documents</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-medium text-primary mb-2">Request Form</h4>
+                    <p class="text-sm text-gray-600 mb-2">{{ data_request.get_form_submission_filename }}</p>
+                    <a href="{{ data_request.form_submission.url }}" 
+                    target="_blank" 
+                    class="text-accent hover:underline flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        Download PDF
+                    </a>
+            </div>
+        </div>
+
+        <!-- Review Form -->
+        <div class="border-t pt-6">
+            <h3 class="text-lg font-medium text-primary mb-4">Review Decision</h3>
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                <div>
+                    <label for="manager_comment" class="block text-sm font-medium text-primary mb-2">
+                        Manager Notes
+                    </label>
+                    <textarea name="manager_comment" id="manager_comment" rows="4" 
+                              placeholder="Enter your comments about this request..."
+                              class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent">{{ data_request.data_manager_comment|default:'' }}</textarea>
+                </div>
+                
+                <div class="flex gap-4">
+                    <button type="submit" name="action" value="approve" 
+                            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        Approve & Send to Director
+                    </button>
+                    
+                    <button type="submit" name="action" value="reject" 
+                            class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                        Reject Request
+                    </button>
+                    
+                    <a href="{% url 'admin:datasets_datarequest_changelist' %}" 
+                       class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition-colors">
+                        Back to List
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+{% endblock %}

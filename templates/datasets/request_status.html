@@ -93,8 +93,8 @@
                 <div class="progress-bar h-full bg-accent transition-all duration-500" 
                     style="width: 
                     {% if data_request.status == 'approved' or data_request.status == 'rejected' %}100%
-                    {% elif data_request.status == 'director_review' %}66%  <!-- Fixed 'director_review' -->
-                    {% elif data_request.status == 'manager_review' %}33%  <!-- Fixed 'manager_review' -->
+                    {% elif data_request.status == 'director_review' %}66%  
+                    {% elif data_request.status == 'manager_review' %}33%  
                     {% else %}0%{% endif %}">
                 </div>
             </div>

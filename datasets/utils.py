@@ -7,6 +7,8 @@ from io import BytesIO
 import os
 import gzip
 import tempfile
+from django.contrib.auth.decorators import user_passes_test
+
 
 def convert_to_png(file):
     """Convert medical image files (DICOM/NIfTI) to PNG format"""
@@ -106,3 +108,36 @@ def image_to_buffer(img):
     img.save(png_buffer, format='PNG')
     png_buffer.seek(0)
     return png_buffer
+
+def is_data_manager(user):
+    """Check if user is a data manager or superuser"""
+    return user.is_authenticated and (user.is_superuser or user.role == 'data_manager')
+
+def is_director(user):
+    """Check if user is a director or superuser"""
+    return user.is_authenticated and (user.is_superuser or user.role == 'director')
+
+def is_admin(user):
+    """Check if user is an admin or superuser"""
+    return user.is_authenticated and (user.is_superuser or user.role == 'admin')
+
+# Create decorators for role-based access
+def data_manager_required(view_func=None):
+    actual_decorator = user_passes_test(
+        is_data_manager,
+        login_url='/accounts/login/',
+        redirect_field_name=None
+    )
+    if view_func:
+        return actual_decorator(view_func)
+    return actual_decorator
+
+def director_required(view_func=None):
+    actual_decorator = user_passes_test(
+        is_director,
+        login_url='/accounts/login/',
+        redirect_field_name=None
+    )
+    if view_func:
+        return actual_decorator(view_func)
+    return actual_decorator
