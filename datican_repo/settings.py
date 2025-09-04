@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
 from pathlib import Path
+import pymysql
+pymysql.install_as_MySQLdb()
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,12 +57,22 @@ INSTALLED_APPS = [
     
 ]
 
+# Different session cookie names for admin and main site
+SESSION_COOKIE_NAME = 'main_site_sessionid'
+SESSION_COOKIE_PATH = '/'
+
+# Admin-specific settings
+ADMIN_SESSION_COOKIE_NAME = 'admin_sessionid'
+ADMIN_SESSION_COOKIE_PATH = '/admin/'
+
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    'datican_repo.middleware.AdminSessionMiddleware',
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -111,8 +124,7 @@ DATABASES = {
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
             'charset': 'utf8mb4',
-            'auth_plugin': 'mysql_native_password'
-}
+        }
     }
 }
 
@@ -186,7 +198,7 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-SITE_ID = 1
+SITE_ID = 2
 
 # Authentication settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -225,5 +237,3 @@ SOCIALACCOUNT_PROVIDERS = {
 
 # Crispy Forms
 #CRISPY_TEMPLATE_PACK = 'bootstrap4'
-
-

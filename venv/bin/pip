@@ -1,4 +1,4 @@
-#!/Applications/XAMPP/datican_repo/venv/bin/python
+#!/Users/mondayoke/Documents/Projects/datican_repo/venv/bin/python
 # -*- coding: utf-8 -*-
 import re
 import sys

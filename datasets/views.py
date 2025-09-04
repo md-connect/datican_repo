@@ -143,7 +143,7 @@ def dataset_detail(request, pk):
         'thumbnails': thumbnails,
         'primary_thumbnail': primary_thumbnail
     })
-    
+
 @login_required
 def dataset_request(request, pk):
     dataset = get_object_or_404(Dataset, pk=pk)
@@ -163,10 +163,8 @@ def dataset_request(request, pk):
         # Process form data
         institution = request.POST.get('institution', '').strip()
         project_title = request.POST.get('project_title', '').strip()
-        project_details = request.POST.get('project_details', '').strip()
         project_description = request.POST.get('project_description', '').strip()
         form_submission = request.FILES.get('form_submission')
-        document = request.FILES.get('document')
         
         # Enhanced validation
         errors = []
@@ -174,18 +172,13 @@ def dataset_request(request, pk):
             errors.append('Institution is required')
         if not project_title:
             errors.append('Project title is required')
-        if not project_details:
-            errors.append('Project details are required')
         if not project_description:
             errors.append('Project description is required')
         if not form_submission:
             errors.append('Form submission file is required')
         elif not form_submission.name.endswith('.pdf'):
             errors.append('Form submission must be a PDF file')
-        if not document:
-            errors.append('Supporting document is required')
-        elif not document.name.endswith('.pdf'):
-            errors.append('Supporting document must be a PDF file')
+        
         
         if errors:
             for error in errors:
@@ -194,7 +187,6 @@ def dataset_request(request, pk):
                 'dataset': dataset,
                 'institution': institution,
                 'project_title': project_title,
-                'project_details': project_details,
                 'project_description': project_description
             })
         
@@ -205,13 +197,23 @@ def dataset_request(request, pk):
                 dataset=dataset,
                 institution=institution,
                 project_title=project_title,
-                project_details=project_details,
                 project_description=project_description,
                 form_submission=form_submission,
-                document=document
             )
             data_request.save()
             
+            user_full_name = getattr(request.user, 'get_full_name', None)
+            if callable(user_full_name):
+                user_full_name = user_full_name()
+            else:
+                # Fallback: use first and last name or username
+                first_name = getattr(request.user, 'first_name', '')
+                last_name = getattr(request.user, 'last_name', '')
+                if first_name or last_name:
+                    user_full_name = f"{first_name} {last_name}".strip()
+                else:
+                    user_full_name = request.user.username
+                    
             # Send notification emails
             subject = f"New Data Request: {dataset.title}"
             message = f"""
@@ -253,8 +255,11 @@ def dataset_request(request, pk):
                 fail_silently=True,
             )
             
-            messages.success(request, 'Your request has been submitted successfully!')
-            return redirect('request_status', pk=data_request.pk)
+            # Render success page
+            return render(request, 'datasets/request_submitted.html', {
+                'dataset': dataset,
+                'data_request': data_request
+            })
             
         except Exception as e:
             messages.error(request, f'An error occurred: {str(e)}')
@@ -262,13 +267,12 @@ def dataset_request(request, pk):
                 'dataset': dataset,
                 'institution': institution,
                 'project_title': project_title,
-                'project_details': project_details,
                 'project_description': project_description
             })
     
     return render(request, 'datasets/request_form.html', {
         'dataset': dataset
-    })
+    })    
 
 @login_required
 def request_status(request, pk):

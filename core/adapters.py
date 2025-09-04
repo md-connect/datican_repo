@@ -2,6 +2,12 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from accounts.models import CustomUser
+from allauth.account.adapter import DefaultAccountAdapter
+
+class CustomAccountAdapter(DefaultAccountAdapter):
+    def is_open_for_signup(self, request):
+        # Disable allauth's regular signup since we're using our custom view
+        return False
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
@@ -28,7 +34,7 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
         
         profile_picture = extra_data.get('picture')  # URL to the profile picture
         if profile_picture:
-            user.profile_picture = profile_picture  # assumes your model has this field
+            user.profile_picture = profile_picture  # This will save the URL
 
         return user
 

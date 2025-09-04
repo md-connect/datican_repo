@@ -41,7 +41,7 @@ def home(request):
         'dataset_count': dataset_count,
     })
 
-    
+# core/views.py (update your signup_view)
 def signup_view(request):
     if request.user.is_authenticated:
         return redirect('home')
@@ -52,13 +52,18 @@ def signup_view(request):
         form = SignUpForm(request.POST, request.FILES)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             
             # Handle redirect to next page
             next_url = request.POST.get('next', '')
             if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
                 return redirect(next_url)
             return redirect('home')
+        else:
+            # Add form errors to messages
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
     else:
         form = SignUpForm()
     
@@ -95,13 +100,13 @@ def login_view(request):
 @login_required
 def profile_view(request):
     if request.method == 'POST':
-        form = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
+        form = ProfileForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Your profile has been updated!')
             return redirect('profile')
     else:
-        form = ProfileForm(instance=request.user.profile)
+        form = ProfileForm(instance=request.user)
     
     return render(request, 'core/profile.html', {'form': form})
 

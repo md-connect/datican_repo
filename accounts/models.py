@@ -1,3 +1,4 @@
+# accounts/models.py
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 
@@ -22,24 +23,18 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
     
-    # Add these new fields
-    profile_picture = models.ImageField(
-        upload_to='profile_pics/',
+    # Change this to handle both URLs and file uploads
+    profile_picture = models.CharField(
+        max_length=500,
         blank=True,
         null=True,
-        help_text="Upload a profile picture"
+        help_text="URL or path to profile picture"
     )
+    
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    last_login = models.DateTimeField(
-        blank=True,
-        null=True,
-        verbose_name="last login"
-    )
-    date_joined = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name="date joined"
-    )
+    last_login = models.DateTimeField(blank=True, null=True, verbose_name="last login")
+    date_joined = models.DateTimeField(auto_now_add=True, verbose_name="date joined")
 
     objects = CustomUserManager()
 

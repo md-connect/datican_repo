@@ -1,18 +1,39 @@
-{% extends 'base.html' %} {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-8">
+{% extends 'base.html' %} 
+{% block title %}Request Submitted{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8">
   <div class="bg-white rounded-lg shadow-sm p-6 text-center">
-    <h2 class="text-xl font-semibold text-primary mb-4">Request Submitted</h2>
-    <p>
-      Your request for access to
-      <strong>{{ data_request.dataset.title }}</strong> has been submitted.
+    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <i data-lucide="check" class="w-8 h-8 text-green-600"></i>
+    </div>
+    
+    <h2 class="text-2xl font-semibold text-primary mb-4">Request Submitted Successfully!</h2>
+    
+    <p class="text-secondary mb-6">
+      Your request for access to <strong>{{ dataset.title }}</strong> has been submitted.
+      You will be redirected to the status page shortly.
     </p>
-    <p>Request ID: {{ data_request.id }}</p>
-    <a
-      href="{% url 'home' %}"
-      class="mt-4 inline-block bg-accent text-white px-6 py-2 rounded-lg"
-    >
-      Return Home
-    </a>
+    
+    <div class="flex justify-center gap-4">
+      <a href="{% url 'request_status' data_request.pk %}" 
+         class="bg-accent text-white px-6 py-2 rounded-lg hover:bg-accent/90 transition-colors">
+        View Request Status
+      </a>
+      <a href="{% url 'home' %}" 
+         class="border border-secondary text-secondary px-6 py-2 rounded-lg hover:bg-secondary/10 transition-colors">
+        Return Home
+      </a>
+    </div>
   </div>
 </div>
+
+<script>
+  lucide.createIcons();
+  
+  // Redirect after 5 seconds
+  setTimeout(function() {
+    window.location.href = "{% url 'request_status' data_request.pk %}";
+  }, 5000);
+</script>
 {% endblock %}
