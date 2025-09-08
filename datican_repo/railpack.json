@@ -1,0 +1,12 @@
+{
+  "name": "datican",
+  "version": "1.0.0",
+  "description": "Datican Django Application",
+  "scripts": {
+    "start": "gunicorn datican_repo.wsgi:application --bind 0.0.0.0:$PORT"
+  },
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "datican_repo.settings",
+    "PYTHONPATH": "/workspace"
+  }
+}
