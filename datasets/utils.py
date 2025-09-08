@@ -109,6 +109,10 @@ def image_to_buffer(img):
     png_buffer.seek(0)
     return png_buffer
 
+def can_manage_datasets(user):
+    """Check if user can manage datasets"""
+    return user.is_authenticated and (user.is_superuser or user.role in ['data_manager', 'admin'])
+    
 def is_data_manager(user):
     """Check if user is a data manager or superuser"""
     return user.is_authenticated and (user.is_superuser or user.role == 'data_manager')

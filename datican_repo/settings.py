@@ -12,9 +12,30 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 import pymysql
+from dotenv import load_dotenv
+
 pymysql.install_as_MySQLdb()
 
 
+load_dotenv()
+
+# Security settings for production
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
+
+# Database configuration for production
+if os.environ.get('RAILWAY_ENV') or os.environ.get('RAILPACK_DEPLOY'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('MYSQLDATABASE'),
+            'USER': os.environ.get('MYSQLUSER'),
+            'PASSWORD': os.environ.get('MYSQLPASSWORD'),
+            'HOST': os.environ.get('MYSQLHOST'),
+            'PORT': os.environ.get('MYSQLPORT', '3306'),
+        }
+    }
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -92,7 +113,7 @@ TEMPLATES = [
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
             BASE_DIR / "templates",
-            BASE_DIR / "core" / "templates",
+            #BASE_DIR / "core" / "templates",
             ],
         "APP_DIRS": True,
         "OPTIONS": {
@@ -101,7 +122,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                'core.context_processors.dataset_count',
+                "core.context_processors.admin_stats",
             ],
         },
     },
@@ -199,6 +220,18 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = 2
+SITE_LOGO = 'images/datican_logo1.png'  # Path to your logo in static files
+SITE_HEADER = 'Datican Administration'
+SITE_TITLE = 'Datican Admin Portal'
+
+# Email configuration for password reset
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # or your email provider
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'mondayoke93@gmail.com'
+EMAIL_HOST_PASSWORD = 'Mdconnect@6886@@'  # Use app password for Gmail
+
 
 # Authentication settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -210,6 +243,12 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 ACCOUNT_EMAIL_VERIFICATION = 'none' 
+
+# Custom login URL
+LOGIN_URL = '/login/'
+
+# Redirect after logout
+LOGOUT_REDIRECT_URL = '/'
 LOGIN_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 ACCOUNT_LOGOUT_ON_GET = True

@@ -7,6 +7,8 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from .utils import can_manage_datasets, is_data_manager, is_director, is_admin
+
 
 
 
@@ -54,7 +56,21 @@ class DatasetAdmin(admin.ModelAdmin):
         if not change:
             obj.owner = request.user
         super().save_model(request, obj, form, change)
-
+    def has_add_permission(self, request):
+        return can_manage_datasets(request.user)
+    
+    def has_change_permission(self, request, obj=None):
+        return can_manage_datasets(request.user)
+    
+    def has_delete_permission(self, request, obj=None):
+        return can_manage_datasets(request.user)
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.role == 'data_manager' and not request.user.is_superuser:
+            # Data managers can only edit datasets they own
+            return qs.filter(owner=request.user)
+        return qs
 
 @admin.register(DataRequest)
 class DataRequestAdmin(admin.ModelAdmin):
@@ -97,6 +113,21 @@ class DataRequestAdmin(admin.ModelAdmin):
     approved_date_short.short_description = 'Approved'
     approved_date_short.admin_order_field = 'approved_date'
 
+    def colored_status_badge(self, obj):
+        colors = {
+            'pending': 'status-pending',
+            'manager_review': 'status-manager_review',
+            'director_review': 'status-director_review',
+            'approved': 'status-approved',
+            'rejected': 'status-rejected',
+        }
+        return format_html(
+            '<span class="status-badge {}">{}</span>',
+            colors.get(obj.status, ''),
+            obj.get_status_display()
+        )
+    colored_status_badge.short_description = 'Status'
+    colored_status_badge.admin_order_field = 'status'
 
     # Custom display methods
     def dataset_short(self, obj):

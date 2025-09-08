@@ -9,6 +9,6 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('profile/', views.profile_view, name='profile'),
     #path('logout/', views.logout_view, name='logout'),
-    path('accounts/logout/', LogoutView.as_view(next_page='/'), name='account_logout'),
+    path('logout/', LogoutView.as_view(next_page='/'), name='account_logout'),
     path('accounts/3rdparty/signup/', views.social_login_callback, name='social_callback'),
 ]

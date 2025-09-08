@@ -18,5 +18,9 @@ urlpatterns = [
     path('admin/requests/<int:pk>/approve/', views.approve_request, name='approve_request'),
     path('request/review/<int:pk>/', views.review_request, name='review_request'),
     path('request/director-review/<int:pk>/', views.director_review, name='director_review'),
+    path('manager/recommendations/', views.manager_recommendations, name='manager_recommendations'),
+    path('manager/rejections/', views.manager_rejections, name='manager_rejections'),
+    path('director/approvals/', views.director_approvals, name='director_approvals'),
+    path('director/rejections/', views.director_rejections, name='director_rejections'),
 
 ]

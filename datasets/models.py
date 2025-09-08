@@ -199,6 +199,18 @@ class DataRequest(models.Model):
     director_comment = models.TextField(blank=True, null=True, verbose_name="Director Notes")
     approved_date = models.DateTimeField(blank=True, null=True)
     
+    manager_action = models.CharField(
+        max_length=20,
+        choices=(('recommended', 'Recommended'), ('rejected', 'Rejected')),
+        blank=True,
+        null=True
+    )
+    director_action = models.CharField(
+        max_length=20,
+        choices=(('approved', 'Approved'), ('rejected', 'Rejected')),
+        blank=True,
+        null=True
+    )
     class Meta:
         ordering = ['-request_date']
         permissions = [

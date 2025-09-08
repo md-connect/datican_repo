@@ -345,6 +345,7 @@ def download_request_form(request):
     messages.error(request, 'The request form template is not currently available.')
     return redirect('dataset_list')
 
+# datasets/views.py
 @login_required
 @data_manager_required
 def review_request(request, pk):
@@ -363,8 +364,9 @@ def review_request(request, pk):
             data_request.status = 'director_review'
             data_request.manager = request.user
             data_request.data_manager_comment = manager_comment
-            data_request.manager_review_date = timezone.now()  # Set manager review date
-            messages.success(request, 'Request approved and sent to director for final review.')
+            data_request.manager_review_date = timezone.now()
+            data_request.manager_action = 'recommended'  # Track recommendation
+            messages.success(request, 'Request recommended and sent to director for final review.')
             
             # Notify directors
             directors = CustomUser.objects.filter(role='director', is_active=True)
@@ -386,7 +388,8 @@ def review_request(request, pk):
             data_request.status = 'rejected'
             data_request.manager = request.user
             data_request.data_manager_comment = manager_comment
-            data_request.manager_review_date = timezone.now()  # Set manager review date
+            data_request.manager_review_date = timezone.now()
+            data_request.manager_action = 'rejected'  # Track rejection
             messages.success(request, 'Request has been rejected.')
             
             # Notify user
@@ -412,12 +415,7 @@ def review_request(request, pk):
 @login_required
 @director_required
 def director_review(request, pk):
-    # Use select_related to optimize database queries
-    data_request = get_object_or_404(
-        DataRequest.objects.select_related('user', 'dataset', 'manager'), 
-        pk=pk, 
-        status='director_review'
-    )
+    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -428,6 +426,7 @@ def director_review(request, pk):
             data_request.director = request.user
             data_request.director_comment = director_comment
             data_request.approved_date = timezone.now()
+            data_request.director_action = 'approved'  # Track approval
             messages.success(request, 'Request approved successfully!')
             
             # Notify user
@@ -447,6 +446,7 @@ def director_review(request, pk):
             data_request.status = 'rejected'
             data_request.director = request.user
             data_request.director_comment = director_comment
+            data_request.director_action = 'rejected'  # Track rejection
             messages.success(request, 'Request has been rejected.')
             
             # Notify user
@@ -467,6 +467,59 @@ def director_review(request, pk):
     
     return render(request, 'datasets/director_review.html', {
         'data_request': data_request
+    })
+
+# datasets/views.py
+@login_required
+@data_manager_required
+def manager_recommendations(request):
+    """Show data manager's recommended requests"""
+    recommendations = DataRequest.objects.filter(
+        manager=request.user,
+        manager_action='recommended'
+    ).select_related('user', 'dataset', 'director')
+    
+    return render(request, 'datasets/manager_recommendations.html', {
+        'recommendations': recommendations
+    })
+
+@login_required
+@data_manager_required
+def manager_rejections(request):
+    """Show data manager's rejected requests"""
+    rejections = DataRequest.objects.filter(
+        manager=request.user,
+        manager_action='rejected'
+    ).select_related('user', 'dataset', 'director')
+    
+    return render(request, 'datasets/manager_rejections.html', {
+        'rejections': rejections
+    })
+
+@login_required
+@director_required
+def director_approvals(request):
+    """Show director's approved requests"""
+    approvals = DataRequest.objects.filter(
+        director=request.user,
+        director_action='approved'
+    ).select_related('user', 'dataset', 'manager')
+    
+    return render(request, 'datasets/director_approvals.html', {
+        'approvals': approvals
+    })
+
+@login_required
+@director_required
+def director_rejections(request):
+    """Show director's rejected requests"""
+    rejections = DataRequest.objects.filter(
+        director=request.user,
+        director_action='rejected'
+    ).select_related('user', 'dataset', 'manager')
+    
+    return render(request, 'datasets/director_rejections.html', {
+        'rejections': rejections
     })
 
 @login_required
