@@ -11,13 +11,13 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Check if we're running on Render
-IS_RENDER = 'RENDER' in os.environ
+# Import pymysql for MySQL connection
+import pymysql
+pymysql.install_as_MySQLdb()
 
-# Import MySQL only for local development
-if not IS_RENDER:
-    import pymysql
-    pymysql.install_as_MySQLdb()
+# Detect environment
+IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production'
+IS_DEVELOPMENT = not IS_PRODUCTION
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
@@ -25,9 +25,13 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# Host configuration
+if IS_PRODUCTION:
+    ALLOWED_HOSTS = ['repo.datican.org', '93.127.206.235']
+    CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
+else:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+    CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
 
 # Application definition
 INSTALLED_APPS = [
@@ -51,17 +55,12 @@ INSTALLED_APPS = [
     'datasets',
 ]
 
-# Different session cookie names for admin and main site
+# Session cookie names
 SESSION_COOKIE_NAME = 'main_site_sessionid'
 SESSION_COOKIE_PATH = '/'
 
-# Admin-specific settings
-ADMIN_SESSION_COOKIE_NAME = 'admin_sessionid'
-ADMIN_SESSION_COOKIE_PATH = '/admin/'
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware" if IS_RENDER else "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -70,12 +69,6 @@ MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    'http://127.0.0.1:8000',
-    'http://localhost:8000',
-    'https://*.onrender.com',
 ]
 
 ROOT_URLCONF = "datican_repo.urls"
@@ -99,51 +92,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "datican_repo.wsgi.application"
 
-# Database configuration
-if IS_RENDER:
-    # Production - PostgreSQL on Render
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-            ssl_require=True,
-        )
-    }
-    
-    # HTTPS settings for production
-    SECURE_SSL_REDIRECT = True
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-    
-    # Static files with Whitenoise
-    STATIC_URL = '/static/'
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    
-else:
-    # Development - MySQL locally
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'datican_db',
-            'USER': 'datican',
-            'PASSWORD': 'datican123',
-            'HOST': '127.0.0.1',
-            'PORT': '3307',
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            }
+# Database configuration - MySQL
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'datican_db'),
+        'USER': os.environ.get('DB_USER', 'datican'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'datican123'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '3307'),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
         }
     }
-    
-    # Static files for development
-    STATIC_URL = "static/"
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+}
+
+# Static files
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 # Media files
 MEDIA_URL = '/media/'
@@ -158,15 +126,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # File upload settings
-DATA_UPLOAD_MAX_MEMORY_SIZE = None
-FILE_UPLOAD_MAX_MEMORY_SIZE = 0
-FILE_UPLOAD_PERMISSIONS = 0o644
-FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
-
-if DEBUG:
-    FILE_UPLOAD_HANDLERS = [
-        'django.core.files.uploadhandler.TemporaryFileUploadHandler',
-    ]
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
@@ -184,17 +145,14 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 SITE_ID = 2
-SITE_LOGO = 'images/datican_logo1.png'
-SITE_HEADER = 'Datican Administration'
-SITE_TITLE = 'Datican Admin Portal'
 
-# Email configuration
+# Email configuration (update with your production email settings)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'mondayoke93@gmail.com'
-EMAIL_HOST_PASSWORD = 'Mdconnect@6886@@'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 # Auth settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -226,3 +184,20 @@ SOCIALACCOUNT_PROVIDERS = {
         'VERIFIED_EMAIL': True,
     }
 }
+
+# Security settings for production only
+if IS_PRODUCTION:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    # Development-specific settings
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
