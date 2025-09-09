@@ -5,7 +5,7 @@ sqlparse==0.5.3
 
 # Database (both MySQL and PostgreSQL support)
 mysqlclient==2.2.4
-psycopg[binary]==3.2.9
+psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 
 # Authentication
@@ -24,8 +24,8 @@ pydicom==3.0.1
 nibabel==5.3.2
 
 # Deployment
-gunicorn==23.0.0
-whitenoise==6.6.0
+gunicorn
+whitenoise
 python-dotenv==1.1.1
 
 # Utilities
