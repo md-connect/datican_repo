@@ -5,7 +5,7 @@ sqlparse==0.5.3
 
 # Database (both MySQL and PostgreSQL support)
 mysqlclient==2.2.4
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.0
 dj-database-url==2.1.0
 
 # Authentication
