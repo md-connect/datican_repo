@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: datican-web
+    name: daticanrepo
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python manage.py migrate
     startCommand: gunicorn datican_repo.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DEBUG
