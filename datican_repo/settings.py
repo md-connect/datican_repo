@@ -18,6 +18,7 @@ pymysql.install_as_MySQLdb()
 # Detect environment
 IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production'
 IS_DEVELOPMENT = not IS_PRODUCTION
+IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('MYSQL_URL') or os.environ.get('MYSQLHOST')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
@@ -26,9 +27,17 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Host configuration
-if IS_PRODUCTION:
-    ALLOWED_HOSTS = ['repo.datican.org', '93.127.206.235']
+if IS_PRODUCTION or IS_RAILWAY:
+    import dj_database_url
+    # Allow Railway domain and your custom domain
+    railway_host = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', '')
+    allowed_hosts = ['repo.datican.org', '93.127.206.235']
+    if railway_host:
+        allowed_hosts.append(railway_host)
+    ALLOWED_HOSTS = allowed_hosts
     CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
+    if railway_host:
+        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_host}')
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
     CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
@@ -58,6 +67,11 @@ INSTALLED_APPS = [
 # Session cookie names
 SESSION_COOKIE_NAME = 'main_site_sessionid'
 SESSION_COOKIE_PATH = '/'
+
+# Admin-specific settings
+ADMIN_SESSION_COOKIE_NAME = 'admin_sessionid'
+ADMIN_SESSION_COOKIE_PATH = '/admin/'
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -92,21 +106,58 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "datican_repo.wsgi.application"
 
-# Database configuration - MySQL
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ.get('DB_NAME', 'datican_db'),
-        'USER': os.environ.get('DB_USER', 'datican'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'datican123'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', '3307'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',
+# Database configuration
+if os.environ.get('MYSQL_URL'):
+    # Use Railway's MySQL database with MYSQL_URL
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('MYSQL_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+            engine='django.db.backends.mysql',
+        )
+    }
+elif os.environ.get('MYSQLHOST'):
+    # Use Railway's MySQL database with individual variables
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('MYSQLDATABASE', 'railway'),
+            'USER': os.environ.get('MYSQLUSER', 'root'),
+            'PASSWORD': os.environ.get('MYSQLPASSWORD', ''),
+            'HOST': os.environ.get('MYSQLHOST'),
+            'PORT': os.environ.get('MYSQLPORT', '3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            }
         }
     }
-}
+elif os.environ.get('DATABASE_URL'):
+    # Fallback for PostgreSQL if needed
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+else:
+    # Use MySQL for local Docker development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('DB_NAME', 'datican_db'),
+            'USER': os.environ.get('DB_USER', 'datican'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'datican123'),
+            'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+            'PORT': os.environ.get('DB_PORT', '3307'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            }
+        }
+    }
 
 # Static files
 STATIC_URL = '/static/'
@@ -186,7 +237,7 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Security settings for production only
-if IS_PRODUCTION:
+if IS_PRODUCTION or IS_RAILWAY:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
