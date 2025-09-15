@@ -9,11 +9,6 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from .utils import can_manage_datasets, is_data_manager, is_director, is_admin
 
-
-
-
-
-
 class ThumbnailInline(admin.TabularInline):
     model = Thumbnail
     extra = 1

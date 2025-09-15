@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "./railway_start.sh"
+
+[[services]]
+name = "web"
+[[services.ports]]
+http = true
