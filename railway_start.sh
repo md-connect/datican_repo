@@ -7,7 +7,9 @@ if [ -n "$MYSQLHOST" ] || [ -n "$MYSQL_URL" ]; then
 fi
 
 # Run migrations
-python manage.py migrate
+python manage.py migrate && python manage.py createsuperuser --noinput
+
+
 
 # Collect static files
 python manage.py collectstatic --noinput
