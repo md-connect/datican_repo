@@ -36,13 +36,14 @@ if IS_RAILWAY:
     CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
     if os.environ.get("DJANGO_SUPERUSER_EMAIL") and os.environ.get("DJANGO_SUPERUSER_PASSWORD"):
     User = get_user_model()
-    if not User.objects.filter(email=os.environ["DJANGO_SUPERUSER_EMAIL"]).exists():
-        User.objects.create_superuser(
-            email=os.environ["DJANGO_SUPERUSER_EMAIL"],
-            password=os.environ["DJANGO_SUPERUSER_PASSWORD"],
-            first_name="Admin",
-            last_name="User",
-        )
+        if not User.objects.filter(email=os.environ["DJANGO_SUPERUSER_EMAIL"]).exists():
+            User.objects.create_superuser(
+                email=os.environ["DJANGO_SUPERUSER_EMAIL"],
+                password=os.environ["DJANGO_SUPERUSER_PASSWORD"],
+                first_name="Admin",
+                last_name="User",
+            )
+
     
     # Add specific domain if available
     railway_domain = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', '')
