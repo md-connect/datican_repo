@@ -6,8 +6,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
-from django.contrib.auth import get_user_model
-
 
 load_dotenv()
 
@@ -34,16 +32,6 @@ if IS_RAILWAY:
     # Allow all Railway domains
     ALLOWED_HOSTS = ['*']
     CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
-    if os.environ.get("DJANGO_SUPERUSER_EMAIL") and os.environ.get("DJANGO_SUPERUSER_PASSWORD"):
-    User = get_user_model()
-        if not User.objects.filter(email=os.environ["DJANGO_SUPERUSER_EMAIL"]).exists():
-            User.objects.create_superuser(
-                email=os.environ["DJANGO_SUPERUSER_EMAIL"],
-                password=os.environ["DJANGO_SUPERUSER_PASSWORD"],
-                first_name="Admin",
-                last_name="User",
-            )
-
     
     # Add specific domain if available
     railway_domain = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', '')
