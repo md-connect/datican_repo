@@ -16,10 +16,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 import pymysql
 pymysql.install_as_MySQLdb()
 
-# Detect environment
-IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production'
-IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_STATIC_URL')
-IS_DEVELOPMENT = not IS_PRODUCTION and not IS_RAILWAY
+# Detect environment - FIXED
+IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_STATIC_URL') or os.environ.get('MYSQLHOST'))
+IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production' or IS_RAILWAY
+IS_DEVELOPMENT = not IS_PRODUCTION
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
@@ -27,24 +27,22 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-# Host configuration - Get Railway domain dynamically
-railway_domain = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', '')
-
-if IS_PRODUCTION:
+# Host configuration - SIMPLIFIED
+if IS_RAILWAY:
+    # Allow all Railway domains
+    ALLOWED_HOSTS = ['*']
+    CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
+    
+    # Add specific domain if available
+    railway_domain = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', '')
+    if railway_domain:
+        ALLOWED_HOSTS.append(railway_domain)
+        ALLOWED_HOSTS.append(f'.{railway_domain}')
+        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
+        
+elif IS_PRODUCTION:
     ALLOWED_HOSTS = ['repo.datican.org', '93.127.206.235']
     CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
-elif IS_RAILWAY:
-    # Allow Railway domain and any subdomains
-    ALLOWED_HOSTS = ['*']  # Allow all hosts temporarily for debugging
-    CSRF_TRUSTED_ORIGINS = [f'https://{railway_domain}', f'https://*.{railway_domain}']
-    
-    # Alternatively, use specific domain if available
-    if railway_domain:
-        ALLOWED_HOSTS = [railway_domain, f'.{railway_domain}']
-        CSRF_TRUSTED_ORIGINS = [f'https://{railway_domain}']
-    else:
-        ALLOWED_HOSTS = ['*']
-        CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
     CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
@@ -113,8 +111,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "datican_repo.wsgi.application"
 
-# Database configuration
-if os.environ.get('MYSQL_URL'):
+# Database configuration - WITH DEBUGGING
+print("=== DATABASE CONFIG DEBUG ===")
+print(f"MYSQLHOST: {os.environ.get('MYSQLHOST')}")
+print(f"MYSQL_URL: {os.environ.get('MYSQL_URL')}")
+print(f"MYSQLDATABASE: {os.environ.get('MYSQLDATABASE')}")
+
+if os.environ.get('MYSQLHOST'):
+    print("Using MYSQLHOST configuration")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('MYSQLDATABASE', 'railway'),
+            'USER': os.environ.get('MYSQLUSER', 'root'),
+            'PASSWORD': os.environ.get('MYSQLPASSWORD', ''),
+            'HOST': os.environ.get('MYSQLHOST', 'mysql.railway.internal'),
+            'PORT': os.environ.get('MYSQLPORT', '3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                'charset': 'utf8mb4',
+            }
+        }
+    }
+elif os.environ.get('MYSQL_URL'):
+    print("Using MYSQL_URL configuration")
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('MYSQL_URL'),
@@ -123,33 +143,11 @@ if os.environ.get('MYSQL_URL'):
             engine='django.db.backends.mysql',
         )
     }
-elif os.environ.get('MYSQLHOST'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('MYSQLDATABASE', 'railway'),
-            'USER': os.environ.get('MYSQLUSER', 'root'),
-            'PASSWORD': os.environ.get('MYSQLPASSWORD', ''),
-            'HOST': os.environ.get('MYSQLHOST'),
-            'PORT': os.environ.get('MYSQLPORT', '3306'),
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            }
-        }
-    }
-elif os.environ.get('DATABASE_URL'):
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('DATABASE_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-        )
-    }
 else:
+    print("Using SQLite fallback")
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',  # Fallback to SQLite for now
+            'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
