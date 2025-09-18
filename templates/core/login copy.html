@@ -13,7 +13,7 @@
       </h2>
 
       <!-- Google Signup -->
-      <form method="post" action="#">
+      <form method="post" action="{% provider_login_url 'google' process='login' %}">
         {% csrf_token %}
         <!-- Pass next URL to Google login -->
         {% if next_url %}

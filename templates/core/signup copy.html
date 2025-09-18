@@ -28,7 +28,7 @@
       </p>
 
       <!-- Google Signup -->
-      <form method="post" action="#">
+      <form method="post" action="{% provider_login_url 'google' %}">
         {% csrf_token %}
         <button type="submit" class="block w-full flex items-center justify-center gap-2 py-3 border rounded-lg hover:bg-gray-50 transition-colors">
           <svg class="w-5 h-5" viewBox="0 0 24 24">
