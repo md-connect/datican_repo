@@ -2,176 +2,446 @@
 {% load static %}
 {% block title %}Request Status - {{ data_request.dataset.title }}{% endblock %}
 
+{% block extra_head %}
+<style>
+  .sticky-search {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  @media (max-width: 768px) {
+    .sticky-search {
+      top: 64px;
+      z-index: 30;
+    }
+    
+    .mobile-hide-auth {
+      display: none !important;
+    }
+  }
+
+  /* UPDATED: Custom styles for progress circles - Hollow circle design */
+  .progress-circle {
+    width: 56px; /* Larger circles */
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
+  .progress-circle-default {
+    border: 3px solid #d1d5db; /* Thicker border, no fill */
+    background-color: transparent;
+  }
+  
+  .progress-circle-completed {
+    border: 3px solid #10b981; /* Green outline, no fill */
+    background-color: transparent;
+  }
+  
+  .progress-circle-rejected {
+    border: 3px solid #ef4444; /* Red outline, no fill */
+    background-color: transparent;
+  }
+  
+  .progress-line {
+    height: 3px; /* Thicker line */
+    background-color: #d1d5db;
+    flex-grow: 1;
+    margin: 0 16px;
+    position: relative;
+    top: 28px; /* Align with center of circles */
+  }
+  
+  .progress-line-completed {
+    background-color: #10b981;
+  }
+  
+  .status-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 12px;
+    color: #6b7280;
+  }
+  
+  .status-label-active {
+    color: #111827;
+    font-weight: 600;
+  }
+
+  /* Custom icon styling */
+  .progress-icon {
+    width: 28px;
+    height: 28px;
+    stroke-width: 3;
+  }
+  
+  .icon-completed {
+    color: #10b981;
+  }
+  
+  .icon-rejected {
+    color: #ef4444;
+  }
+  
+  .icon-pending {
+    color: #d1d5db;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 py-8">
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+<div class="p-4 md:p-6">
+  <!-- Sticky Search Bar -->
+  <div class="sticky-search py-4 bg-white px-4 sm:px-6">
+    <!-- ... keep your existing search bar code ... -->
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <!-- Breadcrumb -->
+    <nav class="mb-6 flex items-center text-sm text-gray-600">
+      <a href="{% url 'dataset_list' %}" class="hover:text-primary">Datasets</a>
+      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+      <a href="{% url 'dataset_detail' data_request.dataset.id %}" class="hover:text-primary">{{ data_request.dataset.title|truncatechars:30 }}</a>
+      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+      </svg>
+      <span class="text-primary font-medium">Request Status</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-primary mb-2">Request Status</h1>
+      <p class="text-gray-600">
+        Track the status of your data access request for <span class="font-medium">{{ data_request.dataset.title }}</span>
+      </p>
+    </div>
+
+    <div class="max-w-4xl mx-auto">
+      <!-- Status Card -->
+      <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
         <div class="flex flex-col items-center mb-8">
-            {% if data_request.status == 'approved' %}
-                <i data-lucide="check-circle" class="w-12 h-12 text-green-500 mb-4"></i>
-                <h2 class="text-xl font-semibold text-primary mb-2">Request Approved</h2>
-                <p class="text-secondary text-center">Approved on {{ data_request.approved_date|date:"F j, Y" }}</p>
-                {% if data_request.director_comment %}
-                    <p class="text-secondary text-center mt-2">"{{ data_request.director_comment }}"</p>
-                {% endif %}
-            {% elif data_request.status == 'rejected' %}
-                <i data-lucide="x-circle" class="w-12 h-12 text-red-500 mb-4"></i>
-                <h2 class="text-xl font-semibold text-primary mb-2">Request Rejected</h2>
-                {% if data_request.director_comment %}
-                    <p class="text-secondary text-center">"{{ data_request.director_comment }}"</p>
-                {% elif data_request.data_manager_comment %}
-                    <p class="text-secondary text-center">"{{ data_request.data_manager_comment }}"</p>
-                {% else %}
-                    <p class="text-secondary text-center">Your request was not approved</p>
-                {% endif %}
-            {% else %}
-                <i data-lucide="clock" class="w-12 h-12 text-accent mb-4"></i>
-                <h2 class="text-xl font-semibold text-primary mb-2">
-                    {% if data_request.status == 'manager_review' %}
-                        Under Manager Review
-                    {% elif data_request.status == 'director_review' %}
-                        Under Director Review
-                    {% else %}
-                        Request Submitted
-                    {% endif %}
-                </h2>
-                <p class="text-secondary text-center">
-                    Submitted on {{ data_request.request_date|date:"F j, Y" }}
-                </p>
+          {% if data_request.status == 'approved' %}
+            <svg class="w-12 h-12 text-green-500 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" fill="none"/>
+              <path d="M7 13l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-primary mb-2">Request Approved</h2>
+            <p class="text-secondary text-center">Approved on {{ data_request.approved_date|date:"F j, Y" }}</p>
+            {% if data_request.director_comment %}
+              <p class="text-secondary text-center mt-2 italic">"{{ data_request.director_comment }}"</p>
             {% endif %}
+          {% elif data_request.status == 'rejected' %}
+            <svg class="w-12 h-12 text-red-500 mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" fill="none"/>
+              <path d="M15 9l-6 6M9 9l6 6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-primary mb-2">Request Rejected</h2>
+            {% if data_request.director_comment %}
+              <p class="text-secondary text-center italic">"{{ data_request.director_comment }}"</p>
+            {% elif data_request.data_manager_comment %}
+              <p class="text-secondary text-center italic">"{{ data_request.data_manager_comment }}"</p>
+            {% else %}
+              <p class="text-secondary text-center">Your request was not approved</p>
+            {% endif %}
+          {% else %}
+            <svg class="w-12 h-12 text-accent mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" fill="none"/>
+              <path d="M12 6v6l4 2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h2 class="text-xl font-semibold text-primary mb-2">
+              {% if data_request.status == 'manager_review' %}
+                Under Manager Review
+              {% elif data_request.status == 'director_review' %}
+                Under Director Review
+              {% else %}
+                Request Submitted
+              {% endif %}
+            </h2>
+            <p class="text-secondary text-center">
+              Submitted on {{ data_request.request_date|date:"F j, Y" }}
+            </p>
+            <p class="text-gray-500 text-sm text-center mt-2">
+              Request ID: {{ data_request.id }}
+            </p>
+          {% endif %}
         </div>
 
         <!-- Status Progress Visualization -->
         <div class="relative pt-8 pb-12">
-            <div class="flex justify-between mb-4">
-                <div class="w-1/3 text-center">
-                    <div class="process-step mx-auto w-10 h-10 rounded-full 
-                                {% if data_request.status != 'pending' %}bg-accent{% else %}bg-secondary/20{% endif %} 
-                                flex items-center justify-center">
-                        <i data-lucide="clipboard-check" class="w-5 h-5 
-                            {% if data_request.status != 'pending' %}text-white{% else %}text-secondary{% endif %}"></i>
-                    </div>
-                    <div class="mt-2 text-sm font-medium 
-                              {% if data_request.status != 'pending' %}text-primary{% else %}text-secondary{% endif %}">
-                        Submitted
-                    </div>
-                    <div class="text-xs text-secondary">{{ data_request.request_date|date:"Y-m-d" }}</div>
-                </div>
-                
-                <div class="w-1/3 text-center">
-                    <div class="process-step mx-auto w-10 h-10 rounded-full 
-                    {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}bg-accent{% else %}bg-secondary/20{% endif %}
-                                flex items-center justify-center">
-                        <i data-lucide="user-check" class="w-5 h-5 
-                            {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}text-white{% else %}text-secondary{% endif %}"></i>
-                    </div>
-                    <div class="mt-2 text-sm font-medium 
-                              {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}text-primary{% else %}text-secondary{% endif %}">
-                        Manager Review
-                    </div>
-                    {% if data_request.data_manager_comment %}
-                        <div class="text-xs text-secondary">{{ data_request.data_manager_comment|truncatechars:20 }}</div>
-                    {% endif %}
-                </div>
-                
-                <div class="w-1/3 text-center">
-                    <div class="process-step mx-auto w-10 h-10 rounded-full 
-                                {% if data_request.status == 'approved' or data_request.status == 'rejected' %}bg-accent{% else %}bg-secondary/20{% endif %} 
-                                flex items-center justify-center">
-                        <i data-lucide="shield-check" class="w-5 h-5 
-                            {% if data_request.status == 'approved' or data_request.status == 'rejected' %}text-white{% else %}text-secondary{% endif %}"></i>
-                    </div>
-                    <div class="mt-2 text-sm font-medium 
-                              {% if data_request.status == 'approved' or data_request.status == 'rejected' %}text-primary{% else %}text-secondary{% endif %}">
-                        Final Decision
-                    </div>
-                    {% if data_request.approved_date %}
-                        <div class="text-xs text-secondary">{{ data_request.approved_date|date:"Y-m-d" }}</div>
-                    {% endif %}
-                </div>
+          <div class="flex items-center justify-between mb-2">
+            <!-- Submitted Stage -->
+            <div class="flex flex-col items-center">
+              <div class="progress-circle 
+                {% if data_request.status == 'pending' or data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}
+                  progress-circle-completed
+                {% else %}
+                  progress-circle-default
+                {% endif %}">
+                {% if data_request.status == 'pending' or data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}
+                  <!-- Completed: Hollow green circle with checkmark -->
+                  <svg class="progress-icon icon-completed" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                    <path d="M7 13l3 3 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                {% else %}
+                  <!-- Pending: Hollow gray circle -->
+                  <svg class="progress-icon icon-pending" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="status-label {% if data_request.status == 'pending' or data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}status-label-active{% endif %}">
+                Submitted
+              </div>
+              <div class="text-xs text-gray-500 mt-1">{{ data_request.request_date|date:"M d, Y" }}</div>
             </div>
-            <div class="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 transform -translate-y-1/2">
-                <div class="progress-bar h-full bg-accent transition-all duration-500" 
-                    style="width: 
-                    {% if data_request.status == 'approved' or data_request.status == 'rejected' %}100%
-                    {% elif data_request.status == 'director_review' %}66%  
-                    {% elif data_request.status == 'manager_review' %}33%  
-                    {% else %}0%{% endif %}">
-                </div>
+            
+            <!-- Connecting Line 1 -->
+            <div class="progress-line {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}progress-line-completed{% endif %}"></div>
+            
+            <!-- Manager Review Stage -->
+            <div class="flex flex-col items-center">
+              <div class="progress-circle 
+                {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}
+                  progress-circle-completed
+                {% else %}
+                  progress-circle-default
+                {% endif %}">
+                {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}
+                  <!-- Completed: Hollow green circle with checkmark -->
+                  <svg class="progress-icon icon-completed" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                    <path d="M7 13l3 3 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                {% else %}
+                  <!-- Pending: Hollow gray circle -->
+                  <svg class="progress-icon icon-pending" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="status-label {% if data_request.status == 'manager_review' or data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}status-label-active{% endif %}">
+                Manager's Review
+              </div>
+              {% if data_request.manager_review_date %}
+                <div class="text-xs text-gray-500 mt-1">{{ data_request.manager_review_date|date:"M d, Y" }}</div>
+              {% else %}
+                <div class="text-xs text-gray-400 mt-1">Pending</div>
+              {% endif %}
             </div>
+            
+            <!-- Connecting Line 2 -->
+            <div class="progress-line {% if data_request.status == 'director_review' or data_request.status == 'approved' or data_request.status == 'rejected' %}progress-line-completed{% endif %}"></div>
+            
+            <!-- Final Decision Stage -->
+            <div class="flex flex-col items-center">
+              <div class="progress-circle 
+                {% if data_request.status == 'approved' %}
+                  progress-circle-completed
+                {% elif data_request.status == 'rejected' %}
+                  progress-circle-rejected
+                {% else %}
+                  progress-circle-default
+                {% endif %}">
+                {% if data_request.status == 'approved' %}
+                  <!-- Approved: Hollow green circle with checkmark -->
+                  <svg class="progress-icon icon-completed" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                    <path d="M7 13l3 3 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                {% elif data_request.status == 'rejected' %}
+                  <!-- Rejected: Hollow red circle with X -->
+                  <svg class="progress-icon icon-rejected" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                    <path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                {% else %}
+                  <!-- Pending: Hollow gray circle -->
+                  <svg class="progress-icon icon-pending" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" fill="none"/>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="status-label {% if data_request.status == 'approved' or data_request.status == 'rejected' %}status-label-active{% endif %}">
+                Final Decision
+              </div>
+              {% if data_request.approved_date %}
+                <div class="text-xs text-gray-500 mt-1">{{ data_request.approved_date|date:"M d, Y" }}</div>
+              {% elif data_request.status == 'rejected' %}
+                <div class="text-xs text-gray-500 mt-1">Rejected</div>
+              {% else %}
+                <div class="text-xs text-gray-400 mt-1">Pending</div>
+              {% endif %}
+            </div>
+          </div>
         </div>
 
         <!-- Request Details -->
-        <div class="mt-8 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <h3 class="text-md font-semibold text-primary mb-2">Dataset</h3>
-                    <p>{{ data_request.dataset.title }}</p>
-                </div>
-                <div>
-                    <h3 class="text-md font-semibold text-primary mb-2">Institution</h3>
-                    <p>{{ data_request.institution }}</p>
-                </div>
-            </div>
-            
+        <div class="mt-8 space-y-6">
+          <h3 class="text-lg font-semibold text-primary border-b pb-2">Request Details</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Project Title</h3>
-                <p>{{ data_request.project_title }}</p>
+              <h4 class="text-sm font-medium text-gray-700 mb-1">Dataset</h4>
+              <p class="font-medium">{{ data_request.dataset.title }}</p>
+              <a href="{% url 'dataset_detail' data_request.dataset.id %}" class="text-sm text-accent hover:underline mt-1 inline-block">
+                View Dataset Details →
+              </a>
             </div>
-            
             <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Project Description</h3>
-                <p class="whitespace-pre-line">{{ data_request.project_description }}</p>
+              <h4 class="text-sm font-medium text-gray-700 mb-1">Institution</h4>
+              <p class="font-medium">{{ data_request.institution }}</p>
             </div>
-            
-            {% if data_request.form_submission %}
-            <div>
-                <h3 class="text-md font-semibold text-primary mb-2">Submitted Form</h3>
-                <a href="{{ data_request.form_submission.url }}" 
-                   class="text-accent hover:underline flex items-center gap-1">
-                    <i data-lucide="file-text" class="w-4 h-4"></i>
-                    Download Submitted Form
-                </a>
+          </div>
+          
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-1">Project Title</h4>
+            <p class="font-medium">{{ data_request.project_title }}</p>
+          </div>
+          
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-1">Project Description</h4>
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <p class="whitespace-pre-line text-gray-700">{{ data_request.project_description }}</p>
             </div>
+          </div>
+          
+          {% if data_request.form_submission %}
+          <div>
+            <h4 class="text-sm font-medium text-gray-700 mb-1">Submitted Form</h4>
+            <a href="{{ data_request.form_submission.url }}" 
+               class="text-accent hover:underline flex items-center gap-2 bg-gray-50 p-3 rounded-lg inline-block">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="14 2 14 8 20 8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="16" y1="13" x2="8" y2="13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="16" y1="17" x2="8" y2="17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="10 9 9 9 8 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Download Submitted Form (PDF)
+            </a>
+          </div>
+          {% endif %}
+          
+          <!-- Manager Comments -->
+          {% if data_request.data_manager_comment %}
+          <div class="bg-blue-50 p-4 rounded-lg">
+            <h4 class="text-sm font-medium text-primary mb-2">Manager's Comments</h4>
+            <p class="text-gray-700 whitespace-pre-line">{{ data_request.data_manager_comment }}</p>
+            {% if data_request.manager_review_date %}
+              <p class="text-xs text-gray-500 mt-2">Reviewed on: {{ data_request.manager_review_date|date:"M d, Y H:i" }}</p>
             {% endif %}
+          </div>
+          {% endif %}
+          
+          <!-- Director Comments -->
+          {% if data_request.director_comment %}
+          <div class="bg-green-50 p-4 rounded-lg">
+            <h4 class="text-sm font-medium text-primary mb-2">Director's Comments</h4>
+            <p class="text-gray-700 whitespace-pre-line">{{ data_request.director_comment }}</p>
+            {% if data_request.approved_date %}
+              <p class="text-xs text-gray-500 mt-2">Decided on: {{ data_request.approved_date|date:"M d, Y H:i" }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
         </div>
-    </div>
+      </div>
 
-    <!-- Download Section -->
-    {% if data_request.status == 'approved' %}
-    <div class="bg-white rounded-lg shadow-sm p-6 text-center">
-        {% if data_request.can_download %}
-        <div class="mb-4">
-            <i data-lucide="download" class="w-8 h-8 text-accent mx-auto"></i>
-            <p class="text-secondary mt-2">
-                You have {{ remaining_downloads }} download(s) remaining
-                download(s) remaining
+      <!-- Download Section (Only for approved requests) -->
+      {% if data_request.status == 'approved' %}
+      <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+        <div class="mb-6">
+          <svg class="w-12 h-12 text-accent mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="7 10 12 15 17 10" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3 class="text-xl font-semibold text-primary mb-2">Dataset Ready for Download</h3>
+          
+          {% if data_request.can_download %}
+          <div class="mb-4">
+            <div class="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" fill="none"/>
+                <path d="M7 13l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ remaining_downloads }} download(s) remaining
+            </div>
+            <p class="text-gray-600 mt-3">
+              Your request has been approved. You can now download the dataset.
             </p>
+          </div>
+          <a href="{% url 'dataset_download' data_request.dataset.id %}" 
+             class="bg-accent text-white px-8 py-4 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-lg">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7 10 12 15 17 10" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="15" x2="12" y2="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download Dataset Now
+          </a>
+          {% else %}
+          <div class="mb-4">
+            <div class="inline-flex items-center bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-medium">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" fill="none"/>
+                <path d="M12 8v4m0 4h.01" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Download Limit Reached
+            </div>
+            <p class="text-gray-600 mt-3">
+              You have reached your download limit for this dataset.
+            </p>
+            <p class="text-sm text-gray-500 mt-2">
+              Downloads used: {{ data_request.download_count }} of {{ data_request.max_downloads }}
+            </p>
+          </div>
+          <button disabled class="bg-gray-200 text-gray-500 px-8 py-4 rounded-lg cursor-not-allowed flex items-center justify-center gap-3 mx-auto text-lg">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="7 10 12 15 17 10" stroke-linecap="round" stroke-linejoin="round"/>
+              <line x1="12" y1="15" x2="12" y2="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Download Limit Reached
+          </button>
+          {% endif %}
+          
+          <div class="mt-6 pt-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500">
+              Need more downloads? <a href="#" class="text-accent hover:underline font-medium">Contact support</a>
+            </p>
+          </div>
         </div>
-        <a href="{% url 'dataset_download' data_request.dataset.id %}" 
-           class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2 mx-auto">
-            <i data-lucide="download" class="w-5 h-5"></i>
-            Download Dataset
+      </div>
+      {% endif %}
+
+      <!-- Navigation Links -->
+      <div class="mt-8 flex flex-col sm:flex-row gap-4">
+        <a href="{% url 'dataset_detail' data_request.dataset.id %}" 
+           class="flex-1 text-center border border-primary text-primary px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors">
+          ← Back to Dataset
         </a>
-        {% else %}
-        <div class="mb-4">
-            <i data-lucide="alert-circle" class="w-8 h-8 text-yellow-500 mx-auto"></i>
-            <p class="text-secondary mt-2">Your download limit has been reached</p>
-            {% if request.user.is_staff %}
-            <p class="text-sm text-gray-500 mt-1">
-                (Admin note: User has downloaded {{ data_request.download_count }} times)
-            </p>
-            {% endif %}
-        </div>
-        <button disabled class="bg-secondary/20 text-secondary px-6 py-3 rounded-lg cursor-not-allowed flex items-center justify-center gap-2 mx-auto">
-            <i data-lucide="download" class="w-5 h-5"></i>
-            Download Dataset
-        </button>
-        {% endif %}
+        <a href="{% url 'dataset_list' %}" 
+           class="flex-1 text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+          Browse More Datasets
+        </a>
+      </div>
     </div>
-    {% endif %}
+  </div>
 </div>
 
 <script>
+  document.addEventListener('DOMContentLoaded', function() {
     lucide.createIcons();
+  });
 </script>
 {% endblock %}

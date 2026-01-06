@@ -1,0 +1,27 @@
+<!-- templates/datasets/include/filter_button.html -->
+{% load static %}
+
+{% with action_url=action_url|default:request.path %}
+<div class="filter-container" x-data="{ filterOpen: false }">
+  <button
+    @click="filterOpen = !filterOpen"
+    class="filter-button {% if custom_class %}{{ custom_class }}{% else %}flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm transition-colors{% endif %}"
+    {% if button_id %}id="{{ button_id }}"{% endif %}
+  >
+    {% if custom_icon %}
+      {{ custom_icon|safe }}
+    {% else %}
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+      </svg>
+    {% endif %}
+    {% if button_text %}
+      <span>{{ button_text }}</span>
+    {% else %}
+      <span>Filter</span>
+    {% endif %}
+  </button>
+  
+  {% include 'datasets/filter_modal.html' with action_url=action_url %}
+</div>
+{% endwith %}

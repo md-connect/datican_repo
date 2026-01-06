@@ -5,7 +5,6 @@ Django settings for datican_repo project.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import dj_database_url
 
 load_dotenv()
 
@@ -16,31 +15,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 import pymysql
 pymysql.install_as_MySQLdb()
 
-# Detect environment - FIXED
-IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_STATIC_URL') or os.environ.get('MYSQLHOST'))
-IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production' or IS_RAILWAY
+# Detect environment
+IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production'
 IS_DEVELOPMENT = not IS_PRODUCTION
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-# Host configuration - SIMPLIFIED
-if IS_RAILWAY:
-    # Allow all Railway domains
-    ALLOWED_HOSTS = ['*']
-    CSRF_TRUSTED_ORIGINS = ['https://*.up.railway.app']
-    
-    # Add specific domain if available
-    railway_domain = os.environ.get('RAILWAY_STATIC_URL', '').replace('https://', '').replace('http://', '')
-    if railway_domain:
-        ALLOWED_HOSTS.append(railway_domain)
-        ALLOWED_HOSTS.append(f'.{railway_domain}')
-        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
-        
-elif IS_PRODUCTION:
+# Host configuration
+if IS_PRODUCTION:
     ALLOWED_HOSTS = ['repo.datican.org', '93.127.206.235']
     CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
 else:
@@ -77,9 +63,9 @@ SESSION_COOKIE_PATH = '/'
 ADMIN_SESSION_COOKIE_NAME = 'admin_sessionid'
 ADMIN_SESSION_COOKIE_PATH = '/admin/'
 
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # Add whitenoise for static files
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -104,6 +90,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.admin_stats",
+                
             ],
         },
     },
@@ -111,52 +98,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "datican_repo.wsgi.application"
 
-# Database configuration - WITH DEBUGGING
-print("=== DATABASE CONFIG DEBUG ===")
-print(f"MYSQLHOST: {os.environ.get('MYSQLHOST')}")
-print(f"MYSQL_URL: {os.environ.get('MYSQL_URL')}")
-print(f"MYSQLDATABASE: {os.environ.get('MYSQLDATABASE')}")
-
-if os.environ.get('MYSQLHOST'):
-    print("Using MYSQLHOST configuration")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': os.environ.get('MYSQLDATABASE', 'railway'),
-            'USER': os.environ.get('MYSQLUSER', 'root'),
-            'PASSWORD': os.environ.get('MYSQLPASSWORD', ''),
-            'HOST': os.environ.get('MYSQLHOST', 'mysql.railway.internal'),
-            'PORT': os.environ.get('MYSQLPORT', '3306'),
-            'OPTIONS': {
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-                'charset': 'utf8mb4',
-            }
+# Database configuration - Docker MySQL
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ.get('DB_NAME', 'datican_db'),
+        'USER': os.environ.get('DB_USER', 'datican'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'datican123'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),  # Docker container
+        'PORT': os.environ.get('DB_PORT', '3306'),
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
         }
     }
-elif os.environ.get('MYSQL_URL'):
-    print("Using MYSQL_URL configuration")
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ.get('MYSQL_URL'),
-            conn_max_age=600,
-            conn_health_checks=True,
-            engine='django.db.backends.mysql',
-        )
-    }
-else:
-    print("Using SQLite fallback")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
+}
 
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
@@ -171,8 +132,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # File upload settings
-DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
-FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
@@ -180,6 +141,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+# Default primary key field type
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Authentication settings
@@ -190,8 +152,13 @@ AUTHENTICATION_BACKENDS = [
 
 SITE_ID = 2
 
-# Email configuration
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Use console backend for now
+# Email configuration (update with your production email settings)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 # Auth settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -224,26 +191,19 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-# Security settings - TEMPORARILY DISABLE SSL REDIRECT FOR DEBUGGING
+# Security settings for production only
 if IS_PRODUCTION:
-    SECURE_SSL_REDIRECT = False  # Set to False temporarily for debugging
+    SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
-    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-elif IS_RAILWAY:
-    # Railway-specific settings - disable SSL redirect temporarily
-    SECURE_SSL_REDIRECT = False  # CRITICAL: Set to False to fix redirect loop
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
 else:
+    # Development-specific settings
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False

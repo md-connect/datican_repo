@@ -1,7 +1,7 @@
 # datasets/admin.py
 from django.contrib import admin
 from django.utils.safestring import mark_safe
-from .models import Dataset, DataRequest, Thumbnail
+from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
 from django import forms
 from django.utils import timezone
 from django.utils.html import format_html
@@ -28,29 +28,96 @@ class DatasetAdminForm(forms.ModelForm):
         fields = '__all__'
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
+            'preview_file': forms.FileInput(attrs={
+                'accept': '.csv,.xlsx,.xls,.json',
+            }),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make preview_type field readonly since it's auto-detected
+        if 'preview_type' in self.fields:
+            self.fields['preview_type'].widget.attrs['readonly'] = True
+            self.fields['preview_type'].help_text = 'Auto-detected from preview file'
 
+# datasets/admin.py
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
     form = DatasetAdminForm
     inlines = [ThumbnailInline]
-    list_display = ('title', 'category', 'owner', 'size', 'upload_date', 'thumbnail_preview')
-    readonly_fields = ('size', 'download_count', 'upload_date', 'update_date', 'thumbnail_preview')
-    search_fields = ('title', 'description', 'category')
-    list_filter = ('category', 'upload_date')
+    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'dimension', 'has_preview']
+    list_filter = ['modality', 'format', 'upload_date', 'dimension', 'preview_type']
+    search_fields = ['title', 'description', 'body_part', 'dimension']
+    readonly_fields = ('size', 'download_count', 'upload_date', 'update_date', 'thumbnail_preview', 'preview_type', 'owner')
+    
+    # UPDATED: Add preview file section
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('title', 'description', 'uploaded_by', 'owner')
+        }),
+        ('Medical Information', {
+            'fields': ('modality', 'body_part', 'no_of_subjects')
+        }),
+        ('File Information', {
+            'fields': ('file', 'format', 'dimension')
+        }),
+        ('Preview File', {
+            'fields': ('preview_file', 'preview_type'),
+            'classes': ('collapse',),
+            'description': 'Upload a CSV/Excel/JSON file for data preview (optional). File type will be auto-detected.'
+        }),
+        ('Statistics', {
+            'fields': ('rating', 'download_count', 'size'),
+            'classes': ('collapse',)
+        }),
+        ('System Information', {
+            'fields': ('upload_date', 'update_date'),
+            'classes': ('collapse',)
+        })
+    )
     
     def thumbnail_preview(self, obj):
         primary = obj.thumbnails.filter(is_primary=True).first()
         if primary:
-            return f'<img src="{primary.image.url}" style="max-height: 100px;" />'
+            return mark_safe(f'<img src="{primary.image.url}" style="max-height: 100px;" />')
         return "No thumbnail"
     thumbnail_preview.allow_tags = True
     thumbnail_preview.short_description = 'Primary Thumbnail'
     
+    def has_preview(self, obj):
+        if obj.preview_file:
+            return mark_safe(
+                f'<span style="color: green;">✓</span> {obj.get_preview_type_display()}'
+            )
+        return mark_safe('<span style="color: red;">✗</span>')
+    has_preview.short_description = 'Preview'
+    has_preview.admin_order_field = 'preview_type'
+    
     def save_model(self, request, obj, form, change):
+        # Handle owner and uploaded_by for new datasets
         if not change:
-            obj.owner = request.user
+            obj.owner = request.user.username
+            if not obj.uploaded_by:
+                obj.uploaded_by = request.user
+        
+        # Save the model first to process the file
         super().save_model(request, obj, form, change)
+        
+        # Now check if preview_file was uploaded and detect its type
+        if 'preview_file' in form.changed_data and obj.preview_file:
+            file_name = obj.preview_file.name.lower()
+            if file_name.endswith('.csv'):
+                obj.preview_type = 'csv'
+            elif file_name.endswith(('.xlsx', '.xls')):
+                obj.preview_type = 'excel'
+            elif file_name.endswith('.json'):
+                obj.preview_type = 'json'
+            else:
+                obj.preview_type = 'none'
+            
+            # Save just the preview_type field
+            Dataset.objects.filter(pk=obj.pk).update(preview_type=obj.preview_type)
+    
     def has_add_permission(self, request):
         return can_manage_datasets(request.user)
     
@@ -64,9 +131,65 @@ class DatasetAdmin(admin.ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.role == 'data_manager' and not request.user.is_superuser:
             # Data managers can only edit datasets they own
-            return qs.filter(owner=request.user)
+            return qs.filter(owner=request.user.username)
         return qs
 
+# ADD THESE NEW ADMIN CLASSES FOR THE NEW MODELS
+@admin.register(DatasetRating)
+class DatasetRatingAdmin(admin.ModelAdmin):
+    list_display = ['user', 'dataset', 'rating', 'created_at', 'short_comment']
+    list_filter = ['rating', 'created_at']
+    search_fields = ['user__email', 'dataset__title', 'comment']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def short_comment(self, obj):
+        if obj.comment:
+            return obj.comment[:50] + ('...' if len(obj.comment) > 50 else '')
+        return "—"
+    short_comment.short_description = 'Comment'
+
+@admin.register(UserCollection)
+class UserCollectionAdmin(admin.ModelAdmin):
+    list_display = ['name', 'user', 'dataset_count', 'is_public', 'created_at']
+    list_filter = ['is_public', 'created_at']
+    search_fields = ['name', 'user__email', 'description']
+    readonly_fields = ['created_at', 'updated_at']
+    filter_horizontal = ['datasets']
+    
+    def dataset_count(self, obj):
+        return obj.datasets.count()
+    dataset_count.short_description = '# Datasets'
+
+@admin.register(DatasetReport)
+class DatasetReportAdmin(admin.ModelAdmin):
+    list_display = ['dataset', 'user', 'report_type', 'status', 'created_at']
+    list_filter = ['report_type', 'status', 'created_at']
+    search_fields = ['dataset__title', 'user__email', 'description']
+    readonly_fields = ['created_at', 'updated_at', 'resolved_at']
+    
+    fieldsets = (
+        ('Report Information', {
+            'fields': ('user', 'dataset', 'report_type', 'status')
+        }),
+        ('Details', {
+            'fields': ('description', 'screenshot')
+        }),
+        ('Admin', {
+            'fields': ('admin_notes', 'resolved_at'),
+            'classes': ('collapse',)
+        }),
+        ('Dates', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def save_model(self, request, obj, form, change):
+        if change and obj.status == 'resolved' and not obj.resolved_at:
+            obj.resolved_at = timezone.now()
+        super().save_model(request, obj, form, change)
+
+# Keep your existing DataRequestAdmin unchanged
 @admin.register(DataRequest)
 class DataRequestAdmin(admin.ModelAdmin):
     list_display = (

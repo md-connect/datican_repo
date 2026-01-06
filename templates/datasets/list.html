@@ -1,206 +1,774 @@
-{% extends 'base.html' %} 
-{% load static %} 
-{% block title %}Datasets - Datican{% endblock %} 
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Datasets - Datican{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Mobile-first responsive styles */
+  * {
+    box-sizing: border-box;
+    max-width: 100%;
+  }
+  
+  /* Fix horizontal scroll on mobile */
+  body {
+    overflow-x: hidden;
+    width: 100%;
+  }
+  
+  .sticky-search {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* User icon styles */
+  .user-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: 600;
+    overflow: hidden;
+  }
+  
+  .user-icon svg {
+    width: 60%;
+    height: 60%;
+  }
+  
+  /* Authentication circle fix */
+  .auth-circle {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  
+  .auth-circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  /* Mobile header for dataset list */
+  .mobile-dataset-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: white;
+    z-index: 1002;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+  }
+  
+  @media (max-width: 768px) {
+    .sticky-search {
+      position: fixed;
+      top: 60px; /* Below mobile header */
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 0.75rem 1rem;
+    }
+    
+    .mobile-hide-auth {
+      display: none !important;
+    }
+    
+    .mobile-show-auth {
+      display: flex !important;
+    }
+    
+    /* Add padding to main content for fixed header */
+    .mobile-content-padding {
+      padding-top: 120px !important; /* Header + search bar */
+    }
+    
+    /* Prevent overflow on mobile */
+    .container, .max-w-7xl {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+    
+    /* Optimize grid layout */
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    
+    /* Reduce padding on mobile */
+    .p-4, .p-6 {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+  
+  @media (min-width: 769px) {
+    .mobile-dataset-header {
+      display: none;
+    }
+    
+    .mobile-content-padding {
+      padding-top: 0 !important;
+    }
+  }
+  
+  /* Filter modal fixes */
+  .filter-modal {
+    z-index: 1003 !important;
+  }
+  
+  /* Animation for modal */
+  @keyframes modalFadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Custom utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* Hide scrollbar but keep functionality */
+  .overflow-x-auto::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .overflow-x-auto {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Touch-friendly buttons */
+  @media (max-width: 768px) {
+    button, a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+  
+  /* Fix for iOS Safari */
+  @supports (-webkit-touch-callout: none) {
+    .min-h-screen {
+      min-height: -webkit-fill-available;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<main class="pt-20 pb-12">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-primary mb-2">Featured Datasets</h1>
-      <p class="text-gray-600">
-        Explore popular datasets used by machine learning practitioners worldwide
-      </p>
-    </div>
-
-    <div class="flex flex-col md:flex-row gap-8">
-      <!-- Left Filters Sidebar -->
-      <div class="w-full md:w-64 flex-shrink-0">
-        <form method="get" action="{% url 'dataset_list' %}" class="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 class="text-lg font-semibold text-primary mb-4">
-            Filter Datasets
-          </h3>
-
-          <!-- Default Tasks Filter -->
-          <div class="mb-6">
-            <h4 class="font-medium text-sm text-gray-700 mb-2">
-              Default Task
-            </h4>
-            <div class="space-y-2">
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="task" value="classification" class="rounded text-primary" 
-                  {% if 'classification' in request.GET.task %}checked{% endif %}/>
-                <span>Classification</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="task" value="prediction" class="rounded text-primary" 
-                  {% if 'prediction' in request.GET.task %}checked{% endif %}/>
-                <span>Prediction</span>
-              </label>
-               <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="task" value="segmentation" class="rounded text-primary" 
-                  {% if 'segmentation' in request.GET.task %}checked{% endif %}/>
-                <span>Segmentation</span>
-              </label>
-              
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="task" value="regression" class="rounded text-primary"
-                  {% if 'regression' in request.GET.task %}checked{% endif %}/>
-                <span>Regression</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Data Types Filter -->
-          <div class="mb-6">
-            <h4 class="font-medium text-sm text-gray-700 mb-2">
-              Data Types
-            </h4>
-            <div class="space-y-2">
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="datatype" value="image" class="rounded text-primary"
-                  {% if 'image' in request.GET.datatype %}checked{% endif %}/>
-                <span>Image</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="datatype" value="multivariate" class="rounded text-primary"
-                  {% if 'multivariate' in request.GET.datatype %}checked{% endif %}/>
-                <span>Multivariate</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="datatype" value="numerical" class="rounded text-primary"
-                  {% if 'numerical' in request.GET.datatype %}checked{% endif %}/>
-                <span>Numerical</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="datatype" value="other" class="rounded text-primary"
-                  {% if 'other' in request.GET.datatype %}checked{% endif %}/>
-                <span>Other</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Format Filter -->
-          <div class="mb-6">
-            <h4 class="font-medium text-sm text-gray-700 mb-2">Format</h4>
-            <div class="space-y-2">
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="format" value="dicom" class="rounded text-primary"
-                  {% if 'dicom' in request.GET.format %}checked{% endif %}/>
-                <span>.dcm</span>
-              </label>
-               <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="format" value="png" class="rounded text-primary"
-                  {% if 'png' in request.GET.format %}checked{% endif %}/>
-                <span>.png</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="format" value="nifti" class="rounded text-primary"
-                  {% if 'nifti' in request.GET.format %}checked{% endif %}/>
-                <span>.nifti</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="format" value="jpg" class="rounded text-primary"
-                  {% if 'jpg' in request.GET.format %}checked{% endif %}/>
-                <span>.jpg</span>
-              </label>
-              <label class="flex items-center space-x-2 text-sm">
-                <input type="checkbox" name="format" value="csv" class="rounded text-primary"
-                  {% if 'csv' in request.GET.format %}checked{% endif %}/>
-                <span>.csv</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Year Filter -->
-          <div class="mb-6">
-            <h4 class="font-medium text-sm text-gray-700 mb-2">Year</h4>
-            <select name="year" class="w-full border rounded p-2 text-sm">
-              <option value="">All Years</option>
-              <option value="2025" {% if request.GET.year == '2025' %}selected{% endif %}>2025</option>
-              <option value="2024" {% if request.GET.year == '2024' %}selected{% endif %}>2024</option>
-              <option value="2023" {% if request.GET.year == '2023' %}selected{% endif %}>2023</option>
-              <option value="2022" {% if request.GET.year == '2022' %}selected{% endif %}>2022</option>
-            </select>
-          </div>
-
-          <!-- Filter Buttons -->
-          <div class="flex space-x-2">
-            <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">
-              Apply Filters
-            </button>
-            <a href="{% url 'dataset_list' %}" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-center">
-              Reset
-            </a>
-          </div>
+<!-- Mobile Header for Dataset List -->
+<div class="md:hidden mobile-dataset-header">
+  <!-- Left: Hamburger menu button -->
+  <button 
+    @click="$dispatch('toggle-mobile-sidebar')"
+    class="p-2"
+  >
+    <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+  
+  <!-- Center: Logo/Title -->
+  <div class="flex-1 text-center">
+    <h1 class="text-base font-semibold text-gray-800">Datasets</h1>
+  </div>
+  
+  <!-- Right: Authentication - FIXED DROPDOWN -->
+  <div class="relative" x-data="{ mobileProfileOpen: false }" style="min-width: 28px;">
+    {% if user.is_authenticated %}
+      {% if user.profile.avatar %}
+        <img
+          src="{{ user.profile.avatar.url }}"
+          class="auth-circle h-7 w-7 cursor-pointer border border-gray-200"
+          @click="mobileProfileOpen = !mobileProfileOpen"
+          @click.outside="mobileProfileOpen = false"
+          loading="lazy"
+          alt="Profile"
+        />
+      {% else %}
+        <!-- User icon SVG -->
+        <div
+          class="user-icon h-7 w-7 cursor-pointer"
+          @click="mobileProfileOpen = !mobileProfileOpen"
+          @click.outside="mobileProfileOpen = false"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      {% endif %}
+      
+      <!-- Mobile Profile Dropdown - FIXED POSITIONING -->
+      <div
+        x-show="mobileProfileOpen"
+        x-cloak
+        class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
+        style="display: none;"
+        @click.outside="mobileProfileOpen = false"
+      >
+        <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
+        <a href="{% url 'account_change_password' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Change Password</a>
+        <form action="{% url 'account_logout' %}" method="POST" class="block">
+          {% csrf_token %}
+          <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            Logout
+          </button>
         </form>
       </div>
+    {% else %}
+      <a href="{% url 'login' %}?next={{ request.path }}" class="auth-circle h-7 w-7 bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+        <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
+      </a>
+    {% endif %}
+  </div>
+</div>
 
-      <!-- Dataset Grid -->
-      <div class="flex-1">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {% for dataset in datasets %}
-          <a href="{% url 'dataset_detail' dataset.id %}">
-            <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border">
-              <div class="aspect-video bg-gray-100 rounded-t-lg overflow-hidden">
-                {% if dataset.primary_thumbnails %}
+<div class="p-4 md:p-6 mobile-content-padding">
+  <!-- Desktop Sticky Search Bar -->
+  <div class="hidden md:block sticky-search py-4 bg-white px-4 sm:px-6">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex-1 max-w-2xl">
+          <div class="relative">
+            <input 
+              type="text" 
+              placeholder="Search datasets..." 
+              class="w-full px-4 py-3 pl-12 pr-32 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            >
+            <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            
+            <!-- Filter button for desktop -->
+            <button 
+              onclick="openFilterModal()"
+              class="absolute right-2 top-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
+            >
+              Filter
+            </button>
+          </div>
+        </div>
+        
+        <!-- Desktop Authentication - FIXED DROPDOWN -->
+        <div class="flex items-center space-x-4 ml-4">
+          {% if user.is_authenticated %}
+            <div class="relative" x-data="{ profileOpen: false }">
+              {% if user.profile.avatar %}
                 <img
-                  src="{{ dataset.primary_thumbnails.0.image.url }}"
-                  class="w-full h-full object-cover"
-                  alt="{{ dataset.title }} thumbnail"
-                />            
-                {% else %}
-                <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <span class="text-gray-500">No thumbnail</span>
+                  src="{{ user.profile.avatar.url }}"
+                  class="auth-circle h-10 w-10 cursor-pointer border-2 border-transparent hover:border-primary"
+                  @mouseenter="profileOpen = true"
+                  @mouseleave="profileOpen = false"
+                />
+              {% else %}
+                <!-- User icon SVG -->
+                <div
+                  class="user-icon h-10 w-10 cursor-pointer hover:opacity-90"
+                  @mouseenter="profileOpen = true"
+                  @mouseleave="profileOpen = false"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                    <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+                  </svg>
                 </div>
-                {% endif %}
-              </div>
-              <div class="p-4">
-                <h3 class="font-semibold text-primary mb-2">
-                  {{ dataset.title }}
-                </h3>
-                <div class="flex items-center text-sm text-gray-600 mb-3">
-                  <span class="mr-2">📅 Updated: {{ dataset.update_date|date:"Y-m-d" }}</span>
-                  <span>⭐ {{ dataset.rating }}</span>
-                </div>
-                <p class="text-sm text-gray-600 mb-4">
-                  {{ dataset.description|truncatechars:80 }}
-                </p>
-                <div class="flex justify-between items-center text-sm">
-                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded">
-                    Usability {{ dataset.usability_score }}
-                  </span>
-                  <span class="text-gray-500">{{ dataset.size }}</span>
-                </div>
+              {% endif %}
+              
+              <!-- Profile Dropdown - FIXED POSITIONING -->
+              <div
+                x-show="profileOpen"
+                x-cloak
+                class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
+                style="display: none;"
+                @mouseenter="profileOpen = true"
+                @mouseleave="profileOpen = false"
+              >
+                <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Profile</a>
+                <a href="{% url 'account_change_password' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Change Password</a>
+                <form action="{% url 'account_logout' %}" method="POST" class="block">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    Logout
+                  </button>
+                </form>
               </div>
             </div>
-          </a>
-          {% endfor %}
-        </div>
-
-        <!-- Pagination -->
-        <div class="mt-8 flex justify-center space-x-2">
-          {% if datasets.has_previous %}
-          <a
-            href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ datasets.previous_page_number }}"
-            class="px-4 py-2 hover:bg-gray-100 rounded-lg"
-            >← Previous</a
-          >
-          {% endif %}
-
-          <span class="px-4 py-2 bg-primary text-white rounded-lg">
-            {{ datasets.number }}
-          </span>
-
-          {% if datasets.has_next %}
-          <a
-            href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ datasets.next_page_number }}"
-            class="px-4 py-2 hover:bg-gray-100 rounded-lg"
-            >Next →</a
-          >
+          {% else %}
+            <div class="flex items-center space-x-3">
+              <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium">Sign In</a>
+              <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium">Register</a>
+            </div>
           {% endif %}
         </div>
       </div>
     </div>
   </div>
-</main>
+
+  <!-- Mobile Search Bar -->
+  <div class="md:hidden mb-4">
+    <div class="relative">
+      <input 
+        type="text" 
+        placeholder="Search datasets..." 
+        class="w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+      >
+      <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <button 
+        onclick="openFilterModal()"
+        class="absolute right-2 top-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
+      >
+        Filter
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4">
+    <!-- Page Header -->
+    <div class="mb-6 md:mb-8">
+      <h1 class="text-xl md:text-3xl font-bold text-primary mb-2">Datasets</h1>
+      <p class="text-sm md:text-base text-gray-600">
+        Explore, analyze, and share quality data. Learn more about data types, creating, and collaborating.
+      </p>
+    </div>
+
+    <!-- Dataset Categories Tabs - Fixed for mobile -->
+    <div class="mb-6 md:mb-8 overflow-x-auto">
+      <div class="flex space-x-1 border-b pb-1 min-w-max md:min-w-0">
+        <a href="{% url 'dataset_list' %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if not request.GET.category %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          All datasets
+        </a>
+        <a href="?category=brain" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'brain' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Brain
+        </a>
+        <a href="?category=breast" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'breast' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Breast
+        </a>
+        <a href="?category=chest" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'chest' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Chest
+        </a>
+        <a href="?category=teeth" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'teeth' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Teeth
+        </a>
+        <a href="?category=spine" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'spine' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Spine
+        </a>
+        <a href="?category=pelvis" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'pelvis' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Pelvis
+        </a>
+        <a href="?category=others" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'others' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+          Others
+        </a>
+      </div>
+    </div>
+
+    <!-- Dataset Grid - Responsive -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      {% for dataset in datasets %}
+      <a href="{% url 'dataset_detail' dataset.id %}" class="block">
+        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border overflow-hidden">
+          <div class="aspect-video bg-gray-100 overflow-hidden">
+            {% if dataset.primary_thumbnails %}
+            <img
+              src="{{ dataset.primary_thumbnails.0.image.url }}"
+              class="w-full h-full object-cover"
+              alt="{{ dataset.title }} thumbnail"
+              loading="lazy"
+            />            
+            {% else %}
+            <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+              <span class="text-gray-500 text-sm">No thumbnail</span>
+            </div>
+            {% endif %}
+          </div>
+          <div class="p-3 md:p-4">
+            <h3 class="font-semibold text-primary mb-2 text-sm md:text-base line-clamp-2">
+              {{ dataset.title }}
+            </h3>
+            <div class="flex flex-wrap items-center text-xs md:text-sm text-gray-600 mb-2 md:mb-3 gap-1 md:gap-2">
+              <span class="bg-gray-100 px-2 py-0.5 rounded">📅 {{ dataset.update_date|date:"Y-m-d" }}</span>
+              <span class="bg-gray-100 px-2 py-0.5 rounded">⭐ {{ dataset.rating|default:"N/A" }}</span>
+            </div>
+            <p class="text-xs md:text-sm text-gray-600 mb-3 md:mb-4 line-clamp-2">
+              {{ dataset.description|truncatechars:80|default:"No description available" }}
+            </p>
+            <div class="flex justify-between items-center text-xs md:text-sm">
+              <span class="bg-green-100 text-green-800 px-2 py-0.5 md:px-2 md:py-1 rounded text-xs md:text-sm">
+                Usability {{ dataset.usability_score|default:"N/A" }}
+              </span>
+              <span class="text-gray-500 truncate ml-2">{{ dataset.size|default:"N/A" }}</span>
+            </div>
+          </div>
+        </div>
+      </a>
+      {% empty %}
+      <div class="col-span-full text-center py-12">
+        <p class="text-gray-500">No datasets found.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination - Responsive -->
+    {% if datasets.paginator.num_pages > 1 %}
+    <div class="mt-6 md:mt-8 flex justify-center items-center space-x-2">
+      {% if datasets.has_previous %}
+      <a
+        href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ datasets.previous_page_number }}"
+        class="px-3 py-1.5 md:px-4 md:py-2 hover:bg-gray-100 rounded-lg text-sm md:text-base"
+        >← Previous</a
+      >
+      {% endif %}
+
+      <span class="px-3 py-1.5 md:px-4 md:py-2 bg-primary text-white rounded-lg text-sm md:text-base">
+        {{ datasets.number }} of {{ datasets.paginator.num_pages }}
+      </span>
+
+      {% if datasets.has_next %}
+      <a
+        href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ datasets.next_page_number }}"
+        class="px-3 py-1.5 md:px-4 md:py-2 hover:bg-gray-100 rounded-lg text-sm md:text-base"
+        >Next →</a
+      >
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filter Modal -->
+<div id="filterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4 filter-modal">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto" style="animation: modalFadeIn 0.3s ease-out;">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-primary">Filter Datasets</h3>
+        <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="space-y-6">
+        <!-- Modality Filter -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3">Modality</h4>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">CT Scan</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">MRI</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">X-Ray</span>
+            </label>
+            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">Ultrasound</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- File Type Filter -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3">File Type</h4>
+          <div class="space-y-2">
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">DICOM</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">NIfTI</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">CSV</span>
+            </label>
+            <label class="flex items-center space-x-2">
+              <input type="checkbox" class="rounded text-primary focus:ring-primary">
+              <span class="text-sm">Excel</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Rating Filter -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3">Minimum Rating</h4>
+          <input type="range" min="0" max="5" step="0.5" class="w-full" id="ratingSlider">
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0</span>
+            <span>2.5</span>
+            <span>5</span>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="pt-4 border-t">
+          <div class="flex space-x-2">
+            <button onclick="applyFilters()" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark">
+              Apply Filters
+            </button>
+            <button onclick="closeFilterModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300">
+              Cancel
+            </button>
+          </div>
+          <button onclick="resetFilters()" class="w-full mt-2 text-primary hover:text-primary-dark text-sm">
+            Reset all filters
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Handle mobile responsiveness
+document.addEventListener('DOMContentLoaded', function() {
+  // Fix horizontal scroll on mobile
+  function fixMobileScroll() {
+    if (window.innerWidth < 768) {
+      document.body.style.overflowX = 'hidden';
+      document.body.style.width = '100%';
+      
+      // Ensure containers don't overflow
+      const containers = document.querySelectorAll('.max-w-7xl, .container');
+      containers.forEach(container => {
+        container.style.maxWidth = '100%';
+        container.style.overflowX = 'hidden';
+      });
+      
+      // Fix tab scrolling
+      const tabsContainer = document.querySelector('.overflow-x-auto');
+      if (tabsContainer) {
+        tabsContainer.style.overflowX = 'auto';
+        tabsContainer.style.WebkitOverflowScrolling = 'touch';
+      }
+    } else {
+      document.body.style.overflowX = 'auto';
+    }
+  }
+  
+  // Initial fix
+  fixMobileScroll();
+  
+  // Fix on resize
+  window.addEventListener('resize', fixMobileScroll);
+  
+  // Fix for iOS Safari 100vh issue
+  function fixVH() {
+    let vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  }
+  
+  fixVH();
+  window.addEventListener('resize', fixVH);
+  window.addEventListener('orientationchange', fixVH);
+  
+  // Lazy loading for images
+  if ('IntersectionObserver' in window) {
+    const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+    
+    const imageObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const img = entry.target;
+          img.src = img.dataset.src || img.src;
+          imageObserver.unobserve(img);
+        }
+      });
+    });
+    
+    lazyImages.forEach(img => imageObserver.observe(img));
+  }
+});
+
+// Filter Modal Functions
+function openFilterModal() {
+  const modal = document.getElementById('filterModal');
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  
+  // Add animation
+  modal.querySelector('div').style.animation = 'modalFadeIn 0.3s ease-out';
+}
+
+function closeFilterModal() {
+  const modal = document.getElementById('filterModal');
+  modal.classList.add('hidden');
+  document.body.style.overflow = 'auto';
+}
+
+function applyFilters() {
+  // Collect filter values
+  const modalities = [];
+  const fileTypes = [];
+  const rating = document.getElementById('ratingSlider').value;
+  
+  // Get checked modalities
+  document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    if (checkbox.checked) {
+      const label = checkbox.parentElement.querySelector('span').textContent;
+      if (['CT Scan', 'MRI', 'X-Ray', 'Ultrasound'].includes(label)) {
+        modalities.push(label);
+      } else if (['DICOM', 'NIfTI', 'CSV', 'Excel'].includes(label)) {
+        fileTypes.push(label);
+      }
+    }
+  });
+  
+  // Build query string
+  const params = new URLSearchParams();
+  if (modalities.length) params.set('modality', modalities.join(','));
+  if (fileTypes.length) params.set('file_type', fileTypes.join(','));
+  if (rating > 0) params.set('min_rating', rating);
+  
+  // Close modal
+  closeFilterModal();
+  
+  // Show notification
+  showToast('Filters applied successfully!', 'success');
+  
+  // You can redirect or update the page here
+  // window.location.href = `?${params.toString()}`;
+}
+
+function resetFilters() {
+  // Uncheck all checkboxes
+  document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+    checkbox.checked = false;
+  });
+  
+  // Reset range slider
+  document.getElementById('ratingSlider').value = 0;
+  
+  // Show notification
+  showToast('Filters reset!', 'info');
+}
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${
+    type === 'success' ? 'bg-green-500' : 
+    type === 'error' ? 'bg-red-500' : 
+    'bg-blue-500'
+  } z-50`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeFilterModal();
+  }
+});
+
+// Close modal when clicking outside
+document.getElementById('filterModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeFilterModal();
+  }
+});
+
+// Initialize Alpine.js dropdowns
+document.addEventListener('alpine:init', () => {
+  // The dropdowns are already initialized by Alpine.js
+  // The @click.outside directive handles closing dropdowns
+});
+</script>
+
+<style>
+/* Ensure dropdowns display correctly */
+[x-cloak] {
+  display: none !important;
+}
+
+/* Improve dropdown styling */
+.absolute.bg-white {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure mobile header dropdowns are on top */
+.mobile-dataset-header .absolute {
+  z-index: 1003 !important;
+}
+
+/* Improve dropdown item hover */
+.hover\:bg-gray-50:hover {
+  background-color: #f9fafb;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Fix for dropdown positioning */
+.relative {
+  position: relative;
+}
+
+/* Ensure proper spacing for mobile */
+@media (max-width: 768px) {
+  .aspect-video {
+    aspect-ratio: 16/9;
+  }
+}
+</style>
 {% endblock %}

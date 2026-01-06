@@ -1,0 +1,4 @@
+CREATE DATABASE IF NOT EXISTS datican_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'datican'@'%' IDENTIFIED BY 'datican123';
+GRANT ALL PRIVILEGES ON datican_db.* TO 'datican'@'%';
+FLUSH PRIVILEGES;

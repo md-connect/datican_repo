@@ -1,0 +1,239 @@
+<!-- templates/datasets/filter_modal.html -->
+<div class="absolute right-2 top-1.5" x-data="{ filterOpen: false }">
+  <button
+    @click="filterOpen = !filterOpen"
+    class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm transition-colors"
+  >
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+    </svg>
+    <span>Filter</span>
+  </button>
+  
+  <!-- Filter Modal -->
+  <div
+    x-show="filterOpen"
+    @click.away="filterOpen = false"
+    x-cloak
+    class="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border z-50"
+    style="display: none; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);"
+  >
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-primary">Filter Datasets</h3>
+        <button @click="filterOpen = false" class="text-gray-400 hover:text-gray-600">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <form method="get" action="{% url 'dataset_list' %}">
+        <!-- Keep existing search if you have it -->
+        {% if request.GET.q %}
+        <input type="hidden" name="q" value="{{ request.GET.q }}">
+        {% endif %}
+        
+        <!-- Sort Options -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Sort by</h4>
+          <select name="sort" class="w-full border rounded p-2 text-sm">
+            <option value="newest" {% if current_filters.sort == 'newest' %}selected{% endif %}>Newest First</option>
+            <option value="oldest" {% if current_filters.sort == 'oldest' %}selected{% endif %}>Oldest First</option>
+            <option value="rating_high" {% if current_filters.sort == 'rating_high' %}selected{% endif %}>Highest Rated</option>
+            <option value="rating_low" {% if current_filters.sort == 'rating_low' %}selected{% endif %}>Lowest Rated</option>
+            <option value="downloads" {% if current_filters.sort == 'downloads' %}selected{% endif %}>Most Downloaded</option>
+            <option value="title_asc" {% if current_filters.sort == 'title_asc' %}selected{% endif %}>Title (A-Z)</option>
+            <option value="title_desc" {% if current_filters.sort == 'title_desc' %}selected{% endif %}>Title (Z-A)</option>
+            <option value="updated" {% if current_filters.sort == 'updated' %}selected{% endif %}>Recently Updated</option>
+          </select>
+        </div>
+        
+        <!-- Modality Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Modality</h4>
+          <div class="grid grid-cols-2 gap-2">
+            {% for modality_value, modality_label in modality_choices %}
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="checkbox" name="modality" value="{{ modality_value }}" class="rounded text-primary"
+                {% if modality_value in current_filters.modality %}checked{% endif %}/>
+              <span>{{ modality_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <!-- Format Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">File Format</h4>
+          <div class="grid grid-cols-2 gap-2">
+            {% for format_value, format_label in format_choices %}
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="checkbox" name="format" value="{{ format_value }}" class="rounded text-primary"
+                {% if format_value in current_filters.format %}checked{% endif %}/>
+              <span>{{ format_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <!-- Dimension Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Dimension</h4>
+          <div class="grid grid-cols-3 gap-2">
+            {% for dimension_value, dimension_label in dimension_choices %}
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="checkbox" name="dimension" value="{{ dimension_value }}" class="rounded text-primary"
+                {% if dimension_value in current_filters.dimension %}checked{% endif %}/>
+              <span>{{ dimension_label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        
+        <!-- Body Part Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Body Part</h4>
+          <input 
+            type="text" 
+            name="body_part" 
+            placeholder="e.g., Brain, Breast, Chest"
+            value="{{ current_filters.body_part|default:'' }}"
+            class="w-full border rounded p-2 text-sm"
+          >
+        </div>
+        
+        <!-- Number of Subjects Range -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Number of Subjects</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Min</label>
+              <input 
+                type="number" 
+                name="min_subjects" 
+                min="0" 
+                placeholder="0"
+                value="{{ current_filters.min_subjects|default:'' }}"
+                class="w-full border rounded p-2 text-sm"
+              >
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">Max</label>
+              <input 
+                type="number" 
+                name="max_subjects" 
+                min="0" 
+                placeholder="1000"
+                value="{{ current_filters.max_subjects|default:'' }}"
+                class="w-full border rounded p-2 text-sm"
+              >
+            </div>
+          </div>
+        </div>
+        
+        <!-- Rating Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Minimum Rating</h4>
+          <div class="flex items-center space-x-2">
+            <input 
+              type="range" 
+              name="min_rating" 
+              min="0" 
+              max="10" 
+              step="0.5"
+              value="{{ current_filters.min_rating|default:'0' }}"
+              class="flex-1"
+              oninput="this.nextElementSibling.value = this.value + ' ★'"
+            >
+            <output class="text-sm font-medium text-primary">{{ current_filters.min_rating|default:'0' }} ★</output>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0 ★</span>
+            <span>10 ★</span>
+          </div>
+        </div>
+        
+        <!-- Upload Date Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Upload Date</h4>
+          <div class="space-y-2">
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="upload_date" value="all" class="text-primary" 
+                {% if not current_filters.upload_date or current_filters.upload_date == 'all' %}checked{% endif %}/>
+              <span>All Time</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="upload_date" value="today" class="text-primary"
+                {% if current_filters.upload_date == 'today' %}checked{% endif %}/>
+              <span>Today</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="upload_date" value="week" class="text-primary"
+                {% if current_filters.upload_date == 'week' %}checked{% endif %}/>
+              <span>Last Week</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="upload_date" value="month" class="text-primary"
+                {% if current_filters.upload_date == 'month' %}checked{% endif %}/>
+              <span>Last Month</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="upload_date" value="year" class="text-primary"
+                {% if current_filters.upload_date == 'year' %}checked{% endif %}/>
+              <span>Last Year</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- Download Count Filter -->
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-2">Popularity</h4>
+          <div class="space-y-2">
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="popularity" value="all" class="text-primary" 
+                {% if not current_filters.popularity or current_filters.popularity == 'all' %}checked{% endif %}/>
+              <span>All</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="popularity" value="trending" class="text-primary"
+                {% if current_filters.popularity == 'trending' %}checked{% endif %}/>
+              <span>Trending (100+ downloads)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="popularity" value="popular" class="text-primary"
+                {% if current_filters.popularity == 'popular' %}checked{% endif %}/>
+              <span>Popular (500+ downloads)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-sm">
+              <input type="radio" name="popularity" value="viral" class="text-primary"
+                {% if current_filters.popularity == 'viral' %}checked{% endif %}/>
+              <span>Viral (1000+ downloads)</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex space-x-2 pt-4 border-t">
+          <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark transition-colors">
+            Apply Filters
+          </button>
+          <a href="{% url 'dataset_list' %}" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-center">
+            Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const ratingSlider = document.querySelector('input[name="min_rating"]');
+  if (ratingSlider) {
+    const ratingOutput = ratingSlider.nextElementSibling;
+    if (ratingOutput && ratingOutput.tagName === 'OUTPUT') {
+      ratingOutput.textContent = ratingSlider.value + ' ★';
+    }
+  }
+});
+</script>

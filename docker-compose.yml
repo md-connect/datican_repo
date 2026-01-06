@@ -1,24 +1,21 @@
-FROM python:3.11-slim
+version: '3.8'
 
-WORKDIR /app
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: datican_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: datican_db
+      MYSQL_USER: datican
+      MYSQL_PASSWORD: datican123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
 
-# Install system dependencies including MySQL client libraries
-RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev \
-    pkg-config \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Make startup script executable
-RUN chmod +x railway_start.sh
-
-EXPOSE $PORT
-
-CMD ["./railway_start.sh"]
+volumes:
+  mysql_data:

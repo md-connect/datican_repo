@@ -21,33 +21,59 @@ def validate_thumbnail(value):
         )
         
 class Dataset(models.Model):
-    TASK_CHOICES = [
-        ('classification', 'Classification'),
-        ('regression', 'Regression'),
-        ('segmentation', 'Segmentation'),
-        ('detection', 'Detection'),
-        ('prediction', 'Prediction'),
-        ('other', 'Other'),
-    ]
     
-    ATTRIBUTE_CHOICES = [
-        ('image', 'Image'),
-        ('multimodal', 'Multimodal'),
+    MODALITY_CHOICES = [
+        ('MRI', 'MRI'),
+        ('MG', 'Mammography'),
+        ('CT', 'CT Scan'),
+        ('X-RAY', 'X-Ray'),
+        ('Other', 'Other'),
     ]
     
     FORMAT_CHOICES = [
-        ('csv', 'CSV'),
-        ('dcm', 'DICOM'),
-        ('nii', 'NIfTI'),
-        ('png', 'PNG'),
-        ('jpg', 'JPG'),
-        ('h5', 'HDF5'),
+        ('DICOM', 'DICOM'),
+        ('NIfTI', 'NIfTI'),
+        ('PNG', 'PNG'),
+        ('JPG', 'JPG'),
+        ('HDF5', 'HDF5'),
     ]
-    
+    DIMENSION_CHOICES = [
+        ('2D', '2D'),
+        ('3D', '3D'),
+        ('4D', '4D'),
+    ]
+
     title = models.CharField(max_length=255)
     description = models.TextField()
-    category = models.CharField(max_length=100)
+    modality = models.CharField(
+        max_length=20,
+        choices=MODALITY_CHOICES,
+        blank=True,
+        null=True
+    )
+    body_part = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="e.g., Brain, Breast, Chest, Abdomen, Knee, etc."
+    )
     file = models.FileField(upload_to='datasets/')
+    dimension = models.CharField(
+        max_length=10,
+        choices=DIMENSION_CHOICES,
+        blank=True,
+        null=True
+    )
+    format = models.CharField(
+        max_length=10,
+        choices=FORMAT_CHOICES,
+        blank=True,
+        null=True
+    )
+    no_of_subjects = models.IntegerField(
+        default=0,
+        help_text="Number of subjects/patients in the dataset"
+    )
     upload_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
     size = models.CharField(max_length=20, blank=True)
@@ -58,7 +84,7 @@ class Dataset(models.Model):
     download_count = models.PositiveIntegerField(default=0)
     owner = models.CharField(
         max_length=100,
-        default='admin',
+        default='DATICAN',
         editable=False)
     
     # Track who actually uploaded it
@@ -68,23 +94,58 @@ class Dataset(models.Model):
         null=True,
         blank=True
     )
-    
-    # New fields for filtering
-    task = models.CharField(
-        max_length=50, 
-        choices=TASK_CHOICES,
-        default='other'
-    )
-    attributes = models.JSONField(
-        default=list,
-        help_text="List of attributes describing the data"
-    )
-    format = models.CharField(
-        max_length=10,
-        choices=FORMAT_CHOICES,
+
+       # Add this field for preview file
+    preview_file = models.FileField(
+        upload_to='dataset_previews/',
         blank=True,
-        null=True
+        null=True,
+        help_text="Upload a CSV/Excel file for preview (optional)"
     )
+    
+    # Add preview type field
+    PREVIEW_TYPE_CHOICES = [
+        ('csv', 'CSV'),
+        ('excel', 'Excel'),
+        ('json', 'JSON'),
+        ('none', 'No Preview'),
+    ]
+    
+    preview_type = models.CharField(
+        max_length=10,
+        choices=PREVIEW_TYPE_CHOICES,
+        default='none',
+        blank=True
+    )
+
+    def get_user_rating(self, user):
+        """Get user's rating for this dataset"""
+        try:
+            return self.ratings.get(user=user).rating
+        except DatasetRating.DoesNotExist:
+            return None
+    
+    def get_average_rating(self):
+        """Calculate average rating"""
+        ratings = self.ratings.all()
+        if ratings:
+            total = sum(rating.rating for rating in ratings)
+            return total / len(ratings)
+        return 0.0
+    
+    def get_rating_count(self):
+        """Get total number of ratings"""
+        return self.ratings.count()
+    
+    def is_in_user_collection(self, user, collection_id=None):
+        """Check if dataset is in user's collection"""
+        if collection_id:
+            return self.collections.filter(id=collection_id, user=user).exists()
+        return self.collections.filter(user=user).exists()
+    
+    def get_user_collections(self, user):
+        """Get all collections containing this dataset for the user"""
+        return UserCollection.objects.filter(user=user, datasets=self)
 
     def save(self, *args, **kwargs):
         # Auto-calculate size before saving
@@ -107,6 +168,16 @@ class Dataset(models.Model):
                 if base_ext == 'nii':
                     self.format = 'nii'
         
+        # Auto-detect preview type from file extension
+        if self.preview_file and not self.preview_type:
+            file_name = self.preview_file.name.lower()
+            if file_name.endswith('.csv'):
+                self.preview_type = 'csv'
+            elif file_name.endswith(('.xlsx', '.xls')):
+                self.preview_type = 'excel'
+            elif file_name.endswith('.json'):
+                self.preview_type = 'json'
+
         super().save(*args, **kwargs)
         
     def __str__(self):
@@ -148,6 +219,7 @@ class Thumbnail(models.Model):
             Thumbnail.objects.filter(dataset=self.dataset, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
         
         super().save(*args, **kwargs)
+
 class DataRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -162,23 +234,23 @@ class DataRequest(models.Model):
     request_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
-    # Fields after removal
+    # Updated fields
     institution = models.CharField(max_length=255)
+    phone_number = models.CharField(max_length=20, blank=True, null=True)  # NEW FIELD
+    ethical_approval_no = models.CharField(max_length=100, blank=True, null=True)  # NEW FIELD
     project_title = models.CharField(max_length=255)
-    project_description = models.TextField(max_length=500)  # Removed project_details
+    project_description = models.TextField(max_length=500)
+    
+    # File uploads
     form_submission = models.FileField(upload_to='requests/forms/')
+    ethical_approval_proof = models.FileField(  # NEW FIELD
+        upload_to='requests/ethical_approvals/',
+        blank=True,
+        null=True,
+        help_text="Upload proof of ethical approval (PDF, JPG, PNG)"
+    )
     
     # Review fields
-    data_manager_comment = models.TextField(blank=True, null=True)
-    director_comment = models.TextField(blank=True, null=True)
-    approved_date = models.DateTimeField(blank=True, null=True)
-    
-    # Download tracking
-    download_count = models.PositiveIntegerField(default=0)
-    last_download = models.DateTimeField(blank=True, null=True)
-    max_downloads = models.PositiveIntegerField(default=3)
-    
-    # Reviewers
     manager = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -188,6 +260,12 @@ class DataRequest(models.Model):
     )
     data_manager_comment = models.TextField(blank=True, null=True, verbose_name="Manager Notes")
     manager_review_date = models.DateTimeField(blank=True, null=True)
+    manager_action = models.CharField(
+        max_length=20,
+        choices=(('recommended', 'Recommended'), ('rejected', 'Rejected')),
+        blank=True,
+        null=True
+    )
     
     director = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -198,19 +276,18 @@ class DataRequest(models.Model):
     )
     director_comment = models.TextField(blank=True, null=True, verbose_name="Director Notes")
     approved_date = models.DateTimeField(blank=True, null=True)
-    
-    manager_action = models.CharField(
-        max_length=20,
-        choices=(('recommended', 'Recommended'), ('rejected', 'Rejected')),
-        blank=True,
-        null=True
-    )
     director_action = models.CharField(
         max_length=20,
         choices=(('approved', 'Approved'), ('rejected', 'Rejected')),
         blank=True,
         null=True
     )
+    
+    # Download tracking
+    download_count = models.PositiveIntegerField(default=0)
+    last_download = models.DateTimeField(blank=True, null=True)
+    max_downloads = models.PositiveIntegerField(default=3)
+    
     class Meta:
         ordering = ['-request_date']
         permissions = [
@@ -235,8 +312,79 @@ class DataRequest(models.Model):
             return os.path.basename(self.form_submission.name)
         return None
     
-    def get_document_filename(self):
-        """Extract filename from document path"""
-        if self.document:
-            return os.path.basename(self.document.name)
+    def get_ethical_approval_proof_filename(self):  # NEW METHOD
+        """Extract filename from ethical_approval_proof path"""
+        if self.ethical_approval_proof:
+            return os.path.basename(self.ethical_approval_proof.name)
         return None
+
+class DatasetRating(models.Model):
+    """Model for users to rate datasets"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='ratings')
+    rating = models.FloatField(
+        validators=[MinValueValidator(0.0), MaxValueValidator(10.0)],
+        default=0.0
+    )
+    comment = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['user', 'dataset']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username} rated {self.dataset.title}: {self.rating}"
+
+class UserCollection(models.Model):
+    """Model for users to save datasets to collections"""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='collections')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    datasets = models.ManyToManyField(Dataset, related_name='collections', blank=True)
+    is_public = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['user', 'name']
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.username}'s collection: {self.name}"
+
+class DatasetReport(models.Model):
+    """Model for reporting issues with datasets"""
+    REPORT_TYPES = [
+        ('inaccurate', 'Inaccurate Information'),
+        ('corrupt', 'Corrupt File'),
+        ('copyright', 'Copyright Issue'),
+        ('privacy', 'Privacy Concern'),
+        ('offensive', 'Offensive Content'),
+        ('other', 'Other Issue'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('dismissed', 'Dismissed'),
+    ]
+    
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='reports')
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPES)
+    description = models.TextField()
+    screenshot = models.ImageField(upload_to='reports/', blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(blank=True, null=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Report on {self.dataset.title} by {self.user.username if self.user else 'Anonymous'}"

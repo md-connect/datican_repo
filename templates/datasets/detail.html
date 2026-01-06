@@ -3,226 +3,1020 @@
 {% block title %}{{ dataset.title }} - Datican{% endblock %} 
 
 {% block extra_head %}
-<script src="https://cdn.jsdelivr.net/npm/cornerstone-core"></script>
-<script src="https://cdn.jsdelivr.net/npm/cornerstone-web-image-loader"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
-  .thumbnail-gallery img {
-    transition: all 0.3s ease;
+  /* Fix for mobile navbar toggle button */
+  .mobile-sticky-header {
+    z-index: 1001 !important; /* Higher than sidebar */
   }
-  .thumbnail-gallery img:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  
+  /* Fix for desktop sidebar icon visibility */
+  aside svg {
+    display: block !important;
   }
-  .thumbnail-active {
-    border-color: #3B82F6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+  
+  /* Ensure collapsed sidebar shows icons */
+  .collapsed-sidebar .nav-icon {
+    display: block !important;
+    margin: 0 auto;
+  }
+  
+  /* Remove sticky download button styles */
+  .mobile-sticky-download {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Make sure metadata preview loads immediately */
+  #dataPreview.loaded {
+    display: block;
+  }
+  
+  /* Fix for navbar toggle button visibility */
+  .md\\:hidden.fixed {
+    z-index: 1002 !important;
   }
 </style>
+{% if dataset.preview_file %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+{% endif %}
 {% endblock %} 
 
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <div class="flex flex-col md:flex-row justify-between mb-8">
-    <div>
-      <h1 class="text-3xl font-bold text-primary mb-2">{{ dataset.title }}</h1>
-      <div class="flex items-center space-x-4 text-gray-600">
-        <span>Updated {{ dataset.update_date|timesince }} ago</span>
+<!-- Mobile Sticky Header - FIXED: Higher z-index -->
+<div class="md:hidden mobile-sticky-header flex items-center justify-between px-3 py-2" style="z-index: 1001; background: white;">
+  <!-- Left: Hamburger menu button -->
+  <button 
+    @click="$dispatch('toggle-mobile-sidebar')"
+    class="p-1"
+  >
+    <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  </button>
+  
+  <!-- Center: Title -->
+  <div class="flex-1 px-2">
+    <h1 class="text-sm font-medium text-gray-800 truncate text-center">
+      {{ dataset.title|truncatechars:25 }}
+    </h1>
+  </div>
+  
+  <!-- Right: Auth circle - FIXED VISIBILITY -->
+  <div class="relative" x-data="{ mobileProfileOpen: false }" style="min-width: 28px;">
+    {% if user.is_authenticated %}
+      {% if user.profile.avatar %}
+        <img
+          src="{{ user.profile.avatar.url }}"
+          class="auth-circle h-7 w-7 cursor-pointer border border-gray-200"
+          @click="mobileProfileOpen = !mobileProfileOpen"
+          loading="lazy"
+          alt="Profile"
+        />
+      {% else %}
+        <div
+          class="auth-circle h-7 w-7 bg-primary text-white font-medium flex items-center justify-center cursor-pointer hover:bg-primary-dark"
+          @click="mobileProfileOpen = !mobileProfileOpen"
+        >
+          {{ user.username|first|upper }}
+        </div>
+      {% endif %}
+      
+      <!-- Mobile Profile Dropdown -->
+      <div
+        x-show="mobileProfileOpen"
+        @click.away="mobileProfileOpen = false"
+        x-cloak
+        class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
+        style="display: none;"
+      >
+        <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
+        <form action="{% url 'account_logout' %}" method="POST" class="block">
+          {% csrf_token %}
+          <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            Logout
+          </button>
+        </form>
       </div>
-    </div>
-
-    {% if can_download %}
-    <div class="relative mt-4 md:mt-0">
-      <a
-        href="{% url 'dataset_download' dataset.id %}"
-        class="bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 flex items-center gap-2"
-      >
-        <i data-lucide="download" class="w-5 h-5"></i>
-        Download
-      </a>
-    </div>
     {% else %}
-    <div class="relative mt-4 md:mt-0">
-      <a
-        href="{% url 'dataset_request' dataset.id %}"
-        class="bg-accent text-white px-6 py-3 rounded-full hover:bg-red-600 flex items-center gap-2"
-      >
-        <i data-lucide="lock" class="w-5 h-5"></i>
-        Request Access
+      <a href="{% url 'login' %}?next={{ request.path }}" class="auth-circle h-7 w-7 bg-gray-100 flex items-center justify-center hover:bg-gray-200">
+        <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+        </svg>
       </a>
-    </div>
     {% endif %}
   </div>
+</div>
 
-  <!-- Activities Overview -->
-  <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
-    <h2 class="text-xl font-semibold text-primary mb-4">
-      📊 Activities Overview
-    </h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div class="text-center p-4 border rounded-lg">
-        <div class="text-2xl font-bold text-primary">
-          {{ dataset.download_count }}
-        </div>
-        <div class="text-gray-600">Downloads</div>
-      </div>
-      <!-- Other stats... -->
-    </div>
-  </div>
-
-  <div class="grid md:grid-cols-3 gap-8">
-    <!-- Files Section -->
-    <div class="md:col-span-1 bg-white rounded-lg shadow-sm p-4">
-      <h3 class="text-lg font-semibold text-primary mb-4">📁 Files</h3>
-      <ul class="space-y-2">
-        {% for file in dataset.files.all %}
-        <li
-          class="flex items-center justify-between p-2 hover:bg-gray-100 rounded"
-        >
-          <span>{{ file.name }}</span>
-          <span class="text-gray-500 text-sm"
-            >{{ file.size|filesizeformat }}</span
-          >
-        </li>
-        {% endfor %}
-      </ul>
-    </div>
-
-    <!-- Preview Section -->
-    <div class="md:col-span-2">
-      <div class="flex border-b mb-4">
-        <button
-          id="imageTab"
-          class="preview-tab px-4 py-2 border-b-2 text-primary border-primary"
-        >
-          📷 Image Preview
-        </button>
-        <button
-          id="csvTab"
-          class="preview-tab px-4 py-2 text-gray-500 hover:text-primary"
-        >
-          📄 CSV Preview
-        </button>
-      </div>
-
-      <!-- Main Image Preview -->
-      <div
-        id="imageViewer"
-        class="bg-gray-100 rounded-lg aspect-video mb-4 flex items-center justify-center"
-      >
-        {% if primary_thumbnail %}
-          <img 
-            src="{{ primary_thumbnail.image.url }}" 
-            id="mainPreview"
-            class="max-w-full max-h-full object-contain"
-            alt="{{ dataset.title }} preview"
-          />
-        {% else %}
-          <div class="text-gray-500">No preview available</div>
-        {% endif %}
-      </div>
-
-      <!-- Thumbnail Gallery -->
-      {% if thumbnails|length > 0 %}
-      <div class="mb-6">
-        <h3 class="text-md font-semibold text-gray-700 mb-2">Additional Views</h3>
-        <div class="thumbnail-gallery grid grid-cols-4 md:grid-cols-5 gap-2">
-          {% for thumb in thumbnails %}
-          <img 
-            src="{{ thumb.image.url }}" 
-            class="w-full h-24 object-cover rounded border-2 cursor-pointer 
-                   {% if thumb.id == primary_thumbnail.id %}border-primary thumbnail-active{% else %}border-gray-200{% endif %}"
-            data-thumb-id="{{ thumb.id }}"
-            onclick="setMainPreview(this)"
-            alt="{{ dataset.title }} thumbnail {{ forloop.counter }}"
-          />
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
-
-      <!-- Description -->
-      <div class="bg-white rounded-lg shadow-sm p-6 mt-4">
-        <h3 class="text-lg font-semibold text-primary mb-2">📝 Description</h3>
-        <p class="text-gray-600">{{ dataset.description }}</p>
-      </div>
-    </div>
-  </div>
-
-<!-- Similar Datasets -->
-<div class="mt-12">
-  <h2 class="text-2xl font-semibold text-primary mb-6">
-    🧠 Similar Datasets
-  </h2>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-    {% for similar in similar_datasets %}
-      <a href="{% url 'dataset_detail' similar.id %}">
-        <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
-          <div class="aspect-video bg-gray-100 rounded-lg mb-4 overflow-hidden">
-            {% if similar.primary_thumbnail %}
+<!-- Desktop Sticky Header -->
+<div class="hidden md:block sticky-dataset-header">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <div class="flex items-center justify-between">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-sm text-gray-600">
+        <a href="{% url 'dataset_list' %}" class="hover:text-primary">Datasets</a>
+        <svg class="w-4 h-4 mx-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-primary font-medium truncate max-w-md">{{ dataset.title|truncatechars:40 }}</span>
+      </nav>
+      
+      <!-- Authentication Circle - FIXED: Always circular -->
+      <div class="flex items-center space-x-4">
+        {% if user.is_authenticated %}
+          <div class="relative" x-data="{ profileOpen: false }">
+            {% if user.profile.avatar %}
               <img
-                src="{{ similar.primary_thumbnail.image.url }}"
-                class="w-full h-full object-cover"
-                alt="{{ similar.title }} thumbnail"
+                src="{{ user.profile.avatar.url }}"
+                class="auth-circle h-10 w-10 border-2 border-transparent hover:border-primary cursor-pointer"
+                @mouseenter="profileOpen = true"
+                @mouseleave="profileOpen = false"
+                loading="lazy"
+                alt="Profile"
               />
             {% else %}
-              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                <span class="text-gray-500">No image</span>
+              <div
+                class="auth-circle h-10 w-10 bg-primary text-white font-medium flex items-center justify-center hover:bg-primary-dark cursor-pointer"
+                @mouseenter="profileOpen = true"
+                @mouseleave="profileOpen = false"
+              >
+                {{ user.username|first|upper }}
+              </div>
+            {% endif %}
+            
+            <!-- Profile Dropdown -->
+            <div
+              x-show="profileOpen"
+              @mouseenter="profileOpen = true"
+              @mouseleave="profileOpen = false"
+              x-cloak
+              class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
+              style="display: none;"
+            >
+              <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Profile</a>
+              <form action="{% url 'account_logout' %}" method="POST" class="block">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  Logout
+                </button>
+              </form>
+            </div>
+          </div>
+        {% else %}
+          <div class="flex items-center space-x-3">
+            <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium">Sign In</a>
+            <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium">
+              Register
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-6 mobile-content-padding">
+  <!-- Dataset Title and Info -->
+  <div class="flex flex-col mb-6 md:mb-8">
+    <div class="flex-1 mb-4">
+      <h1 class="text-xl md:text-3xl font-bold text-primary mb-2 break-words">{{ dataset.title }}</h1>
+      <div class="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600">
+        <span class="flex items-center bg-gray-50 px-2 py-1 rounded">
+          <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span class="truncate max-w-[80px] md:max-w-none">{{ dataset.uploaded_by.username|truncatechars:15 }}</span>
+        </span>
+        <span class="flex items-center bg-gray-50 px-2 py-1 rounded">
+          <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {{ dataset.update_date|timesince }} ago
+        </span>
+        <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+          {{ dataset.format|default:"N/A" }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-3 gap-4 md:gap-8">
+    <!-- Dataset Info Sidebar -->
+    <div class="md:col-span-1 desktop-sticky-sidebar space-y-4 md:space-y-6">
+      <!-- Dataset Information Card -->
+      <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+        <h3 class="text-base md:text-lg font-semibold text-primary mb-3 md:mb-4">📋 Dataset Information</h3>
+        <div class="space-y-2 md:space-y-3">
+          {% if dataset.modality %}
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">Modality</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.get_modality_display }}</div>
+          </div>
+          {% endif %}
+          
+          {% if dataset.body_part %}
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">Body Part</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.body_part }}</div>
+          </div>
+          {% endif %}
+          
+          {% if dataset.file_type %}
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">File Type</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.get_file_type_display }}</div>
+          </div>
+          {% endif %}
+          
+          {% if dataset.format %}
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">Format</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.format }}</div>
+          </div>
+          {% endif %}
+          
+          {% if dataset.no_of_subjects %}
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">Number of Subjects</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.no_of_subjects }}</div>
+          </div>
+          {% endif %}
+          
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">Upload Date</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.upload_date|date:"M d, Y" }}</div>
+          </div>
+          
+          <div>
+            <div class="text-xs md:text-sm text-gray-600">Last Updated</div>
+            <div class="font-medium text-sm md:text-base">{{ dataset.update_date|date:"M d, Y" }}</div>
+          </div>
+          <!-- File Details -->
+      <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+        <h3 class="text-base md:text-lg font-semibold text-primary mb-3 md:mb-4 flex items-center">
+          <i data-lucide="folder" class="w-4 h-4 md:w-5 md:h-5 mr-2"></i>
+          File Details
+        </h3>
+        <div class="space-y-2 md:space-y-3">
+          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center min-w-0">
+              <i data-lucide="file" class="w-4 h-4 md:w-5 md:h-5 text-gray-400 mr-2 md:mr-3 flex-shrink-0"></i>
+              <div class="min-w-0">
+                <div class="font-medium text-sm md:text-base truncate">{{ dataset.title }}</div>
+                <div class="text-xs md:text-sm text-gray-600 truncate">
+                  {% if dataset.format %}{{ dataset.format }} • {% endif %}{{ dataset.size|default:"Size N/A" }}
+                </div>
+              </div>
+            </div>
+            {% if can_download %}
+            <a href="{{ dataset.file.url }}" class="text-primary hover:text-primary-dark font-medium ml-2 flex-shrink-0">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+        </div>
+      </div>
+
+      <!-- Actions Card - ADDED Download/Request Access Button HERE -->
+      <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+        <h3 class="text-base md:text-lg font-semibold text-primary mb-3 md:mb-4">⚡ Actions</h3>
+        <div class="space-y-2 md:space-y-3">
+          <!-- Download/Request Access Button - MOVED HERE -->
+          {% if can_download %}
+          <a
+            href="{% url 'dataset_download' dataset.id %}"
+            class="w-full px-3 py-2 md:px-4 md:py-2 bg-primary text-white rounded-lg hover:bg-primary-dark flex items-center justify-center gap-2 text-sm md:text-base"
+          >
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Download Dataset
+          </a>
+          {% else %}
+          <a
+            href="{% url 'dataset_request' dataset.id %}"
+            class="w-full px-3 py-2 md:px-4 md:py-2 bg-accent text-white rounded-lg hover:bg-red-600 flex items-center justify-center gap-2 text-sm md:text-base"
+          >
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            Request Access
+          </a>
+          {% endif %}
+          
+          <button 
+            onclick="openRatingModal()"
+            class="w-full px-3 py-2 md:px-4 md:py-2 bg-primary text-white rounded-lg hover:bg-primary-dark flex items-center justify-center gap-2 text-sm md:text-base"
+          >
+            <i data-lucide="star" class="w-4 h-4"></i>
+            {% if user_rating %}Update Rating{% else %}Rate Dataset{% endif %}
+          </button>
+          
+          <button 
+            onclick="openCollectionModal()"
+            class="w-full px-3 py-2 md:px-4 md:py-2 border border-primary text-primary rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2 text-sm md:text-base"
+          >
+            <i data-lucide="bookmark" class="w-4 h-4"></i>
+            {% if in_collections %}In Collection{% else %}Save{% endif %}
+          </button>
+          <!--
+          <button 
+            onclick="openReportModal()"
+            class="w-full px-3 py-2 md:px-4 md:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm md:text-base"
+          >
+            <i data-lucide="flag" class="w-4 h-4"></i>
+            Report Issue
+          </button> -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="md:col-span-2 overflow-hidden">
+      <!-- Preview Section -->
+      <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-4 md:mb-6">
+        <!-- Preview Tabs -->
+        <div class="flex border-b overflow-x-auto no-scrollbar">
+          <button
+            id="imageTab"
+            class="preview-tab px-3 py-2 md:px-4 md:py-3 border-b-2 text-primary border-primary font-medium whitespace-nowrap flex-shrink-0"
+          >
+            <i data-lucide="image" class="w-4 h-4 mr-2"></i>
+            <span>Images</span>
+          </button>
+          <button
+            id="csvTab"
+            class="preview-tab px-3 py-2 md:px-4 md:py-3 text-gray-500 hover:text-primary font-medium whitespace-nowrap flex-shrink-0"
+          >
+            <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+            <span>Metadata</span>
+          </button>
+        </div>
+
+        <!-- Main Image Preview -->
+        <div id="imagePreview" class="p-3 md:p-4">
+          <div
+            id="imageViewer"
+            class="bg-gray-100 rounded-lg aspect-video flex items-center justify-center overflow-hidden"
+          >
+            {% if primary_thumbnail %}
+              <img 
+                src="{{ primary_thumbnail.image.url }}" 
+                id="mainPreview"
+                class="w-full h-full object-contain lazy-load"
+                alt="{{ dataset.title }} preview"
+                loading="lazy"
+                onload="this.classList.add('lazy-loaded')"
+              />
+            {% else %}
+              <div class="text-gray-500 p-4">
+                <i data-lucide="image-off" class="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2"></i>
+                <p class="text-sm">No preview available</p>
               </div>
             {% endif %}
           </div>
-          <h3 class="font-semibold text-primary">{{ similar.title }}</h3>
-          <div class="flex items-center text-sm text-gray-600 mt-2">
-            <span>📦 {{ similar.size }}</span>
+
+          <!-- Thumbnail Gallery -->
+          {% if thumbnails|length > 0 %}
+          <div class="mt-4 md:mt-6">
+            <h3 class="text-sm md:text-base font-semibold text-gray-700 mb-2 md:mb-3">Additional Views</h3>
+            <div class="thumbnail-gallery grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
+              {% for thumb in thumbnails %}
+              <img 
+                src="{{ thumb.image.url }}" 
+                class="w-full h-20 md:h-24 object-cover rounded-lg border-2 cursor-pointer lazy-load
+                       {% if thumb.id == primary_thumbnail.id %}border-primary thumbnail-active{% else %}border-gray-200 hover:border-gray-300{% endif %}"
+                data-thumb-id="{{ thumb.id }}"
+                onclick="setMainPreview(this)"
+                alt="Thumbnail {{ forloop.counter }}"
+                loading="lazy"
+                onload="this.classList.add('lazy-loaded')"
+              />
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Data Preview Section - PRELOADED CONTENT -->
+        <div id="dataPreview" class="p-3 md:p-4 hidden">
+          {% if has_preview and not preview_error %}
+          <!-- Table Container with Scroll -->
+          <div class="bg-white border rounded-lg overflow-hidden">
+            <!-- Table Controls -->
+            <div class="flex items-center justify-between p-3 border-b bg-gray-50">
+              <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-600">
+                  <span class="font-medium">{{ preview_rows|length }}</span> rows × 
+                  <span class="font-medium">{{ preview_columns|length }}</span> columns
+                </div>
+                <div class="text-xs text-gray-500 hidden md:block">
+                  Scroll horizontally and vertically to view all data
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button onclick="scrollToTop()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
+                  <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                </button>
+                <button onclick="scrollToLeft()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded hidden md:block">
+                  <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </button>
+                <button onclick="scrollToRight()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded hidden md:block">
+                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+                <button onclick="scrollToBottom()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
+                  <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Table with Horizontal and Vertical Scroll -->
+            <div class="relative overflow-auto max-h-[400px] md:max-h-[500px]" id="tableContainer">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 sticky left-0 z-20 min-w-[40px] md:min-w-[60px] border-r">
+                      #
+                    </th>
+                    {% for col in preview_columns %}
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 min-w-[100px] md:min-w-[150px] whitespace-nowrap">
+                      <div class="flex items-center justify-between">
+                        <span title="{{ col }}" class="truncate max-w-[80px] md:max-w-[120px]">{{ col }}</span>
+                        <span class="text-xs text-gray-400 ml-1 hidden md:inline">▼</span>
+                      </div>
+                    </th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  {% for row in preview_rows %}
+                  <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-blue-50">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 font-mono bg-inherit sticky left-0 z-10 min-w-[40px] md:min-w-[60px] border-r">
+                      {{ forloop.counter }}
+                    </td>
+                    {% for col in preview_columns %}
+                    <td class="px-4 py-4 text-sm text-gray-900 min-w-[100px] md:min-w-[150px] max-w-[200px] md:max-w-[300px]">
+                      {% for key, value in row.items %}
+                        {% if key == col %}
+                          <div class="group relative">
+                            {% if value == None or value == '' or value == 'nan' %}
+                              <span class="text-gray-400 italic">null</span>
+                            {% else %}
+                              <div class="truncate">{{ value|stringformat:"s" }}</div>
+                              {% if value|stringformat:"s"|length > 20 %}
+                                <div class="absolute left-0 top-full mt-1 w-64 md:w-96 p-2 md:p-3 bg-white border rounded-lg shadow-lg z-50 hidden group-hover:block">
+                                  <div class="text-xs font-medium text-gray-900 mb-1">Full Content:</div>
+                                  <div class="text-xs md:text-sm text-gray-600 whitespace-pre-wrap max-h-40 md:max-h-60 overflow-y-auto">{{ value|stringformat:"s" }}</div>
+                                </div>
+                              {% endif %}
+                            {% endif %}
+                          </div>
+                        {% endif %}
+                      {% endfor %}
+                    </td>
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% elif preview_error %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex items-center text-red-700">
+                <i data-lucide="alert-circle" class="w-5 h-5 mr-2"></i>
+                <div>
+                  <p class="font-medium">Error loading preview</p>
+                  <p class="text-sm">{{ preview_error }}</p>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="bg-gray-50 rounded-lg p-8 text-center">
+              <i data-lucide="file-question" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+              <p class="text-gray-600 mb-2">No preview data available</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Description Card -->
+      <div class="bg-white rounded-lg shadow-sm p-4 md:p-6 mb-4 md:mb-6">
+        <h3 class="text-base md:text-lg font-semibold text-primary mb-3 md:mb-4 flex items-center">
+          <i data-lucide="file-text" class="w-4 h-4 md:w-5 md:h-5 mr-2"></i>
+          Description
+        </h3>
+        <div class="text-sm md:text-base text-gray-700 prose prose-sm max-w-none">
+          {{ dataset.description|linebreaks }}
+        </div>
+      </div>
+
+      
+    </div>
+  </div>
+
+  <!-- Similar Datasets -->
+  {% if similar_datasets %}
+  <div class="mt-8 md:mt-12">
+    <h2 class="text-xl md:text-2xl font-semibold text-primary mb-4 md:mb-6">
+      🧠 Similar Datasets
+    </h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      {% for similar in similar_datasets %}
+        <a href="{% url 'dataset_detail' similar.id %}" class="block">
+          <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-3 md:p-4 h-full">
+            <div class="aspect-video bg-gray-100 rounded-lg mb-3 md:mb-4 overflow-hidden">
+              {% if similar.primary_thumbnail %}
+                <img
+                  src="{{ similar.primary_thumbnail.image.url }}"
+                  class="w-full h-full object-cover lazy-load"
+                  alt="{{ similar.title }} thumbnail"
+                  loading="lazy"
+                  onload="this.classList.add('lazy-loaded')"
+                />
+              {% else %}
+                <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <i data-lucide="image-off" class="w-6 h-6 md:w-8 md:h-8 text-gray-400"></i>
+                </div>
+              {% endif %}
+            </div>
+            <h3 class="font-semibold text-primary text-sm mb-2 truncate">{{ similar.title|truncatechars:50 }}</h3>
+            <div class="flex items-center justify-between text-xs text-gray-600">
+              <span class="truncate">{{ similar.format|default:"N/A" }}</span>
+              <span class="truncate ml-2">{{ similar.size|default:"N/A" }}</span>
+            </div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</main>
+
+<!-- Modals -->
+<!-- Rating Modal -->
+<div id="ratingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-primary">Rate this Dataset</h3>
+        <button onclick="closeRatingModal()" class="text-gray-400 hover:text-gray-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      <form method="POST" action="{% url 'rate_dataset' dataset.id %}">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+          <div class="flex justify-center mb-2">
+            <div class="text-4xl font-bold text-primary" id="ratingValue">
+              {% if user_rating %}{{ user_rating }}{% else %}0.0{% endif %}
+            </div>
+            <div class="ml-2 text-gray-500 text-lg mt-2">/10</div>
+          </div>
+          
+          <input 
+            type="range" 
+            name="rating" 
+            min="0" 
+            max="10" 
+            step="0.5"
+            value="{% if user_rating %}{{ user_rating }}{% else %}0{% endif %}"
+            class="w-full"
+            id="ratingSlider"
+            oninput="updateRatingDisplay(this.value)"
+          >
+          
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>0</span>
+            <span>5</span>
+            <span>10</span>
           </div>
         </div>
-      </a>
-    {% endfor %}
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Your Comments (Optional)</label>
+          <textarea 
+            name="comment" 
+            rows="3"
+            class="w-full border rounded p-2"
+            placeholder="Share your thoughts about this dataset..."
+          >{% if user_rating_obj %}{{ user_rating_obj.comment }}{% endif %}</textarea>
+        </div>
+        
+        <div class="flex space-x-2">
+          <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark">
+            Submit Rating
+          </button>
+          <button type="button" onclick="closeRatingModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
+
+<!-- Collection Modal -->
+<div id="collectionModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-primary">Save to Collection</h3>
+        <button onclick="closeCollectionModal()" class="text-gray-400 hover:text-gray-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      {% if user.is_authenticated %}
+        <!-- Existing Collections -->
+        {% if user_collections %}
+        <div class="mb-6">
+          <h4 class="font-medium text-sm text-gray-700 mb-3">Your Collections</h4>
+          <div class="space-y-2">
+            {% for collection in user_collections %}
+            <div class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+              <div>
+                <div class="font-medium">{{ collection.name }}</div>
+                <div class="text-sm text-gray-500">
+                  {{ collection.datasets.count }} dataset{{ collection.datasets.count|pluralize }}
+                  {% if collection.description %}• {{ collection.description }}{% endif %}
+                </div>
+              </div>
+              <button 
+                type="button"
+                onclick="toggleCollection({{ collection.id }}, this)"
+                class="{% if collection in in_collections %}text-primary{% else %}text-gray-400 hover:text-primary{% endif %}"
+                data-collection-id="{{ collection.id }}"
+              >
+                <i data-lucide="{% if collection in in_collections %}bookmark-minus{% else %}bookmark-plus{% endif %}" class="w-5 h-5"></i>
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        
+        <!-- Create New Collection -->
+        <div>
+          <h4 class="font-medium text-sm text-gray-700 mb-3">Create New Collection</h4>
+          <form method="POST" action="{% url 'save_to_collection' dataset.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <div class="space-y-3">
+              <input 
+                type="text" 
+                name="name" 
+                class="w-full border rounded p-2"
+                placeholder="Collection name"
+                required
+              >
+              <textarea 
+                name="description" 
+                rows="2"
+                class="w-full border rounded p-2"
+                placeholder="Description (optional)"
+              ></textarea>
+              <label class="flex items-center space-x-2">
+                <input type="checkbox" name="is_public" class="rounded">
+                <span class="text-sm">Make this collection public</span>
+              </label>
+              <div class="flex space-x-2">
+                <button type="submit" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark">
+                  Create & Add
+                </button>
+                <button type="button" onclick="closeCollectionModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      {% else %}
+        <div class="text-center py-8">
+          <i data-lucide="log-in" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+          <p class="text-gray-600 mb-4">Please sign in to save datasets to collections.</p>
+          <a href="{% url 'login' %}?next={{ request.path }}" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark inline-block">
+            Sign In
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
-{% endblock %} 
+
+<!-- Report Modal -->
+<div id="reportModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-primary">Report an Issue</h3>
+        <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      
+      {% if user.is_authenticated %}
+      <form method="POST" action="{% url 'report_dataset' dataset.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Issue Type</label>
+            <select name="report_type" class="w-full border rounded p-2" required>
+              <option value="">Select an issue type</option>
+              <option value="inaccurate">Inaccurate Information</option>
+              <option value="corrupt">Corrupt File</option>
+              <option value="copyright">Copyright Issue</option>
+              <option value="privacy">Privacy Concern</option>
+              <option value="offensive">Offensive Content</option>
+              <option value="other">Other Issue</option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea 
+              name="description" 
+              rows="4"
+              class="w-full border rounded p-2"
+              placeholder="Please describe the issue in detail..."
+              required
+            ></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Screenshot (Optional)</label>
+            <input 
+              type="file" 
+              name="screenshot" 
+              accept="image/*"
+              class="w-full border rounded p-2"
+            >
+            <p class="text-xs text-gray-500 mt-1">Upload a screenshot if it helps explain the issue</p>
+          </div>
+          
+          <div class="pt-4 border-t">
+            <div class="flex space-x-2">
+              <button type="submit" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700">
+                Submit Report
+              </button>
+              <button type="button" onclick="closeReportModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300">
+                Cancel
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">
+              <i data-lucide="info" class="w-3 h-3 inline mr-1"></i>
+              Reports are reviewed by our team within 24-48 hours.
+            </p>
+          </div>
+        </div>
+      </form>
+      {% else %}
+        <div class="text-center py-8">
+          <i data-lucide="log-in" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+          <p class="text-gray-600 mb-4">Please sign in to report issues.</p>
+          <a href="{% url 'login' %}?next={{ request.path }}" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark inline-block">
+            Sign In
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
 
 {% block extra_scripts %}
 <script>
-  // Tab switching functionality
-  const imageTab = document.getElementById("imageTab");
-  const csvTab = document.getElementById("csvTab");
-  const imageViewer = document.getElementById("imageViewer");
-  const csvPreview = document.getElementById("csvPreview");
+  // Initialize Lucide icons
+  lucide.createIcons();
 
-  if (imageTab && csvTab) {
-    imageTab.addEventListener("click", () => {
-      imageTab.classList.add("border-primary", "text-primary");
-      csvTab.classList.remove("border-primary", "text-primary");
-      imageViewer.classList.remove("hidden");
-      if (csvPreview) csvPreview.classList.add("hidden");
-    });
+  document.addEventListener('DOMContentLoaded', function() {
+    // Setup tab switching with immediate metadata display
+    setupTabs();
+    
+    // Setup modal functions
+    setupModals();
+    
+    // Handle mobile layout
+    handleMobileLayout();
+    
+    // Setup mobile sidebar toggle
+    setupMobileSidebar();
+  });
+  
+  function setupTabs() {
+    const imageTab = document.getElementById("imageTab");
+    const csvTab = document.getElementById("csvTab");
+    const imagePreview = document.getElementById("imagePreview");
+    const dataPreview = document.getElementById("dataPreview");
 
-    csvTab.addEventListener("click", () => {
-      csvTab.classList.add("border-primary", "text-primary");
-      imageTab.classList.remove("border-primary", "text-primary");
-      if (csvPreview) csvPreview.classList.remove("hidden");
-      imageViewer.classList.add("hidden");
-    });
+    if (imageTab && csvTab) {
+      imageTab.addEventListener("click", () => {
+        imageTab.classList.add("border-primary", "text-primary", "border-b-2");
+        imageTab.classList.remove("text-gray-500");
+        csvTab.classList.remove("border-primary", "text-primary", "border-b-2");
+        csvTab.classList.add("text-gray-500");
+        imagePreview.classList.remove("hidden");
+        if (dataPreview) dataPreview.classList.add("hidden");
+      });
+
+      csvTab.addEventListener("click", () => {
+        csvTab.classList.add("border-primary", "text-primary", "border-b-2");
+        csvTab.classList.remove("text-gray-500");
+        imageTab.classList.remove("border-primary", "text-primary", "border-b-2");
+        imageTab.classList.add("text-gray-500");
+        if (dataPreview) {
+          dataPreview.classList.remove("hidden");
+          // Initialize table controls when tab is shown
+          setTimeout(() => {
+            if (typeof initTableControls === 'function') {
+              initTableControls();
+            }
+          }, 100);
+        }
+        imagePreview.classList.add("hidden");
+      });
+    }
   }
-
-  // Set main preview image
+  
   function setMainPreview(element) {
     const mainPreview = document.getElementById("mainPreview");
     if (mainPreview) {
       mainPreview.src = element.src;
+      mainPreview.classList.remove('lazy-loaded');
+      mainPreview.onload = function() {
+        this.classList.add('lazy-loaded');
+      };
       
-      // Update active thumbnail
       document.querySelectorAll('.thumbnail-gallery img').forEach(thumb => {
         thumb.classList.remove('border-primary', 'thumbnail-active');
+        thumb.classList.add('border-gray-200');
       });
       element.classList.add('border-primary', 'thumbnail-active');
+      element.classList.remove('border-gray-200');
     }
   }
-
-  // Initialize Lucide icons
-  lucide.createIcons();
+  
+  function setupModals() {
+    // Modal functions
+    window.openRatingModal = function() {
+      {% if user.is_authenticated %}
+        document.getElementById('ratingModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      {% else %}
+        window.location.href = "{% url 'login' %}?next={{ request.path %}";
+      {% endif %}
+    };
+    
+    window.closeRatingModal = function() {
+      document.getElementById('ratingModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    };
+    
+    window.openCollectionModal = function() {
+      {% if user.is_authenticated %}
+        document.getElementById('collectionModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      {% else %}
+        window.location.href = "{% url 'login' %}?next={{ request.path %}";
+      {% endif %}
+    };
+    
+    window.closeCollectionModal = function() {
+      document.getElementById('collectionModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    };
+    
+    window.openReportModal = function() {
+      {% if user.is_authenticated %}
+        document.getElementById('reportModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      {% else %}
+        window.location.href = "{% url 'login' %}?next={{ request.path %}";
+      {% endif %}
+    };
+    
+    window.closeReportModal = function() {
+      document.getElementById('reportModal').classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    };
+    
+    // Rating display update
+    window.updateRatingDisplay = function(value) {
+      document.getElementById('ratingValue').textContent = value;
+    };
+    
+    // Close modals on ESC key and overlay click
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        window.closeRatingModal();
+        window.closeCollectionModal();
+        window.closeReportModal();
+      }
+    });
+    
+    // Close modals when clicking on overlay
+    document.querySelectorAll('#ratingModal, #collectionModal, #reportModal').forEach(modal => {
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          if (this.id === 'ratingModal') window.closeRatingModal();
+          if (this.id === 'collectionModal') window.closeCollectionModal();
+          if (this.id === 'reportModal') window.closeReportModal();
+        }
+      });
+    });
+  }
+  
+  function handleMobileLayout() {
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      document.body.style.overflowX = 'hidden';
+      
+      // Ensure mobile header is on top
+      const mobileHeader = document.querySelector('.mobile-sticky-header');
+      if (mobileHeader) {
+        mobileHeader.style.zIndex = '1001';
+      }
+    }
+  }
+  
+  function setupMobileSidebar() {
+    // Listen for mobile sidebar toggle event
+    document.addEventListener('toggle-mobile-sidebar', function() {
+      // This event should be handled by the sidebar component
+      // The sidebar component should have an Alpine.js listener
+    });
+  }
+  
+  // Table scrolling functions
+  window.scrollToTop = function() {
+    const container = document.getElementById('tableContainer');
+    if (container) container.scrollTop = 0;
+    updateScrollPosition();
+  };
+  
+  window.scrollToBottom = function() {
+    const container = document.getElementById('tableContainer');
+    if (container) container.scrollTop = container.scrollHeight;
+    updateScrollPosition();
+  };
+  
+  window.scrollToLeft = function() {
+    const container = document.getElementById('tableContainer');
+    if (container) container.scrollLeft = 0;
+    updateScrollPosition();
+  };
+  
+  window.scrollToRight = function() {
+    const container = document.getElementById('tableContainer');
+    if (container) container.scrollLeft = container.scrollWidth;
+    updateScrollPosition();
+  };
+  
+  window.fitToContent = function() {
+    const container = document.getElementById('tableContainer');
+    if (container) {
+      container.style.maxHeight = 'none';
+      container.style.height = 'auto';
+      setTimeout(() => {
+        container.scrollTop = 0;
+        container.scrollLeft = 0;
+        updateScrollPosition();
+      }, 100);
+    }
+  };
+  
+  window.updateScrollPosition = function() {
+    const container = document.getElementById('tableContainer');
+    const positionElement = document.getElementById('scrollPosition');
+    
+    if (container && positionElement) {
+      const vPos = container.scrollTop === 0 ? 'Top' : 
+                   container.scrollTop + container.clientHeight >= container.scrollHeight ? 'Bottom' : 'Middle';
+      const hPos = container.scrollLeft === 0 ? 'Left' : 
+                   container.scrollLeft + container.clientWidth >= container.scrollWidth ? 'Right' : 'Middle';
+      positionElement.textContent = `Scroll position: ${vPos}-${hPos}`;
+    }
+  };
+  
+  // Initialize table controls
+  window.initTableControls = function() {
+    const container = document.getElementById('tableContainer');
+    if (container) {
+      container.addEventListener('scroll', updateScrollPosition);
+      updateScrollPosition();
+    }
+  };
+  
+  // Handle window resize
+  window.addEventListener('resize', handleMobileLayout);
 </script>
 {% endblock %}

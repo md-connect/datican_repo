@@ -7,14 +7,19 @@ from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.urls import reverse
-from django.db.models import Prefetch, Q
-from .models import Dataset, DataRequest, Thumbnail
-from .forms import DataRequestForm
+from django.db.models import Prefetch, Q, Avg, Count
+from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
+from .forms import DataRequestForm, RatingForm, CollectionForm, ReportForm
 import os
 from datetime import datetime
 from .utils import data_manager_required, director_required
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST, require_GET
+from django.core.paginator import Paginator
+import pandas as pd
+import json
 
 
 User = get_user_model()
@@ -32,11 +37,17 @@ def download_request_form(request):
 
 def dataset_list(request):
     # Get filter parameters from request
-    tasks = request.GET.getlist('task')
-    attributes = request.GET.getlist('attribute')
-    formats = request.GET.getlist('format')
-    year = request.GET.get('year')
-    search_query = request.GET.get('q')
+    modality = request.GET.getlist('modality')
+    format = request.GET.getlist('format')
+    dimension = request.GET.getlist('dimension')
+    body_part = request.GET.get('body_part', '').strip()
+    min_subjects = request.GET.get('min_subjects')
+    max_subjects = request.GET.get('max_subjects')
+    min_rating = request.GET.get('min_rating', '0')
+    upload_date = request.GET.get('upload_date', 'all')
+    popularity = request.GET.get('popularity', 'all')
+    sort = request.GET.get('sort', 'newest')
+    search_query = request.GET.get('q', '').strip()
 
     # Start with base queryset
     datasets = Dataset.objects.prefetch_related(
@@ -50,51 +61,129 @@ def dataset_list(request):
         datasets = datasets.filter(
             Q(title__icontains=search_query) |
             Q(description__icontains=search_query) |
-            Q(category__icontains=search_query)
+            Q(body_part__icontains=search_query) |
+            Q(modality__icontains=search_query)
         )
 
-    # Apply other filters
-    if tasks:
-        datasets = datasets.filter(task__in=tasks)
+    # Apply modality filter
+    if modality:
+        datasets = datasets.filter(modality__in=modality)
     
-    if attributes:
-        attribute_query = Q()
-        for attr in attributes:
-            attribute_query |= Q(attributes__contains=attr)
-        datasets = datasets.filter(attribute_query)
-    
-    if formats:
+    # Apply format filter
+    if format:
+        # Handle both uppercase values from choices and case variations
         format_query = Q()
-        for fmt in formats:
-            format_query |= Q(file__endswith=f'.{fmt}')
+        for fmt in format:
+            format_query |= Q(format__iexact=fmt)
         datasets = datasets.filter(format_query)
     
-    if year:
+    # Apply dimension filter
+    if dimension:
+        datasets = datasets.filter(dimension__in=dimension)
+    
+    # Apply body part filter
+    if body_part:
+        datasets = datasets.filter(body_part__icontains=body_part)
+    
+    # Apply number of subjects filter
+    if min_subjects:
         try:
-            year_int = int(year)
-            datasets = datasets.filter(upload_date__year=year_int)
+            datasets = datasets.filter(no_of_subjects__gte=int(min_subjects))
         except ValueError:
-            pass  # Ignore invalid year values
-
+            pass
+    
+    if max_subjects:
+        try:
+            datasets = datasets.filter(no_of_subjects__lte=int(max_subjects))
+        except ValueError:
+            pass
+    
+    # Apply rating filter
+    try:
+        min_rating_value = float(min_rating)
+        if min_rating_value > 0:
+            datasets = datasets.filter(rating__gte=min_rating_value)
+    except ValueError:
+        pass
+    
+    # Apply upload date filter
+    if upload_date != 'all':
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        now = timezone.now()
+        if upload_date == 'today':
+            datasets = datasets.filter(upload_date__date=now.date())
+        elif upload_date == 'week':
+            week_ago = now - timedelta(days=7)
+            datasets = datasets.filter(upload_date__gte=week_ago)
+        elif upload_date == 'month':
+            month_ago = now - timedelta(days=30)
+            datasets = datasets.filter(upload_date__gte=month_ago)
+        elif upload_date == 'year':
+            year_ago = now - timedelta(days=365)
+            datasets = datasets.filter(upload_date__gte=year_ago)
+    
+    # Apply popularity filter
+    if popularity != 'all':
+        if popularity == 'trending':
+            datasets = datasets.filter(download_count__gte=100)
+        elif popularity == 'popular':
+            datasets = datasets.filter(download_count__gte=500)
+        elif popularity == 'viral':
+            datasets = datasets.filter(download_count__gte=1000)
+    
+    # Apply sorting
+    if sort == 'newest':
+        datasets = datasets.order_by('-upload_date')
+    elif sort == 'oldest':
+        datasets = datasets.order_by('upload_date')
+    elif sort == 'rating_high':
+        datasets = datasets.order_by('-rating')
+    elif sort == 'rating_low':
+        datasets = datasets.order_by('rating')
+    elif sort == 'downloads':
+        datasets = datasets.order_by('-download_count')
+    elif sort == 'title_asc':
+        datasets = datasets.order_by('title')
+    elif sort == 'title_desc':
+        datasets = datasets.order_by('-title')
+    elif sort == 'updated':
+        datasets = datasets.order_by('-update_date')
+    else:  # relevance or default
+        datasets = datasets.order_by('-upload_date')  # Default to newest
+    
     # Pagination
     paginator = Paginator(datasets, 12)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get available years for filter
+    # Get available years for filter (optional, if you want to keep this)
     available_years = Dataset.objects.dates('upload_date', 'year').order_by('-upload_date__year')
     
-    return render(request, 'datasets/list.html', {
+    context = {
         'datasets': page_obj,
         'available_years': available_years,
         'current_filters': {
-            'tasks': tasks,
-            'attributes': attributes,
-            'formats': formats,
-            'year': year,
+            'modality': modality,
+            'format': format,
+            'dimension': dimension,
+            'body_part': body_part,
+            'min_subjects': min_subjects,
+            'max_subjects': max_subjects,
+            'min_rating': min_rating,
+            'upload_date': upload_date,
+            'popularity': popularity,
+            'sort': sort,
             'q': search_query
-        }
-    })
+        },
+        # Pass the choices for the filter template
+        'modality_choices': Dataset.MODALITY_CHOICES,
+        'format_choices': Dataset.FORMAT_CHOICES,
+        'dimension_choices': Dataset.DIMENSION_CHOICES,
+    }
+    
+    return render(request, 'datasets/list.html', context)
 
 def dataset_detail(request, pk):
     # Prefetch related thumbnails and optimize queries
@@ -122,17 +211,15 @@ def dataset_detail(request, pk):
         
         if data_request:
             show_request_form = False
-            # Redirect to status page if request exists
-            return redirect('request_status', pk=data_request.pk)
     
     # Check download access only if request exists and is approved
     can_download = False
     if data_request and data_request.status == 'approved':
         can_download = data_request.can_download()
     
-    # Get similar datasets with their primary thumbnails
+    # Get similar datasets based on format instead of category
     similar_datasets = Dataset.objects.filter(
-        category=dataset.category
+        format=dataset.format
     ).exclude(pk=pk).prefetch_related(
         Prefetch('thumbnails', queryset=Thumbnail.objects.filter(is_primary=True), to_attr='primary_thumbnails')
     )[:4]
@@ -141,15 +228,422 @@ def dataset_detail(request, pk):
     for similar in similar_datasets:
         similar.primary_thumbnail = similar.primary_thumbnails[0] if similar.primary_thumbnails else None
     
-    return render(request, 'datasets/detail.html', {
+    # ===== NEW FEATURES =====
+    
+    # Get user's rating if logged in
+    user_rating = None
+    user_rating_obj = None
+    if request.user.is_authenticated:
+        try:
+            user_rating_obj = DatasetRating.objects.get(user=request.user, dataset=dataset)
+            user_rating = user_rating_obj.rating
+        except DatasetRating.DoesNotExist:
+            pass
+    
+    # Get user's collections
+    user_collections = []
+    if request.user.is_authenticated:
+        user_collections = UserCollection.objects.filter(user=request.user)
+    
+    # Check if dataset is in user's collections
+    in_collections = []
+    if request.user.is_authenticated:
+        in_collections = dataset.get_user_collections(request.user) if hasattr(dataset, 'get_user_collections') else []
+    
+    # Get dataset statistics
+    rating_stats = dataset.ratings.aggregate(
+        average=Avg('rating'),
+        count=Count('id')
+    )
+    
+    # Get preview data if available
+    preview_data = None
+    preview_columns = []
+    preview_rows = []
+    preview_error = None
+    has_preview = False
+    
+    if hasattr(dataset, 'preview_file') and dataset.preview_file:
+        try:
+            preview_data = get_preview_data(dataset, max_rows=10)  # Load only 10 rows initially
+            if preview_data:
+                preview_columns = preview_data.get('columns', [])
+                preview_rows = preview_data.get('rows', [])
+                has_preview = True
+        except Exception as e:
+            preview_error = str(e)
+            has_preview = False
+    elif dataset.format and dataset.format.lower() in ['csv', 'json']:
+        # If no preview file but dataset is CSV/JSON format, try to use the main file
+        try:
+            if dataset.file and dataset.file.name.lower().endswith(('.csv', '.json')):
+                # Create a temporary dataset-like object for preview
+                temp_dataset = type('TempDataset', (), {
+                    'preview_file': dataset.file,
+                    'preview_type': 'csv' if dataset.file.name.lower().endswith('.csv') else 'json'
+                })()
+                preview_data = get_preview_data(temp_dataset, max_rows=10)
+                if preview_data:
+                    preview_columns = preview_data.get('columns', [])
+                    preview_rows = preview_data.get('rows', [])
+                    has_preview = True
+        except Exception as e:
+            preview_error = str(e)
+            has_preview = False
+    
+    # Get recent reviews
+    recent_reviews = DatasetRating.objects.filter(dataset=dataset).select_related('user').order_by('-created_at')[:5]
+    
+    context = {
+        # Existing context
         'dataset': dataset,
         'can_download': can_download,
         'data_request': data_request,
         'show_request_form': show_request_form,
         'similar_datasets': similar_datasets,
         'thumbnails': thumbnails,
-        'primary_thumbnail': primary_thumbnail
-    })
+        'primary_thumbnail': primary_thumbnail,
+        
+        # New features context
+        'user_rating': user_rating,
+        'user_rating_obj': user_rating_obj,
+        'user_collections': user_collections,
+        'in_collections': in_collections,
+        'rating_stats': rating_stats,
+        'recent_reviews': recent_reviews,
+        
+        # Preview context
+        'preview_columns': preview_columns,
+        'preview_rows': preview_rows,
+        'preview_error': preview_error,
+        'has_preview': has_preview,
+        'preview_type': getattr(dataset, 'preview_type', 'none'),
+        
+        # Forms
+        'rating_form': RatingForm(instance=user_rating_obj) if user_rating_obj else RatingForm(),
+        'collection_form': CollectionForm(),
+        'report_form': ReportForm(),
+    }
+    
+    return render(request, 'datasets/detail.html', context)
+
+# Helper function for preview data (add this to your views.py)
+def get_preview_data(dataset, max_rows=100):
+    """Extract preview data from CSV/Excel/JSON file"""
+    if not hasattr(dataset, 'preview_file') or not dataset.preview_file:
+        return None
+    
+    try:
+        # Handle file field properly
+        file_obj = dataset.preview_file
+        if hasattr(file_obj, 'path'):
+            file_path = file_obj.path
+        else:
+            # For in-memory files or URLs
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_obj.name)[1]) as tmp:
+                for chunk in file_obj.chunks():
+                    tmp.write(chunk)
+                file_path = tmp.name
+        
+        file_extension = file_obj.name.lower()
+        
+        if file_extension.endswith('.csv'):
+            # Read CSV with pandas
+            df = pd.read_csv(file_path, nrows=max_rows)
+        elif file_extension.endswith(('.xlsx', '.xls')):
+            # Read Excel with pandas
+            df = pd.read_excel(file_path, nrows=max_rows)
+        elif file_extension.endswith('.json'):
+            # Read JSON
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            # Convert JSON to DataFrame for consistency
+            if isinstance(data, list):
+                df = pd.DataFrame(data[:max_rows])
+            elif isinstance(data, dict):
+                # If JSON is a single object
+                df = pd.DataFrame([data])
+            else:
+                return None
+        else:
+            return None
+        
+        # Convert DataFrame to list of dictionaries
+        rows = df.head(max_rows).to_dict('records')
+        
+        # Clean NaN values
+        for row in rows:
+            for key, value in row.items():
+                if pd.isna(value):
+                    row[key] = None
+        
+        return {
+            'columns': list(df.columns),
+            'rows': rows,
+            'total_rows': len(df),
+            'total_columns': len(df.columns)
+        }
+        
+    except Exception as e:
+        print(f"Error reading preview file: {e}")
+        return None
+    finally:
+        # Clean up temporary file if created
+        if 'tmp' in locals():
+            try:
+                os.unlink(file_path)
+            except:
+                pass
+
+@require_GET
+def dataset_preview_api(request, pk):
+    """API endpoint for loading preview data with pagination"""
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    try:
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 50))
+        
+        # Check if we have a preview file
+        if not hasattr(dataset, 'preview_file') or not dataset.preview_file:
+            # Try to use main file if it's CSV/JSON
+            if dataset.file and dataset.file.name.lower().endswith(('.csv', '.json')):
+                # Use main file as preview
+                preview_file = dataset.file
+                preview_type = 'csv' if dataset.file.name.lower().endswith('.csv') else 'json'
+            else:
+                return JsonResponse({
+                    'error': 'No preview file available',
+                    'success': False
+                })
+        else:
+            preview_file = dataset.preview_file
+            preview_type = getattr(dataset, 'preview_type', 'csv')
+        
+        start_row = (page - 1) * page_size
+        end_row = start_row + page_size
+        
+        # Read file based on type
+        if preview_file:
+            if hasattr(preview_file, 'path'):
+                file_path = preview_file.path
+            else:
+                # Handle in-memory files
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(preview_file.name)[1]) as tmp:
+                    for chunk in preview_file.chunks():
+                        tmp.write(chunk)
+                    file_path = tmp.name
+            
+            file_extension = preview_file.name.lower()
+            
+            if file_extension.endswith('.csv'):
+                # Read specific rows from CSV
+                df = pd.read_csv(file_path, skiprows=start_row, nrows=page_size, header=None if start_row > 0 else 0)
+                if start_row > 0:
+                    # We need to read headers separately
+                    df_header = pd.read_csv(file_path, nrows=0)
+                    df.columns = df_header.columns
+            elif file_extension.endswith(('.xlsx', '.xls')):
+                # Read specific rows from Excel
+                df = pd.read_excel(file_path, skiprows=start_row, nrows=page_size)
+            elif file_extension.endswith('.json'):
+                # Read JSON
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                if isinstance(data, list):
+                    df = pd.DataFrame(data[start_row:end_row])
+                else:
+                    df = pd.DataFrame([data])
+            else:
+                return JsonResponse({
+                    'error': 'Unsupported file format',
+                    'success': False
+                })
+            
+            # Get total rows for pagination
+            total_rows = get_total_rows(preview_file)
+            
+            # Convert to JSON-friendly format
+            rows = df.to_dict('records')
+            for row in rows:
+                for key, value in row.items():
+                    if pd.isna(value):
+                        row[key] = None
+            
+            return JsonResponse({
+                'success': True,
+                'columns': list(df.columns),
+                'rows': rows,
+                'page': page,
+                'page_size': page_size,
+                'total_rows': total_rows,
+                'total_pages': (total_rows + page_size - 1) // page_size if total_rows > 0 else 1,
+                'has_next': (page * page_size) < total_rows,
+                'has_previous': page > 1
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+    finally:
+        # Clean up temporary file if created
+        if 'tmp' in locals():
+            try:
+                os.unlink(file_path)
+            except:
+                pass
+
+def get_total_rows(file_obj):
+    """Get total number of rows in file"""
+    try:
+        if hasattr(file_obj, 'path'):
+            file_path = file_obj.path
+        else:
+            # Handle in-memory files
+            import tempfile
+            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_obj.name)[1]) as tmp:
+                for chunk in file_obj.chunks():
+                    tmp.write(chunk)
+                file_path = tmp.name
+        
+        file_extension = file_obj.name.lower()
+        
+        if file_extension.endswith('.csv'):
+            # Count CSV rows efficiently
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return sum(1 for _ in f) - 1  # Subtract header
+        elif file_extension.endswith(('.xlsx', '.xls')):
+            # Count Excel rows
+            df = pd.read_excel(file_path)
+            return len(df)
+        elif file_extension.endswith('.json'):
+            # Count JSON rows
+            with open(file_path, 'r') as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                return len(data)
+            else:
+                return 1
+        return 0
+    except:
+        return 0
+    finally:
+        # Clean up temporary file if created
+        if 'tmp' in locals():
+            try:
+                os.unlink(file_path)
+            except:
+                pass
+
+@login_required
+@require_POST
+def rate_dataset(request, pk):
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    # Get or create rating
+    rating_obj, created = DatasetRating.objects.get_or_create(
+        user=request.user,
+        dataset=dataset
+    )
+    
+    form = RatingForm(request.POST, instance=rating_obj)
+    if form.is_valid():
+        form.save()
+        
+        # Update dataset average rating
+        dataset.rating = dataset.get_average_rating()
+        dataset.save()
+        
+        if created:
+            messages.success(request, 'Thank you for rating this dataset!')
+        else:
+            messages.success(request, 'Your rating has been updated!')
+    else:
+        messages.error(request, 'Please enter a valid rating.')
+    
+    return redirect('dataset_detail', pk=pk)
+
+@login_required
+def save_to_collection(request, pk):
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    if request.method == 'POST':
+        collection_id = request.POST.get('collection_id')
+        action = request.POST.get('action')
+        
+        if collection_id:
+            # Add/remove from existing collection
+            try:
+                collection = UserCollection.objects.get(id=collection_id, user=request.user)
+                if action == 'add':
+                    collection.datasets.add(dataset)
+                    messages.success(request, f'Added to "{collection.name}" collection!')
+                elif action == 'remove':
+                    collection.datasets.remove(dataset)
+                    messages.success(request, f'Removed from "{collection.name}" collection!')
+            except UserCollection.DoesNotExist:
+                messages.error(request, 'Collection not found.')
+        else:
+            # Create new collection
+            form = CollectionForm(request.POST)
+            if form.is_valid():
+                collection = form.save(commit=False)
+                collection.user = request.user
+                collection.save()
+                collection.datasets.add(dataset)
+                messages.success(request, f'Created new collection "{collection.name}" and added the dataset!')
+            else:
+                messages.error(request, 'Please enter a valid collection name.')
+    
+    return redirect('dataset_detail', pk=pk)
+
+@login_required
+@require_POST
+def report_dataset(request, pk):
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    form = ReportForm(request.POST, request.FILES)
+    if form.is_valid():
+        report = form.save(commit=False)
+        report.user = request.user
+        report.dataset = dataset
+        report.save()
+        
+        messages.success(request, 'Thank you for reporting this issue. We will review it shortly.')
+    else:
+        messages.error(request, 'Please provide valid report details.')
+    
+    return redirect('dataset_detail', pk=pk)
+
+# AJAX views for better UX
+@login_required
+def toggle_collection(request, pk):
+    """AJAX view to toggle dataset in collection"""
+    dataset = get_object_or_404(Dataset, pk=pk)
+    collection_id = request.GET.get('collection_id')
+    
+    try:
+        collection = UserCollection.objects.get(id=collection_id, user=request.user)
+        
+        if dataset in collection.datasets.all():
+            collection.datasets.remove(dataset)
+            added = False
+        else:
+            collection.datasets.add(dataset)
+            added = True
+        
+        return JsonResponse({
+            'success': True,
+            'added': added,
+            'collection_name': collection.name,
+            'in_collection': dataset.is_in_user_collection(request.user, collection_id)
+        })
+    except UserCollection.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Collection not found'})
 
 @login_required
 def dataset_request(request, pk):
