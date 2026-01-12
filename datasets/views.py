@@ -35,6 +35,7 @@ def download_request_form(request):
     messages.error(request, "Dataset Request Form template not found")
     return redirect('dataset_list')
 
+
 def dataset_list(request):
     # Get filter parameters from request
     modality = request.GET.getlist('modality')
@@ -161,6 +162,35 @@ def dataset_list(request):
     # Get available years for filter (optional, if you want to keep this)
     available_years = Dataset.objects.dates('upload_date', 'year').order_by('-upload_date__year')
     
+    # Prepare URL parameters for templates
+    url_params = request.GET.copy()
+    
+    # Create versions without specific parameters
+    url_params_no_page = request.GET.copy()
+    if 'page' in url_params_no_page:
+        url_params_no_page.pop('page')
+    
+    url_params_no_body_part = request.GET.copy()
+    if 'body_part' in url_params_no_body_part:
+        url_params_no_body_part.pop('body_part')
+    
+    # Create URL parameters for removing each modality
+    modality_removal_urls = {}
+    if 'modality' in request.GET:
+        modalities = request.GET.getlist('modality')
+        for modality in modalities:
+            # Create a copy of GET parameters
+            params = request.GET.copy()
+            # Get current modalities list
+            current_modalities = params.getlist('modality')
+            # Remove this specific modality
+            if modality in current_modalities:
+                current_modalities.remove(modality)
+                # Update the parameters
+                params.setlist('modality', current_modalities)
+            # Store the URL
+            modality_removal_urls[modality] = f"?{params.urlencode()}" if params else ""
+    
     context = {
         'datasets': page_obj,
         'available_years': available_years,
@@ -177,6 +207,11 @@ def dataset_list(request):
             'sort': sort,
             'q': search_query
         },
+        # Pass URL parameters
+        'url_params': url_params,
+        'url_params_no_page': url_params_no_page,
+        'url_params_no_body_part': url_params_no_body_part,
+        'modality_removal_urls': modality_removal_urls,
         # Pass the choices for the filter template
         'modality_choices': Dataset.MODALITY_CHOICES,
         'format_choices': Dataset.FORMAT_CHOICES,
@@ -203,14 +238,39 @@ def dataset_detail(request, pk):
     # Check for existing request and determine view behavior
     data_request = None
     show_request_form = True
+    request_button_text = "Request Access"
+    request_button_link = "dataset_request"
+    request_button_disabled = False
+    
     if request.user.is_authenticated:
+        # Get the most recent request for this dataset
         data_request = DataRequest.objects.filter(
             user=request.user,
             dataset=dataset
-        ).first()
+        ).order_by('-request_date').first()
         
         if data_request:
             show_request_form = False
+            
+            # Determine button text and link based on request status
+            if data_request.status == 'approved':
+                if data_request.can_download():
+                    request_button_text = "Download Dataset"
+                    request_button_link = "request_status"
+                else:
+                    # Download count exceeded - can request again
+                    request_button_text = "Request Access"
+                    request_button_link = "dataset_request"
+                    show_request_form = True
+            elif data_request.status == 'rejected':
+                # Rejected - can request again
+                request_button_text = "Request Access"
+                request_button_link = "dataset_request"
+                show_request_form = True
+            else:
+                # Pending/Under Review
+                request_button_text = "View Request Status"
+                request_button_link = "request_status"
     
     # Check download access only if request exists and is approved
     can_download = False
@@ -300,6 +360,9 @@ def dataset_detail(request, pk):
         'can_download': can_download,
         'data_request': data_request,
         'show_request_form': show_request_form,
+        'request_button_text': request_button_text,
+        'request_button_link': request_button_link,
+        'request_button_disabled': request_button_disabled,
         'similar_datasets': similar_datasets,
         'thumbnails': thumbnails,
         'primary_thumbnail': primary_thumbnail,
@@ -327,7 +390,6 @@ def dataset_detail(request, pk):
     
     return render(request, 'datasets/detail.html', context)
 
-# Helper function for preview data (add this to your views.py)
 def get_preview_data(dataset, max_rows=100):
     """Extract preview data from CSV/Excel/JSON file"""
     if not hasattr(dataset, 'preview_file') or not dataset.preview_file:
@@ -661,16 +723,21 @@ def dataset_request(request, pk):
         return redirect('request_status', pk=existing_request.pk)
     
     if request.method == 'POST':
-        # Process form data
+        # Process form data - ADD ALL FIELDS HERE
         institution = request.POST.get('institution', '').strip()
+        phone_number = request.POST.get('phone_number', '').strip()  # ADD THIS
+        ethical_approval_no = request.POST.get('ethical_approval_no', '').strip()  # ADD THIS
         project_title = request.POST.get('project_title', '').strip()
         project_description = request.POST.get('project_description', '').strip()
         form_submission = request.FILES.get('form_submission')
+        ethical_approval_proof = request.FILES.get('ethical_approval_proof')  # ADD THIS
         
-        # Enhanced validation
+        # Enhanced validation - UPDATE TO INCLUDE NEW FIELDS
         errors = []
         if not institution:
             errors.append('Institution is required')
+        if not phone_number:  # ADD THIS VALIDATION (since you made it required)
+            errors.append('Phone number is required')
         if not project_title:
             errors.append('Project title is required')
         if not project_description:
@@ -680,6 +747,12 @@ def dataset_request(request, pk):
         elif not form_submission.name.endswith('.pdf'):
             errors.append('Form submission must be a PDF file')
         
+        # Optional validation for ethical approval proof
+        if ethical_approval_proof:
+            allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
+            file_ext = ethical_approval_proof.name.lower()
+            if not any(file_ext.endswith(ext) for ext in allowed_extensions):
+                errors.append('Ethical approval proof must be PDF, JPG, or PNG format')
         
         if errors:
             for error in errors:
@@ -687,19 +760,24 @@ def dataset_request(request, pk):
             return render(request, 'datasets/request_form.html', {
                 'dataset': dataset,
                 'institution': institution,
+                'phone_number': phone_number,  # ADD THIS
+                'ethical_approval_no': ethical_approval_no,  # ADD THIS
                 'project_title': project_title,
                 'project_description': project_description
             })
         
         try:
-            # Create and save DataRequest
+            # Create and save DataRequest - ADD ALL FIELDS HERE
             data_request = DataRequest(
                 user=request.user,
                 dataset=dataset,
                 institution=institution,
+                phone_number=phone_number if phone_number else None,  # ADD THIS
+                ethical_approval_no=ethical_approval_no if ethical_approval_no else None,  # ADD THIS
                 project_title=project_title,
                 project_description=project_description,
                 form_submission=form_submission,
+                ethical_approval_proof=ethical_approval_proof if ethical_approval_proof else None,  # ADD THIS
             )
             data_request.save()
             
@@ -707,7 +785,6 @@ def dataset_request(request, pk):
             if callable(user_full_name):
                 user_full_name = user_full_name()
             else:
-                # Fallback: use first and last name or username
                 first_name = getattr(request.user, 'first_name', '')
                 last_name = getattr(request.user, 'last_name', '')
                 if first_name or last_name:
@@ -715,15 +792,17 @@ def dataset_request(request, pk):
                 else:
                     user_full_name = request.user.username
 
-            # Send notification emails
+            # Send notification emails - UPDATE EMAIL CONTENT
             subject = f"New Data Request: {dataset.title}"
             message = f"""
             A new data request has been submitted:
             
             Researcher: {request.user.get_full_name()} ({request.user.email})
             Institution: {institution}
+            Phone: {phone_number if phone_number else 'Not provided'}
             Dataset: {dataset.title}
             Project Title: {project_title}
+            Ethical Approval No: {ethical_approval_no if ethical_approval_no else 'Not provided'}
             
             Please review the request in the admin panel.
             """
@@ -737,15 +816,19 @@ def dataset_request(request, pk):
                 fail_silently=True,
             )
             
-            # Send confirmation to user
+            # Send confirmation to user - UPDATE USER EMAIL
             user_message = f"""
             Thank you for submitting your data request for "{dataset.title}".
             
+            Your request details:
+            - Request ID: {data_request.id}
+            - Submission Date: {data_request.request_date.strftime('%Y-%m-%d %H:%M')}
+            - Institution: {institution}
+            - Phone Number: {phone_number if phone_number else 'Not provided'}
+            - Ethical Approval Number: {ethical_approval_no if ethical_approval_no else 'Not provided'}
+            
             Your request is now under review. You'll receive an email notification 
             when there's an update on your request status.
-            
-            Request ID: {data_request.id}
-            Submission Date: {data_request.request_date.strftime('%Y-%m-%d %H:%M')}
             """
             
             send_mail(
@@ -767,13 +850,15 @@ def dataset_request(request, pk):
             return render(request, 'datasets/request_form.html', {
                 'dataset': dataset,
                 'institution': institution,
+                'phone_number': phone_number,  # ADD THIS
+                'ethical_approval_no': ethical_approval_no,  # ADD THIS
                 'project_title': project_title,
                 'project_description': project_description
             })
     
     return render(request, 'datasets/request_form.html', {
         'dataset': dataset
-    })    
+    })
 
 @login_required
 def request_status(request, pk):
@@ -789,45 +874,95 @@ def request_status(request, pk):
     if not can_view:
         return HttpResponseForbidden()
     
-    remaining_downloads = data_request.max_downloads - data_request.download_count
+    # Calculate remaining downloads (ensure it's not negative)
+    remaining_downloads = max(0, data_request.max_downloads - data_request.download_count)
     
-    # Prepare status stages for visualization
+    # Determine button text and styling for the template
+    if data_request.status == 'approved':
+        if data_request.can_download():
+            request_button_text = "Download Dataset"
+            request_button_class = "bg-green-600 hover:bg-green-700"
+            request_button_icon = "download"
+        else:
+            request_button_text = "Request Access Again"
+            request_button_class = "bg-accent hover:bg-accent/90"
+            request_button_icon = "file-text"
+    elif data_request.status == 'rejected':
+        request_button_text = "Submit New Request"
+        request_button_class = "bg-accent hover:bg-accent/90"
+        request_button_icon = "file-text"
+    else:
+        request_button_text = "View Request Status"
+        request_button_class = "bg-blue-600 hover:bg-blue-700"
+        request_button_icon = "clock"
+    
+    # Prepare status stages for visualization (updated for new status flow)
     status_stages = [
         {
             'name': 'Submitted',
             'icon': 'clipboard-check',
             'active': True,
-            'date': data_request.request_date
+            'date': data_request.request_date,
+            'status_class': 'completed',
+            'description': 'Your request has been submitted'
         },
         {
             'name': 'Manager Review',
             'icon': 'user-check',
             'active': data_request.status in ['manager_review', 'director_review', 'approved', 'rejected'],
-            'date': data_request.manager_comment_date if hasattr(data_request, 'manager_comment_date') else None
+            'date': data_request.manager_review_date if data_request.manager_review_date else None,
+            'status_class': 'completed' if data_request.status in ['manager_review', 'director_review', 'approved', 'rejected'] else 'pending',
+            'description': data_request.data_manager_comment or 'Pending manager review'
         },
         {
-            'name': 'Director Review' if data_request.status in ['director_review', 'approved', 'rejected'] else 'Final Approval',
+            'name': 'Director Review',
             'icon': 'shield-check',
             'active': data_request.status in ['director_review', 'approved', 'rejected'],
-            'date': data_request.approved_date if data_request.status == 'approved' else None
+            'date': data_request.approved_date if data_request.status in ['approved', 'rejected'] else None,
+            'status_class': 'approved' if data_request.status == 'approved' else 'rejected' if data_request.status == 'rejected' else 'pending',
+            'description': data_request.director_comment or ('Approved' if data_request.status == 'approved' else 'Rejected' if data_request.status == 'rejected' else 'Pending director review')
         }
     ]
     
-    # Calculate progress percentage
-    progress = 0
-    if data_request.status == 'pending':
-        progress = 33
-    elif data_request.status == 'manager_review':
-        progress = 66
-    else:
-        progress = 100
+    # Calculate current stage for progress tracking
+    current_stage = 1
+    if data_request.status in ['manager_review', 'director_review', 'approved', 'rejected']:
+        current_stage = 2
+    if data_request.status in ['director_review', 'approved', 'rejected']:
+        current_stage = 3
+    
+    # Check if user can submit a new request
+    can_request_again = False
+    if data_request.status == 'approved':
+        can_request_again = not data_request.can_download()  # Can request again if downloads exceeded
+    elif data_request.status == 'rejected':
+        can_request_again = True  # Can request again if rejected
+    
+    # Get download history if any
+    download_history = []
+    if data_request.download_count > 0:
+        download_history = [
+            {
+                'count': i + 1,
+                'date': data_request.last_download if i == data_request.download_count - 1 else None
+            }
+            for i in range(data_request.download_count)
+        ]
     
     return render(request, 'datasets/request_status.html', {
         'data_request': data_request,
         'can_download': data_request.can_download(),
         'status_stages': status_stages,
-        'progress': progress,
-        'remaining_downloads': remaining_downloads
+        'remaining_downloads': remaining_downloads,
+        'current_stage': current_stage,
+        'total_stages': len(status_stages),
+        'request_button_text': request_button_text,
+        'request_button_class': request_button_class,
+        'request_button_icon': request_button_icon,
+        'can_request_again': can_request_again,
+        'download_history': download_history,
+        'max_downloads': data_request.max_downloads,
+        'download_count': data_request.download_count,
     })
 
 @login_required
@@ -839,7 +974,6 @@ def download_request_form(request):
     messages.error(request, 'The request form template is not currently available.')
     return redirect('dataset_list')
 
-# datasets/views.py
 @login_required
 @data_manager_required
 def review_request(request, pk):

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>New Data Request for Review</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #e3f2fd; padding: 20px; border-radius: 5px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        .btn { 
+            display: inline-block; 
+            padding: 10px 20px; 
+            background-color: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 10px 0; 
+        }
+        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .urgent { color: #dc3545; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>New Data Request for Review</h2>
+            <p>Dear {{ staff_member.first_name|default:staff_member.username }},</p>
+        </div>
+        
+        <div class="content">
+            <p>A new data request has been submitted and requires your attention:</p>
+            
+            <div class="details">
+                <h3>Request Details:</h3>
+                <p><strong>Request ID:</strong> #{{ request.id }}</p>
+                <p><strong>Requester:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+                <p><strong>Email:</strong> {{ request.user.email }}</p>
+                <p><strong>Dataset:</strong> {{ request.dataset.title }}</p>
+                <p><strong>Request Date:</strong> {{ request.request_date|date:"F d, Y H:i" }}</p>
+                <p><strong>Institution:</strong> {{ request.institution }}</p>
+                <p><strong>Project Title:</strong> {{ request.project_title }}</p>
+                {% if request.phone_number %}
+                <p><strong>Phone:</strong> {{ request.phone_number }}</p>
+                {% endif %}
+                {% if request.ethical_approval_no %}
+                <p><strong>Ethical Approval No:</strong> {{ request.ethical_approval_no }}</p>
+                {% endif %}
+            </div>
+            
+            <p><strong>Project Description:</strong></p>
+            <div style="background-color: #fff; padding: 10px; border-left: 4px solid #007bff; margin: 10px 0;">
+                {{ request.project_description|linebreaks }}
+            </div>
+            
+            <p class="urgent">Action Required: Please review this request within 48 hours.</p>
+            
+            <a href="{{ review_url }}" class="btn">Review Request</a>
+            
+            <p>Or copy and paste this link in your browser:<br>
+            <small>{{ review_url }}</small></p>
+            
+            <p><strong>Attachments:</strong></p>
+            <ul>
+                <li>Form Submission: {{ request.get_form_submission_filename }}</li>
+                {% if request.get_ethical_approval_proof_filename %}
+                <li>Ethical Approval Proof: {{ request.get_ethical_approval_proof_filename }}</li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification from the {{ site_name }} Data Portal.</p>
+            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

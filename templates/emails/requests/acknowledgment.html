@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Data Request Acknowledgment</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #f8f9fa; padding: 20px; border-radius: 5px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        .status-badge { 
+            display: inline-block; 
+            padding: 5px 10px; 
+            border-radius: 3px; 
+            font-weight: bold; 
+            margin: 10px 0; 
+        }
+        .pending { background-color: #fff3cd; color: #856404; }
+        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Data Request Received</h2>
+            <p>Dear {{ user.first_name|default:user.username }},</p>
+        </div>
+        
+        <div class="content">
+            <p>Thank you for your data request. We have received your request for the following dataset:</p>
+            
+            <div class="details">
+                <h3>Request Details:</h3>
+                <p><strong>Dataset:</strong> {{ dataset.title }}</p>
+                <p><strong>Request ID:</strong> #{{ request.id }}</p>
+                <p><strong>Request Date:</strong> {{ request.request_date|date:"F d, Y H:i" }}</p>
+                <p><strong>Project Title:</strong> {{ request.project_title }}</p>
+                <p><strong>Institution:</strong> {{ request.institution }}</p>
+            </div>
+            
+            <div class="status-badge pending">
+                Current Status: {{ request.get_status_display }}
+            </div>
+            
+            <p>Your request is now pending review by our data manager. The typical review process takes 3-5 business days.</p>
+            
+            <p>You will receive notifications when:</p>
+            <ul>
+                <li>Your request is forwarded to the director for final approval</li>
+                <li>Your request is approved and ready for download</li>
+                <li>Additional information is required</li>
+            </ul>
+            
+            <p>You can check the status of your request at any time by logging into your account.</p>
+            
+            <p><strong>Important:</strong> Please keep your email notifications for future reference.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from the {{ site_name }} Data Portal.</p>
+            <p>If you have any questions, please contact: {{ support_email }}</p>
+            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

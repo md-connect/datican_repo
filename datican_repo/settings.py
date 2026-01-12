@@ -160,6 +160,25 @@ EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # or your SMTP server
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@repo.datican.org')
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@repo.datican.org')
+
+# Application specific settings
+SITE_NAME = 'DATICAN Repository'
+SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
+
+# Staff emails (for rejection notifications)
+MANAGER_EMAIL = os.environ.get('MANAGER_EMAIL', 'mondayoke93@gmail.com')
+DIRECTOR_EMAIL = os.environ.get('DIRECTOR_EMAIL', 'mondayoke93@gmail.com')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'manager.datican@gmail.com')
+
 # Auth settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None

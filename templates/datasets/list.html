@@ -189,74 +189,7 @@
 {% endblock %}
 
 {% block content %}
-<!-- Mobile Header for Dataset List -->
-<div class="md:hidden mobile-dataset-header">
-  <!-- Left: Hamburger menu button -->
-  <button 
-    @click="$dispatch('toggle-mobile-sidebar')"
-    class="p-2"
-  >
-    <svg class="h-5 w-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  </button>
-  
-  <!-- Center: Logo/Title -->
-  <div class="flex-1 text-center">
-    <h1 class="text-base font-semibold text-gray-800">Datasets</h1>
-  </div>
-  
-  <!-- Right: Authentication - FIXED DROPDOWN -->
-  <div class="relative" x-data="{ mobileProfileOpen: false }" style="min-width: 28px;">
-    {% if user.is_authenticated %}
-      {% if user.profile.avatar %}
-        <img
-          src="{{ user.profile.avatar.url }}"
-          class="auth-circle h-7 w-7 cursor-pointer border border-gray-200"
-          @click="mobileProfileOpen = !mobileProfileOpen"
-          @click.outside="mobileProfileOpen = false"
-          loading="lazy"
-          alt="Profile"
-        />
-      {% else %}
-        <!-- User icon SVG -->
-        <div
-          class="user-icon h-7 w-7 cursor-pointer"
-          @click="mobileProfileOpen = !mobileProfileOpen"
-          @click.outside="mobileProfileOpen = false"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-            <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
-          </svg>
-        </div>
-      {% endif %}
-      
-      <!-- Mobile Profile Dropdown - FIXED POSITIONING -->
-      <div
-        x-show="mobileProfileOpen"
-        x-cloak
-        class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
-        style="display: none;"
-        @click.outside="mobileProfileOpen = false"
-      >
-        <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
-        <a href="{% url 'account_change_password' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Change Password</a>
-        <form action="{% url 'account_logout' %}" method="POST" class="block">
-          {% csrf_token %}
-          <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-            Logout
-          </button>
-        </form>
-      </div>
-    {% else %}
-      <a href="{% url 'login' %}?next={{ request.path }}" class="auth-circle h-7 w-7 bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-        <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-        </svg>
-      </a>
-    {% endif %}
-  </div>
-</div>
+
 
 <div class="p-4 md:p-6 mobile-content-padding">
   <!-- Desktop Sticky Search Bar -->
@@ -264,24 +197,34 @@
     <div class="max-w-7xl mx-auto">
       <div class="flex items-center justify-between">
         <div class="flex-1 max-w-2xl">
-          <div class="relative">
+          <form id="desktopSearchForm" method="get" action="{% url 'dataset_list' %}" class="relative">
             <input 
               type="text" 
+              name="q"
               placeholder="Search datasets..." 
+              value="{{ request.GET.q|default:'' }}"
               class="w-full px-4 py-3 pl-12 pr-32 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             >
             <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             
+            <!-- Hidden inputs for existing filters -->
+            {% for key, value in request.GET.items %}
+              {% if key != 'q' and key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+              {% endif %}
+            {% endfor %}
+            
             <!-- Filter button for desktop -->
             <button 
+              type="button"
               onclick="openFilterModal()"
               class="absolute right-2 top-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
             >
               Filter
             </button>
-          </div>
+          </form>
         </div>
         
         <!-- Desktop Authentication - FIXED DROPDOWN -->
@@ -340,22 +283,35 @@
 
   <!-- Mobile Search Bar -->
   <div class="md:hidden mb-4">
-    <div class="relative">
-      <input 
-        type="text" 
-        placeholder="Search datasets..." 
-        class="w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-      >
-      <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-      <button 
-        onclick="openFilterModal()"
-        class="absolute right-2 top-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
-      >
-        Filter
-      </button>
-    </div>
+    <form id="mobileSearchForm" method="get" action="{% url 'dataset_list' %}">
+      <div class="relative">
+        <input 
+          type="text" 
+          name="q"
+          placeholder="Search datasets..." 
+          value="{{ request.GET.q|default:'' }}"
+          class="w-full px-4 py-3 pl-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        >
+        <svg class="absolute left-4 top-3.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        
+        <!-- Hidden inputs for existing filters -->
+        {% for key, value in request.GET.items %}
+          {% if key != 'q' and key != 'page' %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+          {% endif %}
+        {% endfor %}
+        
+        <button 
+          type="button"
+          onclick="openFilterModal()"
+          class="absolute right-2 top-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
+        >
+          Filter
+        </button>
+      </div>
+    </form>
   </div>
 
   <!-- Main Content -->
@@ -368,43 +324,82 @@
       </p>
     </div>
 
-    <!-- Dataset Categories Tabs - Fixed for mobile -->
+    <!-- Dataset Categories Tabs -->
     <div class="mb-6 md:mb-8 overflow-x-auto">
       <div class="flex space-x-1 border-b pb-1 min-w-max md:min-w-0">
-        <a href="{% url 'dataset_list' %}" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if not request.GET.category %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        <!-- All datasets -->
+        <a href="{% url 'dataset_list' %}{% if url_params_no_page %}?{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if not request.GET.body_part %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           All datasets
         </a>
-        <a href="?category=brain" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'brain' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        
+        <!-- Body part tabs -->
+        <a href="?body_part=brain{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'brain' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Brain
         </a>
-        <a href="?category=breast" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'breast' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        
+        <a href="?body_part=breast{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'breast' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Breast
         </a>
-        <a href="?category=chest" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'chest' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        
+        <a href="?body_part=chest{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'chest' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Chest
         </a>
-        <a href="?category=teeth" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'teeth' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        
+        <a href="?body_part=teeth{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'teeth' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Teeth
         </a>
-        <a href="?category=spine" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'spine' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        
+        <a href="?body_part=spine{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'spine' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Spine
         </a>
-        <a href="?category=pelvis" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'pelvis' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
+        
+        <a href="?body_part=pelvis{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'pelvis' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Pelvis
-        </a>
-        <a href="?category=others" 
-           class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.category == 'others' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
-          Others
         </a>
       </div>
     </div>
+
+  <!-- Active Filters Display - SIMPLE VERSION -->
+{% if request.GET.modality or request.GET.body_part %}
+<div class="mb-4 p-3 bg-blue-50 rounded-lg">
+  <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-sm font-medium text-gray-700">Active filters:</span>
+      
+      {% if request.GET.body_part %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary text-white">
+          Body Part: {{ request.GET.body_part|title }}
+          <a href="{% url 'dataset_list' %}{% if url_params_no_body_part %}?{{ url_params_no_body_part.urlencode }}{% endif %}" 
+             class="ml-2 hover:text-gray-200">
+            ×
+          </a>
+        </span>
+      {% endif %}
+      
+      {% if request.GET.modality %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+          Modality: {{ request.GET.modality|upper }}
+          <a href="{% url 'dataset_list' %}{% if url_params_no_body_part %}?{{ url_params_no_body_part.urlencode }}{% endif %}" 
+             class="ml-2 hover:text-blue-600">
+            ×
+          </a>
+        </span>
+      {% endif %}
+      
+      <a href="{% url 'dataset_list' %}" class="text-sm text-primary hover:text-primary-dark font-medium">
+        Clear all
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
 
     <!-- Dataset Grid - Responsive -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -457,7 +452,7 @@
     <div class="mt-6 md:mt-8 flex justify-center items-center space-x-2">
       {% if datasets.has_previous %}
       <a
-        href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ datasets.previous_page_number }}"
+        href="?{% if url_params_no_page %}{{ url_params_no_page.urlencode }}&{% endif %}page={{ datasets.previous_page_number }}"
         class="px-3 py-1.5 md:px-4 md:py-2 hover:bg-gray-100 rounded-lg text-sm md:text-base"
         >← Previous</a
       >
@@ -469,7 +464,7 @@
 
       {% if datasets.has_next %}
       <a
-        href="?{% if request.GET %}{{ request.GET.urlencode }}&{% endif %}page={{ datasets.next_page_number }}"
+        href="?{% if url_params_no_page %}{{ url_params_no_page.urlencode }}&{% endif %}page={{ datasets.next_page_number }}"
         class="px-3 py-1.5 md:px-4 md:py-2 hover:bg-gray-100 rounded-lg text-sm md:text-base"
         >Next →</a
       >
@@ -482,90 +477,54 @@
 <!-- Filter Modal -->
 <div id="filterModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4 filter-modal">
   <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto" style="animation: modalFadeIn 0.3s ease-out;">
-    <div class="p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-semibold text-primary">Filter Datasets</h3>
-        <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-      
-      <div class="space-y-6">
-        <!-- Modality Filter -->
-        <div>
-          <h4 class="font-medium text-gray-700 mb-3">Modality</h4>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">CT Scan</span>
-            </label>
-            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">MRI</span>
-            </label>
-            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">X-Ray</span>
-            </label>
-            <label class="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">Ultrasound</span>
-            </label>
-          </div>
-        </div>
-        
-        <!-- File Type Filter -->
-        <div>
-          <h4 class="font-medium text-gray-700 mb-3">File Type</h4>
-          <div class="space-y-2">
-            <label class="flex items-center space-x-2">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">DICOM</span>
-            </label>
-            <label class="flex items-center space-x-2">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">NIfTI</span>
-            </label>
-            <label class="flex items-center space-x-2">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">CSV</span>
-            </label>
-            <label class="flex items-center space-x-2">
-              <input type="checkbox" class="rounded text-primary focus:ring-primary">
-              <span class="text-sm">Excel</span>
-            </label>
-          </div>
-        </div>
-        
-        <!-- Rating Filter -->
-        <div>
-          <h4 class="font-medium text-gray-700 mb-3">Minimum Rating</h4>
-          <input type="range" min="0" max="5" step="0.5" class="w-full" id="ratingSlider">
-          <div class="flex justify-between text-xs text-gray-500 mt-1">
-            <span>0</span>
-            <span>2.5</span>
-            <span>5</span>
-          </div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="pt-4 border-t">
-          <div class="flex space-x-2">
-            <button onclick="applyFilters()" class="flex-1 bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-dark">
-              Apply Filters
-            </button>
-            <button onclick="closeFilterModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300">
-              Cancel
-            </button>
-          </div>
-          <button onclick="resetFilters()" class="w-full mt-2 text-primary hover:text-primary-dark text-sm">
-            Reset all filters
+    <form id="filterForm" method="get" action="{% url 'dataset_list' %}">
+      <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-semibold text-primary">Filter Datasets</h3>
+          <button type="button" onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
+        
+        <div class="space-y-6">
+          <!-- Modality Filter Only -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-3">Modality</h4>
+            <div class="grid grid-cols-2 gap-3">
+              {% for value, label in modality_choices %}
+              <label class="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                <input 
+                  type="checkbox" 
+                  name="modality" 
+                  value="{{ value }}"
+                  {% if value in current_filters.modality %}checked{% endif %}
+                  class="rounded text-primary focus:ring-primary h-4 w-4"
+                >
+                <span class="text-sm font-medium">{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="pt-4 border-t">
+            <div class="flex space-x-2">
+              <button type="submit" class="flex-1 bg-primary text-white py-3 px-4 rounded-lg hover:bg-primary-dark transition-colors font-medium">
+                Apply Filters
+              </button>
+              <button type="button" onclick="closeFilterModal()" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+                Cancel
+              </button>
+            </div>
+            <a href="{% url 'dataset_list' %}" class="block w-full mt-3 text-primary hover:text-primary-dark text-sm font-medium text-center">
+              Reset all filters
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
+    </form>
   </div>
 </div>
 
@@ -628,6 +587,59 @@ document.addEventListener('DOMContentLoaded', function() {
     
     lazyImages.forEach(img => imageObserver.observe(img));
   }
+  
+  // Add hidden inputs to filter form for existing GET parameters
+  const filterForm = document.getElementById('filterForm');
+  if (filterForm) {
+    // Get current GET parameters
+    const currentParams = new URLSearchParams(window.location.search);
+    
+    // Add hidden inputs for all parameters except 'modality' and 'page'
+    for (const [key, value] of currentParams) {
+      if (key !== 'modality' && key !== 'page') {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = key;
+        hiddenInput.value = value;
+        filterForm.appendChild(hiddenInput);
+      }
+    }
+  }
+  
+  // Handle search form submission on Enter key
+  const desktopSearchForm = document.getElementById('desktopSearchForm');
+  if (desktopSearchForm) {
+    const desktopSearchInput = desktopSearchForm.querySelector('input[name="q"]');
+    if (desktopSearchInput) {
+      desktopSearchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          // Remove page parameter when searching
+          const pageInput = desktopSearchForm.querySelector('input[name="page"]');
+          if (pageInput) {
+            pageInput.remove();
+          }
+          desktopSearchForm.submit();
+        }
+      });
+    }
+  }
+  
+  const mobileSearchForm = document.getElementById('mobileSearchForm');
+  if (mobileSearchForm) {
+    const mobileSearchInput = mobileSearchForm.querySelector('input[name="q"]');
+    if (mobileSearchInput) {
+      mobileSearchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          // Remove page parameter when searching
+          const pageInput = mobileSearchForm.querySelector('input[name="page"]');
+          if (pageInput) {
+            pageInput.remove();
+          }
+          mobileSearchForm.submit();
+        }
+      });
+    }
+  }
 });
 
 // Filter Modal Functions
@@ -646,70 +658,6 @@ function closeFilterModal() {
   document.body.style.overflow = 'auto';
 }
 
-function applyFilters() {
-  // Collect filter values
-  const modalities = [];
-  const fileTypes = [];
-  const rating = document.getElementById('ratingSlider').value;
-  
-  // Get checked modalities
-  document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-    if (checkbox.checked) {
-      const label = checkbox.parentElement.querySelector('span').textContent;
-      if (['CT Scan', 'MRI', 'X-Ray', 'Ultrasound'].includes(label)) {
-        modalities.push(label);
-      } else if (['DICOM', 'NIfTI', 'CSV', 'Excel'].includes(label)) {
-        fileTypes.push(label);
-      }
-    }
-  });
-  
-  // Build query string
-  const params = new URLSearchParams();
-  if (modalities.length) params.set('modality', modalities.join(','));
-  if (fileTypes.length) params.set('file_type', fileTypes.join(','));
-  if (rating > 0) params.set('min_rating', rating);
-  
-  // Close modal
-  closeFilterModal();
-  
-  // Show notification
-  showToast('Filters applied successfully!', 'success');
-  
-  // You can redirect or update the page here
-  // window.location.href = `?${params.toString()}`;
-}
-
-function resetFilters() {
-  // Uncheck all checkboxes
-  document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-    checkbox.checked = false;
-  });
-  
-  // Reset range slider
-  document.getElementById('ratingSlider').value = 0;
-  
-  // Show notification
-  showToast('Filters reset!', 'info');
-}
-
-function showToast(message, type = 'info') {
-  const toast = document.createElement('div');
-  toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white ${
-    type === 'success' ? 'bg-green-500' : 
-    type === 'error' ? 'bg-red-500' : 
-    'bg-blue-500'
-  } z-50`;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
 // Close modal on ESC key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
@@ -718,11 +666,14 @@ document.addEventListener('keydown', (e) => {
 });
 
 // Close modal when clicking outside
-document.getElementById('filterModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    closeFilterModal();
-  }
-});
+const filterModal = document.getElementById('filterModal');
+if (filterModal) {
+  filterModal.addEventListener('click', function(e) {
+    if (e.target === this) {
+      closeFilterModal();
+    }
+  });
+}
 
 // Initialize Alpine.js dropdowns
 document.addEventListener('alpine:init', () => {

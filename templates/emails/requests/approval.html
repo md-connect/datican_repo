@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Data Request Approved</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #d4edda; padding: 20px; border-radius: 5px; }
+        .content { padding: 20px; }
+        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+        .btn { 
+            display: inline-block; 
+            padding: 12px 24px; 
+            background-color: #28a745; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 15px 0; 
+            font-weight: bold; 
+        }
+        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .important { background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 15px 0; border-left: 4px solid #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Data Request Approved! 🎉</h2>
+            <p>Dear {{ user.first_name|default:user.username }},</p>
+        </div>
+        
+        <div class="content">
+            <p>We are pleased to inform you that your data request has been <strong>APPROVED</strong> by the director.</p>
+            
+            <div class="details">
+                <h3>Request Details:</h3>
+                <p><strong>Request ID:</strong> #{{ request.id }}</p>
+                <p><strong>Dataset:</strong> {{ request.dataset.title }}</p>
+                <p><strong>Approval Date:</strong> {{ request.approved_date|date:"F d, Y H:i" }}</p>
+                <p><strong>Approved By:</strong> {{ request.director.get_full_name|default:request.director.username }}</p>
+                {% if request.director_comment %}
+                <p><strong>Director's Note:</strong> {{ request.director_comment }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="important">
+                <h4>📥 Ready for Download</h4>
+                <p>Your dataset is now ready for download. You have <strong>{{ request.max_downloads }} download attempts</strong> available.</p>
+                <p><strong>Important:</strong> The download link will expire after {{ request.max_downloads }} downloads.</p>
+            </div>
+            
+            <a href="{{ download_url }}" class="btn">Download Dataset Now</a>
+            
+            <p>Or copy and paste this link in your browser:<br>
+            <small>{{ download_url }}</small></p>
+            
+            <h4>📋 Terms and Conditions:</h4>
+            <ul>
+                <li>This data is provided for the specific research project described in your request</li>
+                <li>You may not redistribute or share this data with others</li>
+                <li>Proper citation of the dataset is required in any publications</li>
+                <li>Any modifications to the data must be documented</li>
+                <li>You must comply with all ethical guidelines and data use agreements</li>
+            </ul>
+            
+            <p>If you encounter any issues with the download, please contact our support team immediately.</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message from the {{ site_name }} Data Portal.</p>
+            <p>For technical support, contact: {{ support_email }}</p>
+            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

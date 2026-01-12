@@ -149,4 +149,30 @@ class ReportForm(forms.ModelForm):
                 'placeholder': 'Please describe the issue in detail...'
             }),
         }
+
+
+class ManagerReviewForm(forms.Form):
+    action = forms.ChoiceField(
+        choices=[('approve', 'Approve'), ('reject', 'Reject')],
+        widget=forms.RadioSelect(attrs={'class': 'space-x-4'})
+    )
+    manager_comment = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'rows': 4,
+            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent',
+            'placeholder': 'Enter your comments about this request...'
+        }),
+        required=False,
+        help_text="Your comments will be visible to the director and researcher"
+    )
     
+    def clean(self):
+        cleaned_data = super().clean()
+        action = cleaned_data.get('action')
+        
+        if action == 'reject':
+            manager_comment = cleaned_data.get('manager_comment', '').strip()
+            if not manager_comment:
+                self.add_error('manager_comment', 'Please provide a reason for rejection.')
+        
+        return cleaned_data
