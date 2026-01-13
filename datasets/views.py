@@ -1,7 +1,7 @@
 # datasets/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
 from django.http import FileResponse, HttpResponseForbidden, JsonResponse, HttpResponse
 from django.conf import settings
 from django.contrib import messages
@@ -1761,3 +1761,151 @@ def my_requests(request):
     }
     
     return render(request, 'datasets/my_requests.html', context)
+
+# views.py
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .models import DataRequest
+from django.db.models import Count, Q
+
+# Check functions for user roles
+def is_manager(user):
+    return user.is_authenticated and user.role == 'data_manager'
+
+def is_director(user):
+    return user.is_authenticated and user.role == 'director'
+
+def is_superuser(user):
+    return user.is_authenticated and user.is_superuser
+
+# Manager Dashboard
+@login_required
+@user_passes_test(is_manager, login_url='/login/')
+def manager_dashboard(request):
+    # Get pending requests for this manager (assuming manager reviews requests in their department)
+    pending_requests = DataRequest.objects.filter(
+        status='pending_review',
+        # If you have a department field, add it here
+        # department=request.user.department
+    ).count()
+    
+    # Get approved requests by this manager - use manager_id field
+    approved_requests = DataRequest.objects.filter(
+        status='approved',
+        manager_id=request.user.id  # Changed from reviewed_by to manager_id
+    ).count()
+    
+    # Get rejected requests by this manager - use manager_id field
+    rejected_requests = DataRequest.objects.filter(
+        status='rejected',
+        manager_id=request.user.id  # Changed from reviewed_by to manager_id
+    ).count()
+    
+    # Get total requests assigned to this manager
+    total_assigned = DataRequest.objects.filter(
+        manager_id=request.user.id
+    ).count()
+    
+    context = {
+        'pending_count': pending_requests,
+        'approved_count': approved_requests,
+        'rejected_count': rejected_requests,
+        'total_assigned': total_assigned,
+        'completion_rate': (approved_requests + rejected_requests) / total_assigned * 100 if total_assigned > 0 else 0,
+    }
+    return render(request, 'dashboard/manager_dashboard.html', context)
+
+# Director Dashboard
+@login_required
+@user_passes_test(is_director, login_url='/login/')
+def director_dashboard(request):
+    # Get requests pending director review
+    pending_director_reviews = DataRequest.objects.filter(
+        status='pending_director'
+    ).count()
+    
+    # Get total approved requests
+    total_approved = DataRequest.objects.filter(
+        status='approved'
+    ).count()
+    
+    # Get total rejected requests
+    total_rejected = DataRequest.objects.filter(
+        status='rejected'
+    ).count()
+    
+    # Get requests approved by this director - use director_id field
+    director_approved = DataRequest.objects.filter(
+        status='approved',
+        director_id=request.user.id  # Changed from director_reviewed_by to director_id
+    ).count()
+    
+    # Get requests rejected by this director
+    director_rejected = DataRequest.objects.filter(
+        status='rejected',
+        director_id=request.user.id
+    ).count()
+    
+    # Get recent pending requests for the table
+    recent_pending = DataRequest.objects.filter(
+        status='pending_director'
+    ).select_related('user', 'manager')[:5]  # Adjust fields as needed
+    
+    context = {
+        'pending_director_count': pending_director_reviews,
+        'total_approved': total_approved,
+        'total_rejected': total_rejected,
+        'director_approved': director_approved,
+        'director_rejected': director_rejected,
+        'total_requests': total_approved + total_rejected,
+        'recent_pending': recent_pending,
+        'director_total_decisions': director_approved + director_rejected,
+        'approval_rate': director_approved / (director_approved + director_rejected) * 100 if (director_approved + director_rejected) > 0 else 0,
+    }
+    return render(request, 'dashboard/director_dashboard.html', context)
+
+# Admin Dashboard (for superusers)
+@login_required
+@user_passes_test(is_superuser, login_url='/login/')
+def admin_dashboard(request):
+    # Get all statistics
+    total_requests = DataRequest.objects.count()
+    pending_review = DataRequest.objects.filter(status='pending_review').count()
+    pending_director = DataRequest.objects.filter(status='pending_director').count()
+    approved = DataRequest.objects.filter(status='approved').count()
+    rejected = DataRequest.objects.filter(status='rejected').count()
+    
+    
+    total_users = User.objects.count()
+    managers = User.objects.filter(role='data_manager').count()
+    directors = User.objects.filter(role='director').count()
+    
+    # Get recent activity
+    from datetime import datetime, timedelta
+    last_week = datetime.now() - timedelta(days=7)
+    recent_requests = DataRequest.objects.filter(
+        request_date__gte=last_week
+    ).count()
+    
+    # Get pending requests by department if you have that field
+    # pending_by_department = DataRequest.objects.filter(
+    #     status='pending_review'
+    # ).values('department__name').annotate(count=Count('id'))
+    # Calculate regular users
+    regular_users = total_users - managers - directors
+    
+    context = {
+        'total_requests': total_requests,
+        'pending_review': pending_review,
+        'pending_director': pending_director,
+        'approved': approved,
+        'rejected': rejected,
+        'total_users': total_users,
+        'managers': managers,
+        'directors': directors,
+        'regular_users': regular_users,
+        'recent_requests': recent_requests,
+        'completion_rate': (approved + rejected) / total_requests * 100 if total_requests > 0 else 0,
+        # 'pending_by_department': pending_by_department,
+    }
+    return render(request, 'dashboard/admin_dashboard.html', context)

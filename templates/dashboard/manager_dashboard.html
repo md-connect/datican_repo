@@ -1,0 +1,200 @@
+<!-- templates/dashboard/manager_dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Manager Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Manager Dashboard</h1>
+    <p class="text-gray-600 mb-8">Welcome back, {{ staff_display_name }}</p>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Pending Reviews Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Pending Reviews</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ pending_count|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-yellow-50 rounded-lg">
+                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'review_requests_list' %}" class="text-sm font-medium text-yellow-600 hover:text-yellow-700">
+                    Review Now →
+                </a>
+            </div>
+        </div>
+
+        <!-- Approved Requests Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Your Approvals</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ approved_count|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-lg">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-sm text-gray-500">Total approved</span>
+            </div>
+        </div>
+
+        <!-- Rejected Requests Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Your Rejections</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ rejected_count|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-red-50 rounded-lg">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-sm text-gray-500">Total rejected</span>
+            </div>
+        </div>
+
+        <!-- Completion Rate Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Completion Rate</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ completion_rate|floatformat:1 }}%</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="text-sm">
+                    {{ total_assigned|default:"0" }} assigned
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Quick Actions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <a href="{% url 'review_requests_list' %}" 
+                   class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-8 h-8 text-yellow-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Review Requests</span>
+                </a>
+                
+                <a href="{% url 'manager_recommendations' %}" 
+                   class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Your Recommendations</span>
+                </a>
+                
+                <a href="{% url 'manager_rejections' %}" 
+                   class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-8 h-8 text-red-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Your Rejections</span>
+                </a>
+                
+                <a href="#" 
+                   class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">Reports</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Activity</h2>
+            <div class="space-y-4">
+                {% if pending_count > 0 %}
+                <div class="flex items-center p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">{{ pending_count }} requests pending review</p>
+                        <p class="text-xs text-gray-500">Awaiting your decision</p>
+                    </div>
+                    <div class="ml-auto">
+                        <a href="{% url 'review_requests_list' %}" class="text-sm font-medium text-yellow-600 hover:text-yellow-700">
+                            Review →
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="flex items-center p-4 bg-green-50 rounded-lg border border-green-100">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">All caught up!</p>
+                        <p class="text-xs text-gray-500">No pending requests</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">{{ approved_count|default:"0" }} approved requests</p>
+                        <p class="text-xs text-gray-500">Total approved by you</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">{{ rejected_count|default:"0" }} rejected requests</p>
+                        <p class="text-xs text-gray-500">Total rejected by you</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

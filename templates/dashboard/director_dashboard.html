@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+
+{% block title %}Director Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Director Dashboard</h1>
+        <p class="text-gray-600 mt-2">Executive overview and decision-making tools</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Pending Director Review -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Pending Review</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ pending_director_count|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-yellow-50 rounded-lg">
+                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'director_review_list' %}" class="text-sm font-medium text-yellow-600 hover:text-yellow-700">
+                    Review Now →
+                </a>
+            </div>
+        </div>
+
+        <!-- Total Approved -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Total Approved</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_approved|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded-lg">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <span class="text-sm text-gray-500">System-wide</span>
+            </div>
+        </div>
+
+        <!-- Your Approvals -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Your Approvals</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ director_approved|default:"0" }}</p>
+                </div>
+                <div class="p-3 bg-blue-50 rounded-lg">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <a href="{% url 'director_approvals' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                    View Details →
+                </a>
+            </div>
+        </div>
+
+        <!-- Approval Rate -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-500">Approval Rate</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">
+                        {% if total_requests > 0 %}
+                            {{ total_approved|floatformat:0|add:"0"|default:"0" }}/{{ total_requests|default:"0" }}
+                        {% else %}
+                            0/0
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="p-3 bg-purple-50 rounded-lg">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    </svg>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="text-sm">
+                    {% if total_requests > 0 %}
+                        {% widthratio total_approved total_requests 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                    of all requests
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Left Column: Pending Review List -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Pending Your Review</h2>
+                <p class="text-sm text-gray-500 mt-1">Requests awaiting your decision</p>
+            </div>
+            <div class="p-6">
+                {% if pending_director_count > 0 %}
+                <div class="space-y-4">
+                    <!-- Sample pending items - replace with actual data -->
+                    <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Financial Data Request</h4>
+                            <p class="text-sm text-gray-500 mt-1">Submitted by John Doe • Manager: Jane Smith</p>
+                        </div>
+                        <a href="{% url 'director_review_list' %}" 
+                           class="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors">
+                            Review
+                        </a>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <div>
+                            <h4 class="font-medium text-gray-900">Customer Analytics Dataset</h4>
+                            <p class="text-sm text-gray-500 mt-1">Submitted by Mike Johnson • Manager: Sarah Lee</p>
+                        </div>
+                        <a href="{% url 'director_review_list' %}" 
+                           class="px-4 py-2 bg-yellow-600 text-white text-sm font-medium rounded-lg hover:bg-yellow-700 transition-colors">
+                            Review
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <svg class="w-16 h-16 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 class="mt-4 text-lg font-medium text-gray-900">All caught up!</h3>
+                    <p class="mt-2 text-gray-500">No pending requests for review.</p>
+                </div>
+                {% endif %}
+                
+                <div class="mt-6">
+                    <a href="{% url 'director_review_list' %}" 
+                       class="block w-full text-center py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                        View All Pending Requests
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Quick Actions & Stats -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="{% url 'director_review_list' %}" 
+                       class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <svg class="w-8 h-8 text-yellow-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">Review Requests</span>
+                    </a>
+                    
+                    <a href="{% url 'director_approvals' %}" 
+                       class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">Approved</span>
+                    </a>
+                    
+                    <a href="{% url 'director_rejections' %}" 
+                       class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <svg class="w-8 h-8 text-red-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">Rejected</span>
+                    </a>
+                    
+                    <a href="#" 
+                       class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <span class="text-sm font-medium text-gray-700">Reports</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Decision Statistics -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Your Decision Statistics</h2>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700">Approval Rate</span>
+                            <span class="font-medium">
+                                {% if director_approved > 0 and total_requests > 0 %}
+                                    {% widthratio director_approved total_requests 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" 
+                                 style="width: {% if director_approved > 0 and total_requests > 0 %}{% widthratio director_approved total_requests 100 %}%{% else %}0%{% endif %}"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-700">Average Review Time</span>
+                            <span class="font-medium">2.3 days</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-500">Last 30 days</p>
+                        <p class="text-2xl font-bold text-gray-900 mt-1">{{ director_approved|default:"0" }} decisions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="mt-8 bg-white rounded-xl shadow-sm border border-gray-200">
+        <div class="p-6 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-900">Recent Activity</h2>
+        </div>
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">Approved "Q3 Sales Data" request</p>
+                        <p class="text-xs text-gray-500">Today, 10:30 AM</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">Rejected "HR Employee Data" request</p>
+                        <p class="text-xs text-gray-500">Yesterday, 3:15 PM</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">Reviewed "Marketing Campaign Data"</p>
+                        <p class="text-xs text-gray-500">2 days ago, 11:45 AM</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View full activity log →</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

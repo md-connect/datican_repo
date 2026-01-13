@@ -39,19 +39,7 @@ urlpatterns = [
          views.preview_acknowledgment_email, 
          name='preview_acknowledgment_email'),
          
-    # List views for managers and directors
-    path('review/requests/', views.review_requests_list, name='review_requests_list'),
-    path('manager/recommendations/', views.manager_recommendations, name='manager_recommendations'),
-    path('manager/rejections/', views.manager_rejections, name='manager_rejections'),
-    path('director/reviews/', views.director_review_list, name='director_review_list'),
-    path('director/approvals/', views.director_approvals, name='director_approvals'),
-    path('director/rejections/', views.director_rejections, name='director_rejections'),
-
-
-    # Admin override URLs (for superusers)
-    path('admin/requests/<int:pk>/review/', views.admin_review_request, name='admin_review_request'),
-    path('admin/requests/<int:pk>/approve/', views.approve_request, name='approve_request'),
-    path('reports/all-requests/', views.all_requests_report, name='all_requests_report'),
+    
 
     path('test-email/', views.test_email_notification, name='test_email'),
 ]
