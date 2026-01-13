@@ -7,7 +7,20 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from .utils import can_manage_datasets, is_data_manager, is_director, is_admin
+from .utilities import can_manage_datasets, is_data_manager, is_director, is_admin
+from datasets.utils.email_service import EmailService
+
+@admin.action(description='Send approval emails to selected requests')
+def send_approval_emails(modeladmin, request, queryset):
+    for data_request in queryset.filter(status='approved'):
+        EmailService.send_approval_email(data_request)
+    modeladmin.message_user(request, f"Approval emails sent for {queryset.count()} requests.")
+
+@admin.action(description='Send status update emails')
+def send_status_update_emails(modeladmin, request, queryset):
+    for data_request in queryset:
+        EmailService.send_status_update_email(data_request, 'previous', request.user)
+    modeladmin.message_user(request, f"Status update emails sent for {queryset.count()} requests.")
 
 class ThumbnailInline(admin.TabularInline):
     model = Thumbnail
@@ -321,7 +334,7 @@ class DataRequestAdmin(admin.ModelAdmin):
                 self.request.user.role == 'data_manager'):
                 return format_html(
                     '<a href="{}" class="button" style="background: #417690; color: white; padding: 5px 10px; border-radius: 3px; text-decoration: none;">Review</a>',
-                    reverse('review_request', args=[obj.pk])
+                    reverse('manager_review', args=[obj.pk])
                 )
             elif (obj.status == 'director_review' and 
                   self.request.user.role == 'director'):
@@ -340,7 +353,7 @@ class DataRequestAdmin(admin.ModelAdmin):
             'fields': ('project_title', 'institution', 'project_description')
         }),
         ('Documents', {
-            'fields': ('form_submission', 'document'),
+            'fields': ('form_submission', 'ethical_approval_proof'),
             'classes': ('collapse',)
         }),
         ('Review Comments', {
@@ -362,13 +375,13 @@ class DataRequestAdmin(admin.ModelAdmin):
             readonly.extend([
                 'user', 'dataset', 'project_title', 'institution', 'project_description',
                 'director_comment', 'director', 'download_count', 'last_download', 
-                'approved_date', 'status', 'form_submission', 'document'
+                'approved_date', 'status', 'form_submission', 'ethical_approval_proof'
             ])
         elif request.user.role == 'director':
             readonly.extend([
                 'user', 'dataset', 'project_title', 'institution', 'project_description',
                 'data_manager_comment', 'manager', 'download_count', 'last_download',
-                'form_submission', 'document'
+                'form_submission', 'ethical_approval_proof'
             ])
         
         return readonly
@@ -394,7 +407,7 @@ class DataRequestAdmin(admin.ModelAdmin):
         # Redirect to custom review page for data managers
         if request.user.role == 'data_manager' and not request.user.is_superuser:
             if '_review' in request.POST:
-                return HttpResponseRedirect(reverse('review_request', args=[obj.pk]))
+                return HttpResponseRedirect(reverse('manager_review', args=[obj.pk]))
         return super().response_change(request, obj)
 
     def save_model(self, request, obj, form, change):

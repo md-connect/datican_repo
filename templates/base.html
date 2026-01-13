@@ -4,6 +4,7 @@
     {% load static %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>{% block title %}Datican | Open Data Repository{% endblock %}</title>
 
     <!-- Favicon -->
@@ -23,62 +24,64 @@
           },
         },
       };
-      // Initialize Alpine.js
-      document.addEventListener('DOMContentLoaded', function() {
-        // Make sure Alpine is loaded
-        if (typeof Alpine === 'undefined') {
-          console.warn('Alpine.js not loaded, loading now...');
-          // Load Alpine.js dynamically if not loaded
-          const script = document.createElement('script');
-          script.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js';
-          script.defer = true;
-          document.head.appendChild(script);
-          
-          script.onload = function() {
-            Alpine.start();
-          };
-        } else {
-          Alpine.start();
-        }
-      });
     </script>
 
     <!-- AlpineJS -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-
     {% block extra_head %}{% endblock %}
   </head>
-  <!-- base.html - Update body tag -->
-<body class="bg-gray-50">
-    <!-- Main layout container -->
-    <div class="flex min-h-screen">
-        {% block sidebar_header %}
-            {% if request.resolver_match.url_name in 'dataset_list,dataset_detail,dataset_request,request_status,dataset_download,review_request,director_review,manager_recommendations,manager_rejections,director_approvals,director_rejections' %}
-                {% include 'partials/_sidebar_header.html' %}
-            {% else %}
-                {% include 'partials/_header.html' %}
-            {% endif %}
-        {% endblock %}
 
-        <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col">
-            <!-- Content container that grows and handles scrolling -->
-            <div id="main-content" class="flex-1 transition-all duration-300 
-                {% if request.resolver_match.url_name not in 'dataset_list,dataset_detail,dataset_request,request_status,dataset_download,review_request,director_review,manager_recommendations,manager_rejections,director_approvals,director_rejections' %}
-                    pt-16
-                {% endif %}">
-                <main class="h-full">
-                    {% block content %}{% endblock %}
-                </main>
-            </div>
-            
-            <!-- Footer outside the main content -->
-            {% include 'partials/_footer.html' %}
+  <body class="bg-gray-50">
+    <div class="flex min-h-screen">
+
+      {% block sidebar_header %}
+        {% with url_name=request.resolver_match.url_name|default:'' path=request.path %}
+
+        {% if path == '/' and not url_name %}
+          {% include 'partials/_header.html' %}
+        {% elif url_name == 'login' or url_name == 'signup' %}
+          {% include 'partials/_header.html' %}
+        {% elif 'account' in path %}
+          {% include 'partials/_header.html' %}
+        {% elif 'password' in path %}
+          {% include 'partials/_header.html' %}
+        {% else %}
+          {% include 'partials/_sidebar_header.html' %}
+        {% endif %}
+
+        {% endwith %}
+      {% endblock %}
+
+      <!-- Main Content Area -->
+      <div class="flex-1 flex flex-col">
+
+        {% with url_name=request.resolver_match.url_name|default:'' path=request.path %}
+        <div
+          id="main-content"
+          class="flex-1 transition-all duration-300
+          {% if path == '/' and not url_name %}
+            pt-16
+          {% elif url_name == 'login' or url_name == 'signup' %}
+            pt-16
+          {% elif 'account' in path %}
+            pt-16
+          {% elif 'password' in path %}
+            pt-16
+          {% endif %}
+          "
+        >
+          <main class="h-full">
+            {% block content %}{% endblock %}
+          </main>
         </div>
+        {% endwith %}
+
+        {% include 'partials/_footer.html' %}
+      </div>
     </div>
 
     {% include 'partials/_scripts.html' %}
     {% block extra_scripts %}{% endblock %}
-</body>
+  </body>
 </html>

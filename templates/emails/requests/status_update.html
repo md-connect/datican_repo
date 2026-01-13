@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #3498db;">🔄 Data Request Status Update</h2>
+        
+        <p>Dear <strong>{{ user_display_name }}</strong>,</p>
+        
+        <p>Your data request status has been updated.</p>
+        
+        <div style="background-color: #ebf5fb; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Status Change</h3>
+            <p><strong>Request ID:</strong> #{{ request.id }}</p>
+            <p><strong>Dataset:</strong> {{ request.dataset.title }}</p>
+            <p><strong>Previous Status:</strong> {{ previous_status }}</p>
+            <p><strong>Current Status:</strong> {{ current_status }}</p>
+            <p><strong>Updated By:</strong> {{ updated_by_name }}</p>
+            <p><strong>Update Date:</strong> {{ update_date|date:"F d, Y H:i" }}</p>
+        </div>
+        
+        <p><strong>What happens next?</strong></p>
+        <ul>
+            {% if request.status == 'manager_review' %}
+            <li>Your request is being reviewed by a data manager</li>
+            <li>You will be notified when a decision is made</li>
+            {% elif request.status == 'director_review' %}
+            <li>The data manager has recommended your request</li>
+            <li>It is now awaiting final approval from the director</li>
+            {% elif request.status == 'approved' %}
+            <li>Your request has been approved (you should receive a separate email)</li>
+            {% elif request.status == 'rejected' %}
+            <li>Your request was not approved (you should receive a separate email)</li>
+            {% endif %}
+        </ul>
+        
+        <p>If you have any questions, please contact us at <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+        
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        
+        <p style="font-size: 12px; color: #7f8c8d;">
+            This is an automated message from {{ site_name }}.<br>
+            Please do not reply to this email.
+        </p>
+    </div>
+</body>
+</html>

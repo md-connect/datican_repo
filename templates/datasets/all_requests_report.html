@@ -1,0 +1,354 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Requests Report - {% if user_role == 'director' %}Director{% else %}Manager{% endif %} Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">
+            📊 All Requests Report
+            <span class="text-lg font-normal text-gray-600">
+                - {% if user_role == 'director' %}Director View{% else %}Manager View{% endif %}
+            </span>
+        </h1>
+        <div class="space-x-2">
+            <a href="{% url 'dataset_list' %}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm">
+                ← Back to Datasets
+            </a>
+            <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                🖨️ Print Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Total Requests</div>
+            <div class="text-3xl font-bold mt-2">{{ total_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">All time</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Pending</div>
+            <div class="text-3xl font-bold mt-2 text-yellow-600">{{ pending_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">Awaiting action</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Approved</div>
+            <div class="text-3xl font-bold mt-2 text-green-600">{{ approved_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">{{ approved_requests|floatformat:0 }}% of total</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Rejected</div>
+            <div class="text-3xl font-bold mt-2 text-red-600">{{ rejected_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">{{ rejected_requests|floatformat:0 }}% of total</div>
+        </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📈 Status Distribution</h2>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {% for stat in status_counts %}
+            <div class="text-center p-4 rounded-lg {% if stat.status == 'approved' %}bg-green-50{% elif stat.status == 'rejected' %}bg-red-50{% elif stat.status == 'pending' %}bg-yellow-50{% else %}bg-blue-50{% endif %}">
+                <div class="text-lg font-bold">{{ stat.count }}</div>
+                <div class="text-sm text-gray-600 capitalize">{{ stat.status|title }}</div>
+            </div>
+            {% empty %}
+            <div class="col-span-5 text-center py-8 text-gray-500">
+                No request data available
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Monthly Trends -->
+    {% if monthly_stats %}
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📅 Monthly Trends (Last 6 Months)</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Month</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Requests</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approved</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rejected</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approval Rate</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for month in monthly_stats %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium">{{ month.month|date:"M Y" }}</td>
+                        <td class="px-4 py-3 text-sm">{{ month.total }}</td>
+                        <td class="px-4 py-3 text-sm text-green-600">{{ month.approved }}</td>
+                        <td class="px-4 py-3 text-sm text-red-600">{{ month.rejected }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if month.total > 0 %}
+                            {{ month.approved|floatformat:0 }}%
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Manager Performance (Directors only) -->
+    {% if user_role == 'director' and manager_stats %}
+    <div class="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">👥 Manager Performance</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manager</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Reviewed</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recommended</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rejected</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Recommendation Rate</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg. Review Time</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for manager in manager_stats %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm">
+                            {{ manager.reviewed_by__first_name }} {{ manager.reviewed_by__last_name }}
+                            <div class="text-xs text-gray-500">{{ manager.reviewed_by__email }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm font-bold">{{ manager.total_reviewed }}</td>
+                        <td class="px-4 py-3 text-sm text-green-600">{{ manager.recommended }}</td>
+                        <td class="px-4 py-3 text-sm text-red-600">{{ manager.rejected }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if manager.total_reviewed > 0 %}
+                            {{ manager.recommended|floatformat:0 }}%
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if manager.avg_review_time %}
+                            {{ manager.avg_review_time|floatformat:0 }} days
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Director Performance (Superusers and Directors only) -->
+{% if user_role == 'director' or is_superuser %}
+{% if director_stats %}
+<div class="bg-white p-6 rounded-lg shadow mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">👑 Director Performance</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Director</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total Reviewed</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approved</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rejected</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pending</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Approval Rate</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for director in director_stats %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm">
+                        {{ director.director__first_name }} {{ director.director__last_name }}
+                        <div class="text-xs text-gray-500">{{ director.director__email }}</div>
+                    </td>
+                    <td class="px-4 py-3 text-sm font-bold">{{ director.total_reviewed }}</td>
+                    <td class="px-4 py-3 text-sm text-green-600">{{ director.approved }}</td>
+                    <td class="px-4 py-3 text-sm text-red-600">{{ director.rejected }}</td>
+                    <td class="px-4 py-3 text-sm text-yellow-600">{{ director.pending }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if director.total_reviewed > 0 %}
+                        {% widthratio director.approved director.total_reviewed 100 %}%
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Overall System Performance -->
+{% if avg_processing_time is not None %}
+<div class="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg shadow mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">⚙️ System Performance Metrics</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Avg. Processing Time</div>
+            <div class="text-3xl font-bold mt-2 text-purple-600">
+                {{ avg_processing_time|floatformat:1 }} days
+            </div>
+            <div class="text-sm text-gray-500 mt-1">Request to approval</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Overall Approval Rate</div>
+            <div class="text-3xl font-bold mt-2 text-green-600">
+                {{ approval_rate|floatformat:1 }}%
+            </div>
+            <div class="text-sm text-gray-500 mt-1">All time</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Current Pending Rate</div>
+            <div class="text-3xl font-bold mt-2 text-yellow-600">
+                {% if total_requests > 0 %}
+                {% widthratio pending_requests total_requests 100 %}%
+                {% else %}0%{% endif %}
+            </div>
+            <div class="text-sm text-gray-500 mt-1">Awaiting decisions</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+    <!-- All Requests Table -->
+    <div class="bg-white p-6 rounded-lg shadow">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">📋 All Data Requests</h2>
+        <div class="mb-4 flex justify-between items-center">
+            <div class="text-sm text-gray-500">
+                Showing {{ all_requests.count }} request{{ all_requests.count|pluralize }}
+            </div>
+            <div class="text-sm">
+                <span class="bg-gray-100 px-3 py-1 rounded-full">Sorted: Newest First</span>
+            </div>
+        </div>
+        
+        {% if all_requests %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Researcher</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Dataset</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Request Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manager</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for req in all_requests|slice:":50" %}  <!-- Limit to 50 rows -->
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm font-medium">#{{ req.id }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {{ req.user.get_full_name|default:req.user.email }}
+                            <div class="text-xs text-gray-500">{{ req.institution }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm">{{ req.dataset.title|truncatechars:40 }}</td>
+                        <td class="px-4 py-3 text-sm">{{ req.request_date|date:"M d, Y" }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if req.status == 'approved' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Approved</span>
+                            {% elif req.status == 'rejected' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Rejected</span>
+                            {% elif req.status == 'pending' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">Pending</span>
+                            {% elif req.status == 'manager_review' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Manager Review</span>
+                            {% elif req.status == 'director_review' %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">Director Review</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if req.manager %}
+                            {{ req.manager.get_short_name|default:req.manager.email|truncatechars:20 }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <a href="{% if user_role == 'director' %}{% url 'director_review_request' req.id %}{% else %}{% url 'manager_review' req.id %}{% endif %}"
+                               class="text-blue-600 hover:text-blue-800">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if all_requests.count > 50 %}
+            <div class="mt-4 text-center text-sm text-gray-500">
+                Showing 50 of {{ all_requests.count }} requests. Use filters for more specific results.
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-500">
+            <div class="text-4xl mb-4">📭</div>
+            <h3 class="text-xl font-medium mb-2">No requests found</h3>
+            <p>No data requests have been submitted yet.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Report Footer -->
+    <div class="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
+        <div class="flex justify-between items-center">
+            <div>
+                Report generated: {% now "F j, Y, g:i a" %}
+                <div class="mt-1">
+                    User: {{ request.user.get_full_name|default:request.user.email }} ({{ user_role|title }})
+                </div>
+            </div>
+            <div class="text-right">
+                Data last updated: {% now "Y-m-d" %}
+                <div class="mt-1">
+                    <a href="{% url 'all_requests_report' %}" class="text-blue-600 hover:text-blue-800">
+                        🔄 Refresh Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        body {
+            font-size: 12pt;
+        }
+        .container {
+            width: 100%;
+            padding: 0;
+        }
+        table {
+            font-size: 10pt;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .grid {
+            grid-template-columns: 1fr;
+        }
+        table {
+            display: block;
+            overflow-x: auto;
+        }
+    }
+</style>
+{% endblock %}

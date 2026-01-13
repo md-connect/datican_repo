@@ -27,7 +27,7 @@
     <div class="container">
         <div class="header">
             <h2>Data Request Approved! 🎉</h2>
-            <p>Dear {{ user.first_name|default:user.username }},</p>
+            <p>Dear <strong>{{ user_display_name }}</strong>,</p>
         </div>
         
         <div class="content">
@@ -38,7 +38,7 @@
                 <p><strong>Request ID:</strong> #{{ request.id }}</p>
                 <p><strong>Dataset:</strong> {{ request.dataset.title }}</p>
                 <p><strong>Approval Date:</strong> {{ request.approved_date|date:"F d, Y H:i" }}</p>
-                <p><strong>Approved By:</strong> {{ request.director.get_full_name|default:request.director.username }}</p>
+                <p><strong>Approved By:</strong> {{ staff_display_name }}</p>
                 {% if request.director_comment %}
                 <p><strong>Director's Note:</strong> {{ request.director_comment }}</p>
                 {% endif %}

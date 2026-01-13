@@ -26,7 +26,7 @@
     <div class="container">
         <div class="header">
             <h2>Update on Your Data Request</h2>
-            <p>Dear {{ user.first_name|default:user.username }},</p>
+            <p>Dear <strong>{{ user_display_name }}</strong>,</p>
         </div>
         
         <div class="content">
@@ -37,7 +37,7 @@
                 <p><strong>Request ID:</strong> #{{ request.id }}</p>
                 <p><strong>Dataset:</strong> {{ request.dataset.title }}</p>
                 <p><strong>Decision Date:</strong> {% now "F d, Y H:i" %}</p>
-                <p><strong>Decision By:</strong> {{ decision_by.get_full_name|default:decision_by.username }}</p>
+                <p><strong>Decision By:</strong> {{ decision_by_name }} ({{ decision_position|title }})</p>
                 <p><strong>Position:</strong> {{ decision_position|title }}</p>
             </div>
             

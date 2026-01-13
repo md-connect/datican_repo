@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 import os
 from django.core.files.base import ContentFile
-from .utils import convert_to_png
+from datasets.utilities import convert_to_png
 
 def validate_thumbnail(value):
     """Validate thumbnail file formats"""

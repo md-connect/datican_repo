@@ -5,6 +5,9 @@ Django settings for datican_repo project.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import ssl
+import certifi
+
 
 load_dotenv()
 
@@ -157,16 +160,9 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-
-# Email Settings
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # or your SMTP server
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_SSL = False  # Must be False when using TLS
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'info.datican@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'hoowicpekknteogn')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@repo.datican.org')
 SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@repo.datican.org')
 
@@ -178,6 +174,10 @@ SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 MANAGER_EMAIL = os.environ.get('MANAGER_EMAIL', 'mondayoke93@gmail.com')
 DIRECTOR_EMAIL = os.environ.get('DIRECTOR_EMAIL', 'mondayoke93@gmail.com')
 CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'manager.datican@gmail.com')
+
+# Use certifi certificates
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+EMAIL_SSL_CONTEXT = ssl_context
 
 # Auth settings
 AUTH_USER_MODEL = 'accounts.CustomUser'

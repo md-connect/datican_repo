@@ -24,7 +24,7 @@
     <div class="container">
         <div class="header">
             <h2>Data Request Received</h2>
-            <p>Dear {{ user.first_name|default:user.username }},</p>
+            <p>Dear <strong>{{ user_display_name }}</strong>,</p>
         </div>
         
         <div class="content">

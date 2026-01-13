@@ -234,62 +234,107 @@
         </div>
 
         <!-- Review Form -->
+        <!-- Review Form -->
 <div class="border-t pt-8">
     <h3 class="text-lg font-medium text-primary mb-6">Review Decision</h3>
     
-    <!-- Manager Comments (shared for both forms) -->
-    <div class="mb-6">
-        <label for="manager_comment" class="block text-sm font-medium text-primary mb-3">
-            Manager Notes
-            <span class="text-gray-500 font-normal">(Visible to director and researcher)</span>
-        </label>
-        <textarea name="manager_comment" id="manager_comment" rows="5" 
-                  placeholder="Enter your assessment and comments about this request. This will be visible to the director and the researcher if approved."
-                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-transparent text-sm">{{ data_request.data_manager_comment|default:'' }}</textarea>
-        <p class="text-xs text-gray-500 mt-2">
-            Provide constructive feedback that will help the director make a decision.
-        </p>
-    </div>
-    
-    <!-- Decision Buttons with separate forms -->
-    <div class="flex flex-col sm:flex-row gap-4 pt-4">
-        <!-- Approve Form -->
-        <form method="post" class="flex-1">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="approve">
-            <input type="hidden" name="manager_comment" id="approve_comment">
-            <button type="submit" 
-                    onclick="document.getElementById('approve_comment').value = document.getElementById('manager_comment').value;"
-                    class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
+    <!-- Single form for both actions -->
+    <form method="post" id="reviewForm" onsubmit="return validateForm()">
+        {% csrf_token %}
+        
+        <!-- Comment textarea with required attribute -->
+        <div class="mb-4">
+            <label for="manager_comment" class="block text-sm font-medium text-gray-700 mb-2">
+                Review Comments *
+            </label>
+            <textarea id="manager_comment" name="manager_comment" 
+                      class="w-full p-3 border rounded-lg" rows="4" 
+                      placeholder="Add your comments here..." required></textarea>
+            <p class="text-sm text-gray-500 mt-1">Comments are required for both recommendation and rejection.</p>
+        </div>
+        
+        <!-- Action buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <!-- Recommend button (CHANGED from "approve" to "recommend") -->
+            <button type="submit" name="action" value="recommend"
+                    class="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
                 <i data-lucide="check-circle" class="w-5 h-5"></i>
                 Recommend to Director
             </button>
-        </form>
-        
-        <!-- Reject Form -->
-        <form method="post" class="flex-1">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="reject">
-            <input type="hidden" name="manager_comment" id="reject_comment">
-            <button type="submit" 
-                    onclick="document.getElementById('reject_comment').value = document.getElementById('manager_comment').value;"
-                    class="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2">
+            
+            <!-- Reject button -->
+            <button type="submit" name="action" value="reject"
+                    class="flex-1 bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center gap-2">
                 <i data-lucide="x-circle" class="w-5 h-5"></i>
                 Reject Request
             </button>
-        </form>
+        </div>
         
-        <a href="{% url 'admin:datasets_datarequest_changelist' %}" 
-           class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center gap-2">
-            <i data-lucide="arrow-left" class="w-5 h-5"></i>
-            Back to List
-        </a>
-    </div>
+        <div class="mt-4">
+            <a href="{% url 'admin:datasets_datarequest_changelist' %}" 
+               class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium gap-2">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                Back to List
+            </a>
+        </div>
+    </form>
 </div>
+
+
     </div>
 </div>
 
 <script>
     lucide.createIcons();
+    
+    // Form validation
+    function validateForm() {
+        const comment = document.getElementById('manager_comment').value.trim();
+        
+        if (!comment) {
+            alert('Please provide review comments before submitting.');
+            document.getElementById('manager_comment').focus();
+            return false;
+        }
+        
+        // Additional validation for specific actions
+        const action = document.activeElement?.value || '';
+        
+        if (action === 'recommend') {
+            return confirm('Are you sure you want to recommend this request to the director?');
+        } else if (action === 'reject') {
+            return confirm('Are you sure you want to reject this request? This will notify the user immediately.');
+        }
+        
+        return true;
+    }
+    
+    // Add click handlers for better UX
+    document.addEventListener('DOMContentLoaded', function() {
+        const recommendBtn = document.querySelector('button[value="recommend"]');
+        const rejectBtn = document.querySelector('button[value="reject"]');
+        
+        if (recommendBtn) {
+            recommendBtn.addEventListener('click', function(e) {
+                const comment = document.getElementById('manager_comment').value.trim();
+                if (!comment) {
+                    e.preventDefault();
+                    alert('Please provide review comments before recommending.');
+                    document.getElementById('manager_comment').focus();
+                }
+            });
+        }
+        
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', function(e) {
+                const comment = document.getElementById('manager_comment').value.trim();
+                if (!comment) {
+                    e.preventDefault();
+                    alert('Please provide review comments before rejecting.');
+                    document.getElementById('manager_comment').focus();
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

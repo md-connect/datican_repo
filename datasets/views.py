@@ -2,24 +2,28 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required, permission_required
-from django.http import FileResponse, HttpResponseForbidden
+from django.http import FileResponse, HttpResponseForbidden, JsonResponse, HttpResponse
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.urls import reverse
-from django.db.models import Prefetch, Q, Avg, Count
+from django.db.models import Prefetch, Q, Avg, Count, F, Sum, Min, Max
+from django.db.models.functions import TruncMonth, TruncYear, TruncDay
+from django.db import models
 from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
 from .forms import DataRequestForm, RatingForm, CollectionForm, ReportForm
 import os
-from datetime import datetime
-from .utils import data_manager_required, director_required
+from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
-from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
 import pandas as pd
 import json
+from datasets.utils.email_service import EmailService
+from accounts.models import CustomUser
+from .decorators import data_manager_required, director_required, admin_required
+
 
 
 User = get_user_model()
@@ -708,6 +712,16 @@ def toggle_collection(request, pk):
         return JsonResponse({'success': False, 'error': 'Collection not found'})
 
 @login_required
+def download_request_form(request):
+    # Path to your form template
+    form_path = os.path.join(settings.BASE_DIR, 'static', 'forms', 'Data_Request_Form.pdf')
+    if os.path.exists(form_path):
+        return FileResponse(open(form_path, 'rb'), as_attachment=True, filename='Data_Request_Form.pdf')
+    messages.error(request, 'The request form template is not currently available.')
+    return redirect('dataset_list')
+
+
+@login_required
 def dataset_request(request, pk):
     dataset = get_object_or_404(Dataset, pk=pk)
     
@@ -723,20 +737,20 @@ def dataset_request(request, pk):
         return redirect('request_status', pk=existing_request.pk)
     
     if request.method == 'POST':
-        # Process form data - ADD ALL FIELDS HERE
+        # Process form data
         institution = request.POST.get('institution', '').strip()
-        phone_number = request.POST.get('phone_number', '').strip()  # ADD THIS
-        ethical_approval_no = request.POST.get('ethical_approval_no', '').strip()  # ADD THIS
+        phone_number = request.POST.get('phone_number', '').strip()
+        ethical_approval_no = request.POST.get('ethical_approval_no', '').strip()
         project_title = request.POST.get('project_title', '').strip()
         project_description = request.POST.get('project_description', '').strip()
         form_submission = request.FILES.get('form_submission')
-        ethical_approval_proof = request.FILES.get('ethical_approval_proof')  # ADD THIS
+        ethical_approval_proof = request.FILES.get('ethical_approval_proof')
         
-        # Enhanced validation - UPDATE TO INCLUDE NEW FIELDS
+        # Enhanced validation
         errors = []
         if not institution:
             errors.append('Institution is required')
-        if not phone_number:  # ADD THIS VALIDATION (since you made it required)
+        if not phone_number:
             errors.append('Phone number is required')
         if not project_title:
             errors.append('Project title is required')
@@ -744,14 +758,14 @@ def dataset_request(request, pk):
             errors.append('Project description is required')
         if not form_submission:
             errors.append('Form submission file is required')
-        elif not form_submission.name.endswith('.pdf'):
+        elif not form_submission.name.lower().endswith('.pdf'):
             errors.append('Form submission must be a PDF file')
         
         # Optional validation for ethical approval proof
         if ethical_approval_proof:
             allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
-            file_ext = ethical_approval_proof.name.lower()
-            if not any(file_ext.endswith(ext) for ext in allowed_extensions):
+            file_ext = os.path.splitext(ethical_approval_proof.name.lower())[1]
+            if file_ext not in allowed_extensions:
                 errors.append('Ethical approval proof must be PDF, JPG, or PNG format')
         
         if errors:
@@ -760,84 +774,49 @@ def dataset_request(request, pk):
             return render(request, 'datasets/request_form.html', {
                 'dataset': dataset,
                 'institution': institution,
-                'phone_number': phone_number,  # ADD THIS
-                'ethical_approval_no': ethical_approval_no,  # ADD THIS
+                'phone_number': phone_number,
+                'ethical_approval_no': ethical_approval_no,
                 'project_title': project_title,
                 'project_description': project_description
             })
         
         try:
-            # Create and save DataRequest - ADD ALL FIELDS HERE
+            # Create and save DataRequest
             data_request = DataRequest(
                 user=request.user,
                 dataset=dataset,
                 institution=institution,
-                phone_number=phone_number if phone_number else None,  # ADD THIS
-                ethical_approval_no=ethical_approval_no if ethical_approval_no else None,  # ADD THIS
+                phone_number=phone_number if phone_number else None,
+                ethical_approval_no=ethical_approval_no if ethical_approval_no else None,
                 project_title=project_title,
                 project_description=project_description,
                 form_submission=form_submission,
-                ethical_approval_proof=ethical_approval_proof if ethical_approval_proof else None,  # ADD THIS
+                ethical_approval_proof=ethical_approval_proof if ethical_approval_proof else None,
             )
             data_request.save()
             
-            user_full_name = getattr(request.user, 'get_full_name', None)
-            if callable(user_full_name):
-                user_full_name = user_full_name()
+            # Send acknowledgment email using EmailService
+            EmailService.send_acknowledgment_email(data_request)
+            
+            # Find and assign a data manager
+            managers = User.objects.filter(role='data_manager', is_active=True)
+            if managers.exists():
+                data_request.manager = managers.first()
+                data_request.save()
+                
+                # Send notification to manager
+                EmailService.send_staff_notification(data_request, data_request.manager, 'manager')
             else:
-                first_name = getattr(request.user, 'first_name', '')
-                last_name = getattr(request.user, 'last_name', '')
-                if first_name or last_name:
-                    user_full_name = f"{first_name} {last_name}".strip()
-                else:
-                    user_full_name = request.user.username
-
-            # Send notification emails - UPDATE EMAIL CONTENT
-            subject = f"New Data Request: {dataset.title}"
-            message = f"""
-            A new data request has been submitted:
-            
-            Researcher: {request.user.get_full_name()} ({request.user.email})
-            Institution: {institution}
-            Phone: {phone_number if phone_number else 'Not provided'}
-            Dataset: {dataset.title}
-            Project Title: {project_title}
-            Ethical Approval No: {ethical_approval_no if ethical_approval_no else 'Not provided'}
-            
-            Please review the request in the admin panel.
-            """
-            
-            # Send to admins
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [admin[1] for admin in settings.ADMINS],
-                fail_silently=True,
-            )
-            
-            # Send confirmation to user - UPDATE USER EMAIL
-            user_message = f"""
-            Thank you for submitting your data request for "{dataset.title}".
-            
-            Your request details:
-            - Request ID: {data_request.id}
-            - Submission Date: {data_request.request_date.strftime('%Y-%m-%d %H:%M')}
-            - Institution: {institution}
-            - Phone Number: {phone_number if phone_number else 'Not provided'}
-            - Ethical Approval Number: {ethical_approval_no if ethical_approval_no else 'Not provided'}
-            
-            Your request is now under review. You'll receive an email notification 
-            when there's an update on your request status.
-            """
-            
-            send_mail(
-                "Data Request Submitted",
-                user_message,
-                settings.DEFAULT_FROM_EMAIL,
-                [request.user.email],
-                fail_silently=True,
-            )
+                # If no manager found, send to admin as fallback
+                admin_users = CustomUser.objects.filter(is_staff=True, is_active=True)
+                for admin_user in admin_users:
+                    send_mail(
+                        "URGENT: No Data Manager Available",
+                        f"A new data request (#{data_request.id}) was submitted but no data manager is available to review it.",
+                        settings.DEFAULT_FROM_EMAIL,
+                        [admin_user.email],
+                        fail_silently=True,
+                    )
             
             # Render success page
             return render(request, 'datasets/request_submitted.html', {
@@ -850,8 +829,8 @@ def dataset_request(request, pk):
             return render(request, 'datasets/request_form.html', {
                 'dataset': dataset,
                 'institution': institution,
-                'phone_number': phone_number,  # ADD THIS
-                'ethical_approval_no': ethical_approval_no,  # ADD THIS
+                'phone_number': phone_number,
+                'ethical_approval_no': ethical_approval_no,
                 'project_title': project_title,
                 'project_description': project_description
             })
@@ -861,7 +840,312 @@ def dataset_request(request, pk):
     })
 
 @login_required
-def request_status(request, pk):
+@data_manager_required
+def manager_review_request(request, pk): 
+    data_request = get_object_or_404(DataRequest, pk=pk)
+    
+    # Check if this data manager can review this request
+    if data_request.status not in ['pending', 'manager_review']:
+        messages.error(request, 'This request is not available for review.')
+        return redirect('review_requests_list')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        manager_comment = request.POST.get('manager_comment', '').strip()
+        
+        if action == 'recommend':
+            data_request.status = 'director_review'
+            data_request.manager = request.user
+            data_request.data_manager_comment = manager_comment
+            data_request.manager_review_date = timezone.now()
+            data_request.manager_action = 'recommended'
+            
+            # Find and assign a director
+            directors = CustomUser.objects.filter(role='director', is_active=True)
+            if directors.exists():
+                data_request.director = directors.first()
+                messages.success(request, 'Request recommended and sent to director for final review.')
+            else:
+                # If no director found, keep in manager_review and notify admin
+                data_request.status = 'manager_review'
+                messages.warning(request, 'Request recommended but no director available. Notified administrators.')
+                
+                # Notify admin
+                admin_users = CustomUser.objects.filter(is_staff=True, is_active=True)
+                for admin_user in admin_users:
+                    send_mail(
+                        "URGENT: No Director Available",
+                        f"A data request (#{data_request.id}) needs director approval but no director is available.",
+                        settings.DEFAULT_FROM_EMAIL,
+                        [admin_user.email],
+                        fail_silently=True,
+                    )
+            
+            data_request.save()
+            
+            # Send email notifications
+            if data_request.director:
+                EmailService.send_staff_notification(data_request, data_request.director, 'director')
+            
+            # Send status update to user
+            EmailService.send_status_update_email(data_request, 'pending', request.user)
+            
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            data_request.manager = request.user
+            data_request.data_manager_comment = manager_comment
+            data_request.manager_review_date = timezone.now()
+            data_request.manager_action = 'rejected'
+            
+            data_request.save()
+            messages.success(request, 'Request has been rejected.')
+            
+            # Send rejection email to user
+            EmailService.send_rejection_email(
+                data_request, 
+                request.user, 
+                manager_comment, 
+                'manager'
+            )
+        
+        return redirect('review_requests_list')
+    
+    return render(request, 'datasets/manager_review.html', {  # Different template
+        'data_request': data_request
+    })
+
+@login_required
+@director_required  
+def director_review_request(request, pk):  # CHANGED NAME
+    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        director_comment = request.POST.get('director_comment', '').strip()
+        
+        if action == 'approve':
+            data_request.status = 'approved'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.approved_date = timezone.now()
+            data_request.director_action = 'approved'
+            
+            data_request.save()
+            messages.success(request, 'Request approved successfully!')
+            
+            # Send approval email with download link
+            EmailService.send_approval_email(data_request)
+            
+            # Notify data manager about approval
+            if data_request.manager:
+                send_mail(
+                    f"Request #{data_request.id} Approved",
+                    f"The data request you recommended has been approved by the director.",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [data_request.manager.email],
+                    fail_silently=True,
+                )
+            
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.director_action = 'rejected'
+            
+            data_request.save()
+            messages.success(request, 'Request has been rejected.')
+            
+            # Send rejection email to user
+            EmailService.send_rejection_email(
+                data_request, 
+                request.user, 
+                director_comment, 
+                'director'
+            )
+            
+            # Notify data manager about rejection
+            if data_request.manager:
+                send_mail(
+                    f"Request #{data_request.id} Rejected",
+                    f"The data request you recommended has been rejected by the director.",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [data_request.manager.email],
+                    fail_silently=True,
+                )
+        
+        return redirect('director_review_list')  # Different redirect
+    
+    return render(request, 'datasets/director_review.html', {  # Different template
+        'data_request': data_request
+    })
+
+@login_required
+@director_required
+def director_review(request, pk):
+    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        director_comment = request.POST.get('director_comment', '').strip()
+        
+        if action == 'approve':
+            data_request.status = 'approved'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.approved_date = timezone.now()
+            data_request.director_action = 'approved'
+            
+            data_request.save()
+            messages.success(request, 'Request approved successfully!')
+            
+            # Send approval email with download link
+            EmailService.send_approval_email(data_request)
+            
+            # Notify data manager about approval
+            if data_request.manager:
+                send_mail(
+                    f"Request #{data_request.id} Approved",
+                    f"The data request you recommended has been approved by the director.\n\n"
+                    f"Request ID: {data_request.id}\n"
+                    f"Dataset: {data_request.dataset.title}\n"
+                    f"Researcher: {data_request.user.get_full_name()}\n"
+                    f"Approval Date: {data_request.approved_date.strftime('%Y-%m-%d %H:%M')}\n"
+                    f"Director Notes: {director_comment}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [data_request.manager.email],
+                    fail_silently=True,
+                )
+            
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.director_action = 'rejected'
+            
+            data_request.save()
+            messages.success(request, 'Request has been rejected.')
+            
+            # Send rejection email to user
+            EmailService.send_rejection_email(
+                data_request, 
+                request.user, 
+                director_comment, 
+                'director'
+            )
+            
+            # Notify data manager about rejection
+            if data_request.manager:
+                send_mail(
+                    f"Request #{data_request.id} Rejected",
+                    f"The data request you recommended has been rejected by the director.\n\n"
+                    f"Request ID: {data_request.id}\n"
+                    f"Dataset: {data_request.dataset.title}\n"
+                    f"Researcher: {data_request.user.get_full_name()}\n"
+                    f"Rejection Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n"
+                    f"Director Notes: {director_comment}",
+                    settings.DEFAULT_FROM_EMAIL,
+                    [data_request.manager.email],
+                    fail_silently=True,
+                )
+        
+        return redirect('director_review_list')
+    
+    return render(request, 'datasets/director_review.html', {
+        'data_request': data_request
+    })
+
+@login_required
+def dataset_download(request, pk):
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    # Find approved request for this user and dataset
+    data_request = DataRequest.objects.filter(
+        user=request.user,
+        dataset=dataset,
+        status='approved'
+    ).order_by('-approved_date').first()
+    
+    if not data_request:
+        messages.error(request, 'You do not have an approved request for this dataset.')
+        return redirect('dataset_detail', pk=pk)
+    
+    if not data_request.can_download():
+        messages.error(request, 
+            f'You have reached your download limit ({data_request.max_downloads} downloads). '
+            f'Please contact support if you need access to the data again.'
+        )
+        return redirect('request_status', pk=data_request.pk)
+    
+    # Record the download
+    data_request.record_download()
+    
+    # Increment dataset download count
+    dataset.download_count += 1
+    dataset.save()
+    
+    # Send download confirmation email (optional)
+    try:
+        send_mail(
+            f"Dataset Downloaded: {dataset.title}",
+            f"You have successfully downloaded the dataset '{dataset.title}'.\n\n"
+            f"Download Details:\n"
+            f"- Request ID: {data_request.id}\n"
+            f"- Download Count: {data_request.download_count} of {data_request.max_downloads}\n"
+            f"- Download Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n"
+            f"- Dataset: {dataset.title}\n\n"
+            f"Please remember to comply with the data use agreement and citation requirements.",
+            settings.DEFAULT_FROM_EMAIL,
+            [request.user.email],
+            fail_silently=True,
+        )
+    except Exception as e:
+        # Log error but don't prevent download
+        pass
+    
+    # Serve the file
+    if dataset.file and dataset.file.name:
+        file_path = dataset.file.path
+        if os.path.exists(file_path):
+            response = FileResponse(open(file_path, 'rb'), as_attachment=True)
+            
+            # Set appropriate filename and Content-Type
+            filename = os.path.basename(dataset.file.name)
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            # Set Content-Type based on file extension
+            ext = os.path.splitext(filename)[1].lower()
+            content_types = {
+                '.csv': 'text/csv',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.xls': 'application/vnd.ms-excel',
+                '.pdf': 'application/pdf',
+                '.zip': 'application/zip',
+                '.rar': 'application/x-rar-compressed',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.png': 'image/png',
+                '.dcm': 'application/dicom',
+                '.nii': 'application/octet-stream',
+                '.gz': 'application/gzip',
+            }
+            response['Content-Type'] = content_types.get(ext, 'application/octet-stream')
+            
+            return response
+        else:
+            messages.error(request, 'The dataset file is not available. Please contact support.')
+            return redirect('dataset_detail', pk=pk)
+    else:
+        # Check for multiple files in a dataset
+        if hasattr(dataset, 'files') and dataset.files.exists():
+            # Handle multiple files - could create a ZIP archive
+            messages.info(request, 'This dataset contains multiple files. Download functionality for multiple files is under development.')
+            return redirect('dataset_detail', pk=pk)
+        else:
+            messages.error(request, 'No files available for this dataset.')
+            return redirect('dataset_detail', pk=pk)
+
+@login_required
+def request_status(request, pk):  # Keep as pk
     data_request = get_object_or_404(DataRequest, pk=pk)
     
     # Check if user has permission to view this request
@@ -965,139 +1249,19 @@ def request_status(request, pk):
         'download_count': data_request.download_count,
     })
 
-@login_required
-def download_request_form(request):
-    # Path to your form template
-    form_path = os.path.join(settings.BASE_DIR, 'static', 'forms', 'Data_Request_Form.pdf')
-    if os.path.exists(form_path):
-        return FileResponse(open(form_path, 'rb'), as_attachment=True, filename='Data_Request_Form.pdf')
-    messages.error(request, 'The request form template is not currently available.')
-    return redirect('dataset_list')
-
+# List views for managers and directors
 @login_required
 @data_manager_required
-def review_request(request, pk):
-    data_request = get_object_or_404(DataRequest, pk=pk)
+def review_requests_list(request):
+    """Show all requests pending manager review"""
+    pending_requests = DataRequest.objects.filter(
+        status__in=['pending', 'manager_review']
+    ).select_related('user', 'dataset').order_by('request_date')
     
-    # Check if this data manager can review this request
-    if data_request.status not in ['pending', 'manager_review']:
-        messages.error(request, 'This request is not available for review.')
-        return redirect('admin:datasets_datarequest_changelist')
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        manager_comment = request.POST.get('manager_comment', '').strip()
-        
-        if action == 'approve':
-            data_request.status = 'director_review'
-            data_request.manager = request.user
-            data_request.data_manager_comment = manager_comment
-            data_request.manager_review_date = timezone.now()
-            data_request.manager_action = 'recommended'  # Track recommendation
-            messages.success(request, 'Request recommended and sent to director for final review.')
-            
-            # Notify directors
-            directors = CustomUser.objects.filter(role='director', is_active=True)
-            for director in directors:
-                send_mail(
-                    "Request Needs Final Approval",
-                    f"Request ID: {data_request.id} for '{data_request.project_title}' needs your approval.\n\n"
-                    f"Researcher: {data_request.user.first_name} {data_request.user.last_name} ({data_request.user.email})\n"
-                    f"Institution: {data_request.institution}\n"
-                    f"Manager Notes: {manager_comment}\n"
-                    f"Manager Review Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
-                    f"Please review the request in the admin panel.",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [director.email],
-                    fail_silently=True,
-                )
-                
-        elif action == 'reject':
-            data_request.status = 'rejected'
-            data_request.manager = request.user
-            data_request.data_manager_comment = manager_comment
-            data_request.manager_review_date = timezone.now()
-            data_request.manager_action = 'rejected'  # Track rejection
-            messages.success(request, 'Request has been rejected.')
-            
-            # Notify user
-            send_mail(
-                "Your Data Request Status",
-                f"Your request for '{data_request.dataset.title}' has been reviewed.\n\n"
-                f"Status: Rejected\n"
-                f"Manager Notes: {manager_comment}\n"
-                f"Review Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
-                f"Request ID: {data_request.id}",
-                settings.DEFAULT_FROM_EMAIL,
-                [data_request.user.email],
-                fail_silently=True,
-            )
-        
-        data_request.save()
-        return redirect('admin:datasets_datarequest_changelist')
-    
-    return render(request, 'datasets/review_request.html', {
-        'data_request': data_request
+    return render(request, 'datasets/review_requests_list.html', {
+        'pending_requests': pending_requests
     })
 
-@login_required
-@director_required
-def director_review(request, pk):
-    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
-    
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        director_comment = request.POST.get('director_comment', '').strip()
-        
-        if action == 'approve':
-            data_request.status = 'approved'
-            data_request.director = request.user
-            data_request.director_comment = director_comment
-            data_request.approved_date = timezone.now()
-            data_request.director_action = 'approved'  # Track approval
-            messages.success(request, 'Request approved successfully!')
-            
-            # Notify user
-            send_mail(
-                "Your Data Request Approved",
-                f"Your request for '{data_request.dataset.title}' has been approved.\n\n"
-                f"Director Notes: {director_comment}\n"
-                f"Approval Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
-                f"Request ID: {data_request.id}\n"
-                f"You can now download the dataset from your request status page.",
-                settings.DEFAULT_FROM_EMAIL,
-                [data_request.user.email],
-                fail_silently=True,
-            )
-            
-        elif action == 'reject':
-            data_request.status = 'rejected'
-            data_request.director = request.user
-            data_request.director_comment = director_comment
-            data_request.director_action = 'rejected'  # Track rejection
-            messages.success(request, 'Request has been rejected.')
-            
-            # Notify user
-            send_mail(
-                "Your Data Request Status",
-                f"Your request for '{data_request.dataset.title}' has been reviewed.\n\n"
-                f"Status: Rejected\n"
-                f"Director Notes: {director_comment}\n"
-                f"Decision Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n\n"
-                f"Request ID: {data_request.id}",
-                settings.DEFAULT_FROM_EMAIL,
-                [data_request.user.email],
-                fail_silently=True,
-            )
-        
-        data_request.save()
-        return redirect('admin:datasets_datarequest_changelist')
-    
-    return render(request, 'datasets/director_review.html', {
-        'data_request': data_request
-    })
-
-# datasets/views.py
 @login_required
 @data_manager_required
 def manager_recommendations(request):
@@ -1118,10 +1282,22 @@ def manager_rejections(request):
     rejections = DataRequest.objects.filter(
         manager=request.user,
         manager_action='rejected'
-    ).select_related('user', 'dataset', 'director')
+    ).select_related('user', 'dataset')
     
     return render(request, 'datasets/manager_rejections.html', {
         'rejections': rejections
+    })
+
+@login_required
+@director_required
+def director_review_list(request):
+    """Show all requests pending director review"""
+    pending_reviews = DataRequest.objects.filter(
+        status='director_review'
+    ).select_related('user', 'dataset', 'manager').order_by('manager_review_date')
+    
+    return render(request, 'datasets/director_review_list.html', {
+        'pending_reviews': pending_reviews
     })
 
 @login_required
@@ -1138,6 +1314,92 @@ def director_approvals(request):
     })
 
 @login_required
+@permission_required('datasets.review_datarequest', raise_exception=True)
+def admin_review_request(request, pk):
+    """Admin review page (for superusers and staff)"""
+    from .models import DataRequest
+    from django.contrib import messages
+    from django.shortcuts import get_object_or_404, redirect, render
+    from django.utils import timezone
+    from .utils.email_service import EmailService
+    
+    data_request = get_object_or_404(DataRequest, pk=pk)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        comment = request.POST.get('admin_comment', '').strip()
+        
+        if action == 'approve':
+            # Admin can directly approve (bypassing normal workflow)
+            data_request.status = 'approved'
+            data_request.director = request.user
+            data_request.director_comment = f"Admin approval: {comment}"
+            data_request.approved_date = timezone.now()
+            data_request.director_action = 'approved'
+            
+            # If no manager assigned, assign admin as manager too
+            if not data_request.manager:
+                data_request.manager = request.user
+                data_request.data_manager_comment = f"Admin processed: {comment}"
+                data_request.manager_action = 'recommended'
+                data_request.manager_review_date = timezone.now()
+            
+            data_request.save()
+            messages.success(request, '✅ Request approved via admin override.')
+            
+            # Send approval email
+            EmailService.send_approval_email(data_request)
+            
+        elif action == 'forward':
+            # Forward to director for normal review
+            data_request.status = 'director_review'
+            if not data_request.manager:
+                data_request.manager = request.user
+                data_request.data_manager_comment = f"Admin forwarded: {comment}"
+                data_request.manager_action = 'recommended'
+                data_request.manager_review_date = timezone.now()
+            
+            # Find a director if not already assigned
+            if not data_request.director:
+                from .models import CustomUser
+                directors = CustomUser.objects.filter(role='director', is_active=True)
+                if directors.exists():
+                    data_request.director = directors.first()
+            
+            data_request.save()
+            messages.success(request, '📤 Request forwarded to director.')
+            
+            # Notify director if assigned
+            if data_request.director:
+                EmailService.send_staff_notification(data_request, data_request.director, 'director')
+            
+        elif action == 'reject':
+            data_request.status = 'rejected'
+            if not data_request.manager:
+                data_request.manager = request.user
+            data_request.data_manager_comment = f"Admin rejected: {comment}"
+            data_request.manager_action = 'rejected'
+            data_request.manager_review_date = timezone.now()
+            
+            data_request.save()
+            messages.success(request, '❌ Request rejected via admin override.')
+            
+            # Send rejection email
+            EmailService.send_rejection_email(
+                data_request, 
+                request.user, 
+                comment, 
+                'admin'
+            )
+        
+        return redirect('admin:datasets_datarequest_changelist')
+    
+    return render(request, 'datasets/admin_review.html', {
+        'data_request': data_request,
+        'is_admin': True,
+    })
+
+@login_required
 @director_required
 def director_rejections(request):
     """Show director's rejected requests"""
@@ -1150,9 +1412,11 @@ def director_rejections(request):
         'rejections': rejections
     })
 
+# Admin approval view (for superusers)
 @login_required
 @permission_required('datasets.approve_datarequest', raise_exception=True)
 def approve_request(request, pk):
+    """Admin/superuser approval view (bypasses normal workflow)"""
     data_request = get_object_or_404(DataRequest, pk=pk)
     
     if request.method == 'POST':
@@ -1163,153 +1427,337 @@ def approve_request(request, pk):
             data_request.status = 'approved'
             data_request.approved_date = timezone.now()
             data_request.director = request.user
-            data_request.director_comment = comment
-            messages.success(request, 'Request approved successfully!')
+            data_request.director_comment = f"Admin override: {comment}"
+            data_request.director_action = 'approved'
+            
+            data_request.save()
+            messages.success(request, 'Request approved via admin override.')
+            
+            # Send approval email
+            EmailService.send_approval_email(data_request)
+            
         elif action == 'reject':
             data_request.status = 'rejected'
             data_request.director = request.user
-            data_request.director_comment = comment
-            messages.success(request, 'Request has been rejected.')
+            data_request.director_comment = f"Admin override: {comment}"
+            data_request.director_action = 'rejected'
+            
+            data_request.save()
+            messages.success(request, 'Request rejected via admin override.')
+            
+            # Send rejection email
+            EmailService.send_rejection_email(
+                data_request, 
+                request.user, 
+                comment, 
+                'admin'
+            )
         
-        data_request.save()
-        data_request.send_status_notification()
-        return redirect(reverse('admin:datasets_datarequest_changelist'))
+        return redirect('admin:datasets_datarequest_changelist')
     
-    return render(request, 'datasets/admin/approve_request.html', {
+    return render(request, 'datasets/admin_approve_request.html', {
         'data_request': data_request
     })
 
-@login_required
-def dataset_download(request, pk):
-    dataset = get_object_or_404(Dataset, pk=pk)
-    data_request = DataRequest.objects.filter(
-        user=request.user,
-        dataset=dataset,
-        status='approved'
-    ).first()
-    
-    if data_request and data_request.can_download():
-        # Record the download
-        data_request.record_download()
-        
-        # Increment dataset download count
-        dataset.download_count += 1
-        dataset.save()
-        
-        # Serve the file
-        file_path = os.path.join(settings.MEDIA_ROOT, dataset.file.name)
-        if os.path.exists(file_path):
-            response = FileResponse(open(file_path, 'rb'), as_attachment=True)
-            
-            # Set appropriate Content-Type based on file extension
-            ext = os.path.splitext(dataset.file.name)[1].lower()
-            if ext == '.csv':
-                response['Content-Type'] = 'text/csv'
-            elif ext in ['.jpg', '.jpeg']:
-                response['Content-Type'] = 'image/jpeg'
-            elif ext == '.png':
-                response['Content-Type'] = 'image/png'
-            elif ext in ['.dcm', '.dicom']:
-                response['Content-Type'] = 'application/dicom'
-            elif ext in ['.nii', '.gz']:
-                response['Content-Type'] = 'application/octet-stream'
-            
-            return response
-    
-    return render(request, 'datasets/download_denied.html', status=403)
-
+# Resend email functionality
 @login_required
 @permission_required('datasets.review_datarequest', raise_exception=True)
-def review_request(request, pk):
-    data_request = get_object_or_404(DataRequest, pk=pk)
+def resend_notification(request, request_id):
+    """Resend notification email for a request"""
+    from .models import DataRequest
+    from .utils.email_service import EmailService
     
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        comment = request.POST.get('comment', '')
-        
-        if action == 'approve':
-            data_request.status = 'director_review'
-            data_request.manager = request.user
-            data_request.data_manager_comment = comment
-            messages.success(request, 'Request recommended for director approval.')
-            
-            # Notify directors
-            directors = User.objects.filter(groups__name='Directors')
-            for director in directors:
-                send_mail(
-                    "Request Needs Final Approval",
-                    f"Request ID: {data_request.id} needs your approval.",
-                    settings.DEFAULT_FROM_EMAIL,
-                    [director.email],
-                    fail_silently=True,
-                )
-                
-        elif action == 'reject':
-            data_request.status = 'rejected'
-            data_request.manager = request.user
-            data_request.data_manager_comment = comment
-            messages.success(request, 'Request has been rejected.')
-            
-            # Notify user
-            send_mail(
-                "Your Data Request Status",
-                f"Your request for {data_request.dataset.title} has been rejected.",
-                settings.DEFAULT_FROM_EMAIL,
-                [data_request.user.email],
-                fail_silently=True,
-            )
-        
-        data_request.save()
-        return redirect('admin:datasets_datarequest_changelist')
+    data_request = get_object_or_404(DataRequest, id=request_id)
     
-    return render(request, 'datasets/review_request.html', {
-        'data_request': data_request
-    })
+    success = False
+    message = ""
     
+    if data_request.status == 'pending' and data_request.manager:
+        success = EmailService.send_staff_notification(data_request, data_request.manager, 'manager')
+        message = 'Manager notification resent.'
+    elif data_request.status == 'approved':
+        success = EmailService.send_approval_email(data_request)
+        message = 'Approval email resent.'
+    elif data_request.status == 'director_review' and data_request.director:
+        success = EmailService.send_staff_notification(data_request, data_request.director, 'director')
+        message = 'Director notification resent.'
+    
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, 'Failed to resend email or no email type applicable.')
+    
+    return redirect('admin:datasets_datarequest_changelist')
 
 @login_required
-@permission_required('datasets.approve_datarequest', raise_exception=True)
-def approve_request(request, pk):
-    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
+def preview_acknowledgment_email(request, request_id):
+    """Preview acknowledgment email (for testing)"""
+    from .models import DataRequest
+    from django.conf import settings
     
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        comment = request.POST.get('comment', '')
-        
-        if action == 'approve':
-            data_request.status = 'approved'
-            data_request.approved_date = timezone.now()
-            data_request.director = request.user
-            data_request.director_comment = comment
-            messages.success(request, 'Request approved successfully!')
-            
-            # Notify user
-            send_mail(
-                "Your Data Request Approved",
-                f"Your request for {data_request.dataset.title} has been approved.",
-                settings.DEFAULT_FROM_EMAIL,
-                [data_request.user.email],
-                fail_silently=True,
-            )
-            
-        elif action == 'reject':
-            data_request.status = 'rejected'
-            data_request.director = request.user
-            data_request.director_comment = comment
-            messages.success(request, 'Request has been rejected.')
-            
-            # Notify user
-            send_mail(
-                "Your Data Request Status",
-                f"Your request for {data_request.dataset.title} has been rejected.",
-                settings.DEFAULT_FROM_EMAIL,
-                [data_request.user.email],
-                fail_silently=True,
-            )
-        
-        data_request.save()
-        return redirect('admin:datasets_datarequest_changelist')
+    data_request = get_object_or_404(DataRequest, id=request_id, user=request.user)
     
-    return render(request, 'datasets/admin/approve_request.html', {
-        'data_request': data_request
-    })
+    context = {
+        'user': request.user,
+        'request': data_request,
+        'dataset': data_request.dataset,
+        'site_name': getattr(settings, 'SITE_NAME', 'Data Portal'),
+        'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com'),
+    }
+    
+    return render(request, 'emails/requests/acknowledgment.html', context)
+    """Resend specific email for a request"""
+    data_request = get_object_or_404(DataRequest, pk=pk)
+    
+    success = False
+    if email_type == 'acknowledgment':
+        success = EmailService.send_acknowledgment_email(data_request)
+        message = 'Acknowledgment email resent.'
+    elif email_type == 'approval':
+        success = EmailService.send_approval_email(data_request)
+        message = 'Approval email resent.'
+    elif email_type == 'notification':
+        if data_request.manager:
+            success = EmailService.send_staff_notification(data_request, data_request.manager, 'manager')
+            message = 'Manager notification resent.'
+    
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, 'Failed to resend email.')
+    
+    return redirect(request.META.get('HTTP_REFERER', 'review_requests_list'))
+
+@admin_required
+def all_requests_report(request):
+    """
+    Comprehensive report of all data requests for admins only
+    """
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Check admin permissions
+    if request.user.role not in ['director', 'data_manager'] and not request.user.is_superuser:
+        messages.error(request, "Access denied. Admin privileges required.")
+        return redirect('dataset_list')
+    
+    # Get all data requests with related data
+    all_requests = DataRequest.objects.all().select_related(
+        'user', 'dataset', 'manager', 'director'
+    ).order_by('-request_date')
+    
+    # Filter based on user role
+    if request.user.role == 'director' or request.user.is_superuser:
+        # Director and superusers see everything
+        pass  # already have all_requests
+    elif request.user.role == 'data_manager':
+        # Managers see requests they've reviewed or are pending
+        all_requests = all_requests.filter(
+            Q(status__in=['manager_review', 'director_review', 'approved', 'rejected']) |
+            Q(manager=request.user)
+        )
+    else:
+        # Regular users should have been redirected already
+        return redirect('dataset_list')
+    
+    # Calculate statistics
+    total_requests = all_requests.count()
+    pending_requests = all_requests.filter(status__in=['pending', 'manager_review', 'director_review']).count()
+    approved_requests = all_requests.filter(status='approved').count()
+    rejected_requests = all_requests.filter(status='rejected').count()
+    
+    # Approval rate
+    approval_rate = 0
+    if total_requests > 0:
+        approval_rate = (approved_requests / total_requests) * 100
+    
+    # Status distribution
+    status_counts = all_requests.values('status').annotate(count=Count('id')).order_by('status')
+    
+    # Monthly trends (last 6 months)
+    six_months_ago = timezone.now() - timedelta(days=180)
+    monthly_stats = all_requests.filter(
+        request_date__gte=six_months_ago
+    ).annotate(
+        month=TruncMonth('request_date')
+    ).values('month').annotate(
+        total=Count('id'),
+        approved=Count('id', filter=Q(status='approved')),
+        rejected=Count('id', filter=Q(status='rejected'))
+    ).order_by('month')
+    
+    # Manager performance (for directors and superusers)
+    manager_stats = None
+    if request.user.role == 'director' or request.user.is_superuser:
+        manager_stats = DataRequest.objects.filter(
+            manager__isnull=False
+        ).values(
+            'manager__email',
+            'manager__first_name',
+            'manager__last_name',
+            'manager__role'
+        ).annotate(
+            total_reviewed=Count('id'),
+            recommended=Count('id', filter=Q(manager_action='recommended')),
+            rejected=Count('id', filter=Q(manager_action='rejected')),
+            pending=Count('id', filter=Q(manager_action__isnull=True) & Q(status='manager_review'))
+        ).order_by('-total_reviewed')
+    
+    # Director performance (for superusers or self-review)
+    director_stats = None
+    if request.user.is_superuser or request.user.role == 'director':
+        director_stats = DataRequest.objects.filter(
+            director__isnull=False
+        ).values(
+            'director__email',
+            'director__first_name',
+            'director__last_name'
+        ).annotate(
+            total_reviewed=Count('id'),
+            approved=Count('id', filter=Q(director_action='approved')),
+            rejected=Count('id', filter=Q(director_action='rejected')),
+            pending=Count('id', filter=Q(director_action__isnull=True) & Q(status='director_review'))
+        ).order_by('-total_reviewed')
+    
+    # Overall system performance
+    avg_processing_time = None
+    if request.user.role == 'director' or request.user.is_superuser:
+        # Calculate average time from request to approval
+        approved_with_dates = DataRequest.objects.filter(
+            status='approved',
+            request_date__isnull=False,
+            approved_date__isnull=False
+        )
+        if approved_with_dates.exists():
+            # This is a simplified calculation
+            total_days = sum([
+                (req.approved_date - req.request_date).days 
+                for req in approved_with_dates
+                if req.approved_date > req.request_date
+            ], 0)
+            avg_processing_time = total_days / approved_with_dates.count() if approved_with_dates.count() > 0 else 0
+    
+    context = {
+        'all_requests': all_requests,
+        'total_requests': total_requests,
+        'pending_requests': pending_requests,
+        'approved_requests': approved_requests,
+        'rejected_requests': rejected_requests,
+        'approval_rate': approval_rate,
+        'status_counts': status_counts,
+        'monthly_stats': monthly_stats,
+        'manager_stats': manager_stats,
+        'director_stats': director_stats,
+        'avg_processing_time': avg_processing_time,
+        'user_role': request.user.role,
+        'is_superuser': request.user.is_superuser,
+    }
+    
+    return render(request, 'datasets/all_requests_report.html', context)
+
+def test_email_notification(request):
+    """Test all email notifications in the system"""
+    # Check if user is logged in
+    if not request.user.is_authenticated:
+        from django.contrib.auth.views import redirect_to_login
+        return redirect_to_login(request.get_full_path())
+    
+    test_results = []
+    test_email = request.user.email if request.user.email else "test@example.com"
+    
+    # Test 1: Basic email
+    try:
+        send_mail(
+            subject='✅ DATICAN - Basic Email Test',
+            message=f'This is a basic text email test.\n\n'
+                   f'User: {request.user.first_name}\n'
+                   f'Email: {test_email}\n'
+                   f'Time: {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n'
+                   f'If you see this in console, basic emails are working!',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[test_email],
+            fail_silently=False,
+        )
+        test_results.append("✅ Basic email sent successfully")
+    except Exception as e:
+        test_results.append(f"❌ Basic email failed: {e}")
+    
+    # Test 2: HTML email
+    try:
+        from django.template.loader import render_to_string
+        from django.utils.html import strip_tags
+        
+        html_message = render_to_string('emails/test_email.html', {
+            'user': request.user,
+            'test_data': f'Test performed at {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}'
+        })
+        plain_message = strip_tags(html_message)
+        
+        send_mail(
+            subject='✅ DATICAN - HTML Email Test',
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[test_email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+        test_results.append("✅ HTML email sent successfully")
+    except Exception as e:
+        test_results.append(f"❌ HTML email failed: {e}")
+    
+    # Test 3: Simulate request notification
+    try:
+        # Try to find a real DataRequest for testing
+        from .models import DataRequest
+        test_request = DataRequest.objects.first()
+        
+        if test_request:
+            subject = f'🔔 DATICAN - Simulated Notification: {test_request.dataset.title}'
+            message = f"""Test Notification Email
+
+    Request Details:
+    - Dataset: {test_request.dataset.title}
+    - Request ID: {test_request.id}
+    - User: {test_request.user.first_name}
+    - Status: {test_request.status}
+    - Date: {test_request.request_date.strftime("%Y-%m-%d")}
+
+    This is a simulated notification email to test the workflow.
+    """
+            
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[test_email],
+                fail_silently=False,
+            )
+            test_results.append("✅ Simulated notification sent successfully")
+        else:
+            test_results.append("⚠️ No DataRequest found for simulation test")
+    except Exception as e:
+        test_results.append(f"❌ Simulation test failed: {e}")
+    
+    # System info
+    test_results.append(f"📧 Current email backend: {settings.EMAIL_BACKEND}")
+    test_results.append(f"👤 Logged in as: {request.user.first_name} ({request.user.email})")
+    test_results.append(f"📨 From email: {settings.DEFAULT_FROM_EMAIL}")
+    
+    return HttpResponse("<br>".join(test_results))
+
+@login_required
+def my_requests(request):
+    """Show all requests made by the current user"""
+    user_requests = DataRequest.objects.filter(user=request.user).select_related(
+        'dataset', 'manager', 'director'
+    ).order_by('-request_date')
+    
+    context = {
+        'user_requests': user_requests,
+        'total_requests': user_requests.count(),
+        'approved_requests': user_requests.filter(status='approved').count(),
+        'pending_requests': user_requests.filter(status__in=['pending', 'manager_review', 'director_review']).count(),
+        'rejected_requests': user_requests.filter(status='rejected').count(),
+    }
+    
+    return render(request, 'datasets/my_requests.html', context)

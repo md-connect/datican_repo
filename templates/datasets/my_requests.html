@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Data Requests - DATICAN{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">📋 My Data Requests</h1>
+        <div class="text-sm text-gray-500">
+            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
+                {{ total_requests }} request{{ total_requests|pluralize }}
+            </span>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Total Requests</div>
+            <div class="text-3xl font-bold mt-2">{{ total_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">All time</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Pending</div>
+            <div class="text-3xl font-bold mt-2 text-yellow-600">{{ pending_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">Awaiting review</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Approved</div>
+            <div class="text-3xl font-bold mt-2 text-green-600">{{ approved_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">Ready for download</div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow">
+            <div class="text-sm text-gray-500 uppercase tracking-wide">Rejected</div>
+            <div class="text-3xl font-bold mt-2 text-red-600">{{ rejected_requests }}</div>
+            <div class="text-sm text-gray-500 mt-1">Not approved</div>
+        </div>
+    </div>
+
+    {% if user_requests %}
+        <div class="bg-white shadow-md rounded-lg overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dataset</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for request in user_requests %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ request.id }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ request.dataset.title|truncatechars:40 }}</div>
+                                <div class="text-sm text-gray-500">ID: {{ request.dataset.id }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ request.request_date|date:"M d, Y H:i" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if request.status == 'approved' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        ✅ Approved
+                                    </span>
+                                    {% if request.approved_date %}
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        {{ request.approved_date|date:"M d, Y" }}
+                                    </div>
+                                    {% endif %}
+                                {% elif request.status == 'rejected' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        ❌ Rejected
+                                    </span>
+                                    {% if request.rejection_reason %}
+                                    <div class="text-xs text-gray-500 mt-1" title="{{ request.rejection_reason }}">
+                                        {{ request.rejection_reason|truncatechars:30 }}
+                                    </div>
+                                    {% endif %}
+                                {% elif request.status == 'pending' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        ⏳ Pending
+                                    </span>
+                                {% elif request.status == 'manager_review' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        🔍 Manager Review
+                                    </span>
+                                    {% if request.manager %}
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        {{ request.manager.get_full_name|default:request.manager.email|truncatechars:20 }}
+                                    </div>
+                                    {% endif %}
+                                {% elif request.status == 'director_review' %}
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                        👑 Director Review
+                                    </span>
+                                    {% if request.director %}
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        {{ request.director.get_full_name|default:request.director.email|truncatechars:20 }}
+                                    </div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if request.approved_date %}
+                                    {{ request.approved_date|date:"M d, Y" }}
+                                {% elif request.manager_review_date %}
+                                    {{ request.manager_review_date|date:"M d, Y" }}
+                                {% else %}
+                                    {{ request.request_date|date:"M d, Y" }}
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                {% if request.status == 'approved' %}
+                                    <a href="{% url 'dataset_download' request.dataset.id %}" 
+                                       class="text-green-600 hover:text-green-900 mr-4">
+                                        ⬇️ Download
+                                    </a>
+                                {% endif %}
+                                <a href="{% url 'request_status' request.id %}" 
+                                   class="text-blue-600 hover:text-blue-900">
+                                    👁️ View Details
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- No requests message -->
+        {% if total_requests == 0 %}
+        <div class="bg-white shadow-md rounded-lg p-8 text-center">
+            <div class="text-6xl mb-4">📭</div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">No Requests Yet</h3>
+            <p class="text-gray-600 mb-6">You haven't submitted any data requests yet.</p>
+            <a href="{% url 'dataset_list' %}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+                Browse Datasets →
+            </a>
+        </div>
+        {% endif %}
+
+        <!-- Request history note -->
+        <div class="mt-8 bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div class="flex items-start">
+                <div class="text-blue-500 mr-3">💡</div>
+                <div class="text-sm text-gray-700">
+                    <span class="font-medium">Note:</span> This page shows all data requests you have submitted. 
+                    You can track the status of each request and download approved datasets.
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white shadow-md rounded-lg p-8 text-center">
+            <div class="text-6xl mb-4">📭</div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">No Requests Yet</h3>
+            <p class="text-gray-600 mb-6">You haven't submitted any data requests yet.</p>
+            <a href="{% url 'dataset_list' %}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark">
+                Browse Datasets →
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Quick actions -->
+    <div class="mt-8 flex justify-between items-center pt-6 border-t border-gray-200">
+        <div class="text-sm text-gray-500">
+            Showing {{ user_requests.count }} request{{ user_requests.count|pluralize }}
+        </div>
+        <div class="space-x-4">
+            <a href="{% url 'dataset_list' %}" class="text-primary hover:text-primary-dark font-medium">
+                Browse More Datasets →
+            </a>
+            <a href="{% url 'download_request_form' %}" class="text-green-600 hover:text-green-800 font-medium">
+                📝 Download Request Form
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
