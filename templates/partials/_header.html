@@ -69,8 +69,8 @@
               x-cloak
               style="display: none;"
             >
-              <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100">My Profile</a>
-              <a href="{% url 'account_change_password' %}" class="block px-4 py-2 hover:bg-gray-100">Change Password</a>
+              <a href="{% url 'profile' %}" class="block px-4 py-2 hover:bg-gray-100">Settings</a>
+              <a href="{% url 'change_password' %}" class="block px-4 py-2 hover:bg-gray-100">Change Password</a>
               <form action="{% url 'account_logout' %}" method="POST" class="block">
                 {% csrf_token %}
                 <button type="submit" class="w-full text-left px-4 py-2 hover:bg-gray-100">
@@ -103,7 +103,8 @@
         <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Courses</a>
         <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Discussions</a>
         {% if user.is_authenticated %}
-        <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Profile</a>
+        <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Settings</a>
+        <a href="{% url 'change_password' %}" class="block px-4 py-2 hover:bg-gray-100">Change Password</a>
         <form action="{% url 'account_logout' %}" method="POST" class="block">
           {% csrf_token %}
           <button type="submit" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">

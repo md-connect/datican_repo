@@ -7,6 +7,9 @@ from django.core.exceptions import ValidationError
 import os
 from django.core.files.base import ContentFile
 from datasets.utilities import convert_to_png
+from django.core.validators import FileExtensionValidator
+import markdown
+from django.utils.safestring import mark_safe
 
 def validate_thumbnail(value):
     """Validate thumbnail file formats"""
@@ -95,7 +98,7 @@ class Dataset(models.Model):
         blank=True
     )
 
-       # Add this field for preview file
+    # Add this field for preview file
     preview_file = models.FileField(
         upload_to='dataset_previews/',
         blank=True,
@@ -118,6 +121,60 @@ class Dataset(models.Model):
         blank=True
     )
 
+    readme_file = models.FileField(
+        upload_to='dataset_readmes/%Y/%m/%d/',
+        null=True,
+        blank=True,
+        validators=[FileExtensionValidator(
+            allowed_extensions=['md', 'txt', 'pdf', 'rst', 'markdown']
+        )],
+        help_text="Upload README file (Markdown, PDF, or Text)"
+    )
+    readme_content = models.TextField(
+        blank=True,
+        help_text="Automatically extracted text from README"
+    )
+    readme_updated = models.DateTimeField(null=True, blank=True)
+    readme_file_size = models.IntegerField(default=0)  
+
+    @property
+    def readme(self):
+        """Property to maintain compatibility with template"""
+        return self.readme_content
+    
+    @property
+    def has_readme(self):
+        """Check if README exists"""
+        return bool(self.readme_file) or bool(self.readme_content)
+
+    @property
+    def readme_html(self):
+        """Convert Markdown to HTML if possible"""
+        if not self.readme_content:
+            return ""
+        
+        # Check if it's likely markdown (contains markdown syntax)
+        content = self.readme_content
+        
+        # Simple check for markdown
+        has_markdown = any(marker in content for marker in [
+            '# ', '## ', '### ', '**', '*', '`', '[', ']('
+        ])
+        
+        if has_markdown:
+            try:
+                # Convert markdown to HTML
+                html = markdown.markdown(
+                    content,
+                    extensions=['extra', 'codehilite', 'tables']
+                )
+                return mark_safe(html)
+            except:
+                # Fallback to plain text
+                return mark_safe(content.replace('\n', '<br>'))
+        else:
+            # Plain text with line breaks
+            return mark_safe(content.replace('\n', '<br>'))
     def get_user_rating(self, user):
         """Get user's rating for this dataset"""
         try:
@@ -177,6 +234,44 @@ class Dataset(models.Model):
                 self.preview_type = 'excel'
             elif file_name.endswith('.json'):
                 self.preview_type = 'json'
+        # Handle README file processing
+        if self.readme_file and hasattr(self.readme_file, 'file'):
+            try:
+                self.readme_file_size = self.readme_file.size
+                
+                # Extract content for text-based files
+                file_extension = os.path.splitext(self.readme_file.name)[1].lower()
+                
+                if file_extension in ['.md', '.txt', '.rst', '.markdown']:
+                    try:
+                        # Read and decode the file
+                        self.readme_file.seek(0)
+                        content_bytes = self.readme_file.read()
+                        
+                        # Try different encodings
+                        for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                            try:
+                                content = content_bytes.decode(encoding)
+                                self.readme_content = content[:50000]  # Limit size
+                                break
+                            except UnicodeDecodeError:
+                                continue
+                        
+                        # If all encodings fail, store as binary string
+                        if not self.readme_content:
+                            self.readme_content = "Binary content - cannot preview"
+                            
+                    except Exception as e:
+                        self.readme_content = f"Error reading file: {str(e)}"
+                
+                elif file_extension == '.pdf':
+                    self.readme_content = "PDF file - download to view"
+                
+                self.readme_updated = timezone.now()
+                
+            except Exception as e:
+                print(f"Error processing README: {str(e)}")
+                self.readme_content = f"Error: {str(e)}"
 
         super().save(*args, **kwargs)
         

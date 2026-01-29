@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import SignUpForm, LoginForm, ProfileForm
+from .forms import SignUpForm, LoginForm, CombinedProfileForm, PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from datasets.models import Dataset, Thumbnail
 from allauth.socialaccount.models import SocialAccount
@@ -11,6 +11,8 @@ from allauth.account import app_settings
 from allauth.socialaccount.helpers import complete_social_login
 from django.http import HttpResponseRedirect
 from django.db.models import Prefetch
+from .models import UserProfile
+from django.contrib.auth import update_session_auth_hash
 
 def home(request):
     featured_datasets = Dataset.objects.order_by('-rating')[:4].prefetch_related(
@@ -96,19 +98,45 @@ def login_view(request):
 
     return render(request, 'core/login.html', {'form': form, 'next_url': next_url})
 
-
 @login_required
 def profile_view(request):
-    if request.method == 'POST':
-        form = ProfileForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Your profile has been updated!')
-            return redirect('profile')
-    else:
-        form = ProfileForm(instance=request.user)
+    """
+    Combined profile view for updating both User and UserProfile
+    """
+    # Get or create user profile
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
     
-    return render(request, 'core/profile.html', {'form': form})
+    if request.method == 'POST':
+        form = CombinedProfileForm(
+            request.POST, 
+            request.FILES,
+            user=request.user,
+            profile=profile
+        )
+        
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, 'Your profile has been updated successfully!')
+                return redirect('profile')
+            except Exception as e:
+                messages.error(request, f'An error occurred: {str(e)}')
+        else:
+            # Display form errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+    else:
+        form = CombinedProfileForm(
+            user=request.user,
+            profile=profile
+        )
+    
+    return render(request, 'core/profile.html', {
+        'form': form,
+        'profile': profile
+    })
+
 
 @login_required
 def logout_view(request):
@@ -134,3 +162,54 @@ def social_login_callback(request):
     
     messages.error(request, "Error during social login")
     return redirect('login')
+
+@login_required
+def change_password(request):
+    """Simple password change view"""
+    if request.method == 'POST':
+        # Get form data directly from request
+        old_password = request.POST.get('old_password', '')
+        new_password1 = request.POST.get('new_password1', '')
+        new_password2 = request.POST.get('new_password2', '')
+        
+        # Validate the old password first
+        if not request.user.check_password(old_password):
+            messages.error(request, 'Your current password was entered incorrectly. Please enter it again.')
+            return render(request, 'core/change_password.html')
+        
+        # Check if new passwords match
+        if new_password1 != new_password2:
+            messages.error(request, 'The two password fields didn\'t match.')
+            return render(request, 'core/change_password.html')
+        
+        # Check password strength (simple validation)
+        if len(new_password1) < 8:
+            messages.error(request, 'Password must be at least 8 characters long.')
+            return render(request, 'core/change_password.html')
+        
+        if new_password1.isdigit():
+            messages.error(request, 'Password cannot be entirely numeric.')
+            return render(request, 'core/change_password.html')
+        
+        # If all validations pass, change the password
+        try:
+            request.user.set_password(new_password1)
+            request.user.save()
+            
+            # Update session to prevent logout
+            update_session_auth_hash(request, request.user)
+            
+            messages.success(request, 'Your password has been changed successfully!')
+            return redirect('profile')
+            
+        except Exception as e:
+            messages.error(request, f'An error occurred: {str(e)}')
+    
+    return render(request, 'core/change_password.html')
+
+
+@login_required
+def password_change_done(request):
+    """Password change success page"""
+    messages.success(request, 'Your password has been changed successfully!')
+    return redirect('profile')

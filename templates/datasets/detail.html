@@ -893,37 +893,81 @@
           {% endif %}
         </div>
 
-        <!-- NEW README Preview Section -->
+        <!-- README Preview Section -->
         <div id="readmePreview" class="p-3 md:p-4 hidden">
-            {% if dataset.readme %}
+            {% if dataset.has_readme %}
                 <div class="bg-white border rounded-lg overflow-hidden">
                     <!-- README Header -->
                     <div class="flex items-center justify-between p-3 md:p-4 border-b bg-gray-50">
                         <div class="flex items-center">
                             <i data-lucide="book-open" class="w-5 h-5 text-primary mr-2"></i>
-                            <h3 class="font-medium text-primary">Dataset Documentation</h3>
+                            <div>
+                                <h3 class="font-medium text-primary">Dataset Documentation</h3>
+                                {% if dataset.readme_file %}
+                                <p class="text-xs text-gray-500">
+                                    {{ dataset.readme_file.name|cut:"dataset_readmes/" }}
+                                    ({{ dataset.readme_file_size|filesizeformat }})
+                                </p>
+                                {% endif %}
+                            </div>
                         </div>
-                        <button onclick="copyReadme()" 
-                                class="text-sm text-gray-600 hover:text-primary flex items-center gap-1">
-                            <i data-lucide="copy" class="w-4 h-4"></i>
-                            Copy
-                        </button>
+                        <div class="flex items-center gap-3">
+                            {% if dataset.readme_file %}
+                            <a href="{{ dataset.readme_file.url }}" 
+                              download
+                              class="text-sm text-gray-600 hover:text-primary flex items-center gap-1 px-3 py-1 border rounded hover:bg-gray-50">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                Original File
+                            </a>
+                            {% endif %}
+                            <button onclick="copyReadme()" 
+                                    class="text-sm text-gray-600 hover:text-primary flex items-center gap-1 px-3 py-1 border rounded hover:bg-gray-50">
+                                <i data-lucide="copy" class="w-4 h-4"></i>
+                                Copy Text
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- README Content -->
                     <div class="p-4 md:p-6 max-h-[500px] overflow-y-auto">
-                        <div class="prose prose-sm max-w-none readme-content">
-                            {{ dataset.readme|linebreaks|urlize }}
+                        {% if dataset.readme_file.name|lower|slice:"-3:" == ".pdf" %}
+                        <div class="text-center p-8">
+                            <i data-lucide="file-text" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                            <p class="text-gray-600 mb-2">PDF README file</p>
+                            <p class="text-sm text-gray-500 mb-4">Download to view the complete documentation</p>
+                            <a href="{{ dataset.readme_file.url }}" 
+                              download
+                              class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark">
+                                <i data-lucide="download" class="w-4 h-4"></i>
+                                Download PDF
+                            </a>
                         </div>
+                        {% else %}
+                        <div class="prose prose-sm max-w-none readme-content">
+                            {{ dataset.readme_html|safe }}  <!-- Use the HTML property -->
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <!-- README Stats -->
                     <div class="px-4 py-3 border-t bg-gray-50 text-xs text-gray-500 flex justify-between">
-                        <div>
-                            <span class="font-medium">{{ dataset.readme|wordcount }}</span> words
+                        <div class="flex items-center gap-4">
+                            <div>
+                                <span class="font-medium">{{ dataset.readme_content|wordcount }}</span> words
+                            </div>
+                            <div>
+                                <span class="font-medium">{{ dataset.readme_content|length }}</span> characters
+                            </div>
+                            {% if dataset.readme_updated %}
+                            <div>
+                                Updated: {{ dataset.readme_updated|date:"M d, Y" }}
+                            </div>
+                            {% endif %}
                         </div>
-                        <div>
-                            <span class="font-medium">{{ dataset.readme|length }}</span> characters
+                        <div class="text-gray-400">
+                            {% if dataset.readme_file.name %}
+                            {{ dataset.readme_file.name|cut:"dataset_readmes/" }}
+                            {% endif %}
                         </div>
                     </div>
                 </div>

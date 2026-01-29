@@ -58,10 +58,10 @@ class DatasetAdminForm(forms.ModelForm):
 class DatasetAdmin(admin.ModelAdmin):
     form = DatasetAdminForm
     inlines = [ThumbnailInline]
-    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'dimension', 'has_preview']
+    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'dimension', 'has_preview', 'has_readme']
     list_filter = ['modality', 'format', 'upload_date', 'dimension', 'preview_type']
     search_fields = ['title', 'description', 'body_part', 'dimension']
-    readonly_fields = ('size', 'download_count', 'upload_date', 'update_date', 'thumbnail_preview', 'preview_type', 'owner')
+    readonly_fields = ('readme_updated', 'readme_file_size', 'size', 'download_count', 'upload_date', 'update_date', 'thumbnail_preview', 'preview_type', 'owner')
     
     # UPDATED: Add preview file section
     fieldsets = (
@@ -76,19 +76,26 @@ class DatasetAdmin(admin.ModelAdmin):
         }),
         ('Preview File', {
             'fields': ('preview_file', 'preview_type'),
-            'classes': ('collapse',),
             'description': 'Upload a CSV/Excel/JSON file for data preview (optional). File type will be auto-detected.'
+        }),
+        ('README Documentation', { 
+            'fields': ('readme_file', 'readme_content', 'readme_updated', 'readme_file_size'),
+            'description': 'Upload README documentation (MD, TXT, PDF, RST, Markdown)'
         }),
         ('Statistics', {
             'fields': ('rating', 'download_count', 'size'),
-            'classes': ('collapse',)
         }),
         ('System Information', {
             'fields': ('upload_date', 'update_date'),
             'classes': ('collapse',)
         })
     )
-    
+    # Add a property for admin list display
+    def has_readme(self, obj):
+        return bool(obj.readme_file) or bool(obj.readme_content)
+    has_readme.boolean = True
+    has_readme.short_description = 'Has README'
+
     def thumbnail_preview(self, obj):
         primary = obj.thumbnails.filter(is_primary=True).first()
         if primary:
@@ -109,7 +116,7 @@ class DatasetAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         # Handle owner and uploaded_by for new datasets
         if not change:
-            obj.owner = request.user.username
+            obj.owner = request.user.email
             if not obj.uploaded_by:
                 obj.uploaded_by = request.user
         
