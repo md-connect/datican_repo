@@ -682,7 +682,7 @@
             {% else %}
               <!-- Not authenticated -->
               <a href="{% url 'login' %}?next={% url 'dataset_detail' dataset.id %}" 
-                class="bg-accent text-white px-8 py-4 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-lg">
+                class="bg-accent text-white px-8 py-4 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-md">
                 <i data-lucide="log-in" class="w-6 h-6"></i>
                 Login to Request Access
               </a>
