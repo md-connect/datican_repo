@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">Manager Dashboard</h1>
-    <p class="text-gray-600 mb-8">Welcome back, {{ staff_display_name }}</p>
+    <p class="text-gray-600 mb-8">Welcome back, {{ request.user.get_full_name|default:request.user.email }}</p>
     
     <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -30,30 +30,32 @@
             </div>
         </div>
 
-        <!-- Approved Requests Card -->
+        <!-- Recommended by You Card -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500">Your Approvals</p>
-                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ approved_count|default:"0" }}</p>
+                    <p class="text-sm font-medium text-gray-500">Recommended by You</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ recommended_by_manager_count|default:"0" }}</p>
                 </div>
-                <div class="p-3 bg-green-50 rounded-lg">
-                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                <div class="p-3 bg-blue-50 rounded-lg">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
             <div class="mt-4">
-                <span class="text-sm text-gray-500">Total approved</span>
+                <a href="{% url 'manager_recommendations' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                    View All →
+                </a>
             </div>
         </div>
 
-        <!-- Rejected Requests Card -->
+        <!-- Your Rejections Card -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-500">Your Rejections</p>
-                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ rejected_count|default:"0" }}</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ rejected_by_manager_count|default:"0" }}</p>
                 </div>
                 <div class="p-3 bg-red-50 rounded-lg">
                     <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +64,9 @@
                 </div>
             </div>
             <div class="mt-4">
-                <span class="text-sm text-gray-500">Total rejected</span>
+                <a href="{% url 'manager_rejections' %}" class="text-sm font-medium text-red-600 hover:text-red-700">
+                    View All →
+                </a>
             </div>
         </div>
 
@@ -73,17 +77,128 @@
                     <p class="text-sm font-medium text-gray-500">Completion Rate</p>
                     <p class="text-3xl font-bold text-gray-900 mt-2">{{ completion_rate|floatformat:1 }}%</p>
                 </div>
-                <div class="p-3 bg-blue-50 rounded-lg">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="p-3 bg-green-50 rounded-lg">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
             <div class="mt-4">
-                <div class="text-sm">
+                <div class="text-sm text-gray-500">
                     {{ total_assigned|default:"0" }} assigned
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- NEW: Lists Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Recommended by You -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Requests Recommended by You</h3>
+            <p class="text-gray-600 mb-4">These are requests you've sent to the director for final approval.</p>
+            
+            {% if manager_recommended_list %}
+            <div class="space-y-3 mb-4">
+                {% for request in manager_recommended_list %}
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">#{{ request.id }}</p>
+                        <p class="text-xs text-gray-600">{{ request.dataset.title|truncatechars:25 }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                        Pending Director
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-6">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-gray-500">No requests recommended yet</p>
+            </div>
+            {% endif %}
+            
+            <a href="{% url 'manager_recommendations' %}" class="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium">
+                View All ({{ recommended_by_manager_count|default:"0" }})
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Rejected by You -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Requests Rejected by You</h3>
+            <p class="text-gray-600 mb-4">These are requests you've rejected at the manager level.</p>
+            
+            {% if manager_rejected_list %}
+            <div class="space-y-3 mb-4">
+                {% for request in manager_rejected_list %}
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">#{{ request.id }}</p>
+                        <p class="text-xs text-gray-600">{{ request.dataset.title|truncatechars:25 }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                        Rejected
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-6">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p class="text-gray-500">No requests rejected yet</p>
+            </div>
+            {% endif %}
+            
+            <a href="{% url 'manager_rejections' %}" class="inline-flex items-center text-red-600 hover:text-red-700 font-medium">
+                View All ({{ rejected_by_manager_count|default:"0" }})
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Director Decisions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Director Decisions</h3>
+            <p class="text-gray-600 mb-4">Final decisions made by the director on requests you reviewed.</p>
+            
+            {% if director_decisions_list %}
+            <div class="space-y-3 mb-4">
+                {% for request in director_decisions_list %}
+                <div class="flex items-center justify-between p-3 {% if request.status == 'approved' %}bg-green-50{% else %}bg-red-50{% endif %} rounded-lg">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">#{{ request.id }}</p>
+                        <p class="text-xs text-gray-600">{{ request.dataset.title|truncatechars:25 }}</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs font-medium {% if request.status == 'approved' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %} rounded-full">
+                        {{ request.get_status_display }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-6">
+                <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <p class="text-gray-500">No director decisions yet</p>
+            </div>
+            {% endif %}
+            
+            <a href="{% url 'director_decisions_manager' %}" class="inline-flex items-center text-gray-600 hover:text-gray-700 font-medium">
+                View All
+                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </a>
         </div>
     </div>
 
@@ -103,7 +218,7 @@
                 
                 <a href="{% url 'manager_recommendations' %}" 
                    class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4" />
                     </svg>
                     <span class="text-sm font-medium text-gray-700">Your Recommendations</span>
@@ -117,12 +232,12 @@
                     <span class="text-sm font-medium text-gray-700">Your Rejections</span>
                 </a>
                 
-                <a href="#" 
+                <a href="{% url 'director_decisions_manager' %}" 
                    class="flex flex-col items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <svg class="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
-                    <span class="text-sm font-medium text-gray-700">Reports</span>
+                    <span class="text-sm font-medium text-gray-700">Director Decisions</span>
                 </a>
             </div>
         </div>
@@ -166,7 +281,8 @@
                 </div>
                 {% endif %}
                 
-                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                {% if recommended_by_manager_count > 0 %}
+                <div class="flex items-center p-4 bg-blue-50 rounded-lg">
                     <div class="flex-shrink-0">
                         <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                             <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,12 +291,19 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-900">{{ approved_count|default:"0" }} approved requests</p>
-                        <p class="text-xs text-gray-500">Total approved by you</p>
+                        <p class="text-sm font-medium text-gray-900">{{ recommended_by_manager_count }} requests recommended</p>
+                        <p class="text-xs text-gray-500">Sent to director for approval</p>
+                    </div>
+                    <div class="ml-auto">
+                        <a href="{% url 'manager_recommended' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700">
+                            View →
+                        </a>
                     </div>
                 </div>
+                {% endif %}
                 
-                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                {% if rejected_by_manager_count > 0 %}
+                <div class="flex items-center p-4 bg-red-50 rounded-lg">
                     <div class="flex-shrink-0">
                         <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                             <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,12 +312,47 @@
                         </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-900">{{ rejected_count|default:"0" }} rejected requests</p>
-                        <p class="text-xs text-gray-500">Total rejected by you</p>
+                        <p class="text-sm font-medium text-gray-900">{{ rejected_by_manager_count }} requests rejected</p>
+                        <p class="text-xs text-gray-500">Rejected at manager level</p>
+                    </div>
+                    <div class="ml-auto">
+                        <a href="{% url 'manager_rejected' %}" class="text-sm font-medium text-red-600 hover:text-red-700">
+                            View →
+                        </a>
                     </div>
                 </div>
+                {% endif %}
+                
+                {% if director_decisions_list %}
+                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-900">{{ director_decisions_list|length }} director decisions</p>
+                        <p class="text-xs text-gray-500">On your reviewed requests</p>
+                    </div>
+                    <div class="ml-auto">
+                        <a href="{% url 'director_decisions_manager' %}" class="text-sm font-medium text-gray-600 hover:text-gray-700">
+                            View →
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* Custom styles for the dashboard */
+.bg-blue-50 { background-color: #eff6ff; }
+.bg-yellow-50 { background-color: #fffbeb; }
+.bg-red-50 { background-color: #fef2f2; }
+.bg-green-50 { background-color: #f0fdf4; }
+</style>
 {% endblock %}

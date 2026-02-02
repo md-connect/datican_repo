@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}All Data Requests - DATICAN Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-2">{{ title }}</h1>
+        <p class="text-gray-600 mb-6">{{ subtitle }}</p>
+        
+        <!-- Filter Form -->
+        <div class="bg-gray-50 p-4 rounded-lg mb-6">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="status" name="status" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                        <option value="">All Statuses</option>
+                        <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="manager_review" {% if current_status == 'manager_review' %}selected{% endif %}>Manager Review</option>
+                        <option value="director_review" {% if current_status == 'director_review' %}selected{% endif %}>Director Review</option>
+                        <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="manager" class="block text-sm font-medium text-gray-700 mb-1">Manager</label>
+                    <select id="manager" name="manager" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                        <option value="">All Managers</option>
+                        {% for manager in managers %}
+                        <option value="{{ manager.id }}" {% if current_manager == manager.id|stringformat:"s" %}selected{% endif %}>
+                            {{ manager.email }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="director" class="block text-sm font-medium text-gray-700 mb-1">Director</label>
+                    <select id="director" name="director" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary">
+                        <option value="">All Directors</option>
+                        {% for director in directors %}
+                        <option value="{{ director.id }}" {% if current_director == director.id|stringformat:"s" %}selected{% endif %}>
+                            {{ director.email }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                        Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Requests Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dataset</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Director</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for request in requests %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ request.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="font-medium">{{ request.user.email }}</div>
+                            <div class="text-xs text-gray-500">{{ request.user.get_full_name|default:"No name" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <div class="font-medium">{{ request.dataset.title|truncatechars:30 }}</div>
+                            <div class="text-xs text-gray-500">{{ request.dataset.modality }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                {% if request.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif request.status == 'rejected' %}bg-red-100 text-red-800
+                                {% elif request.status == 'director_review' %}bg-blue-100 text-blue-800
+                                {% elif request.status == 'manager_review' %}bg-yellow-100 text-yellow-800
+                                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                {{ request.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if request.manager %}
+                            <div>{{ request.manager.email }}</div>
+                            <div class="text-xs text-gray-500">{{ request.manager_review_date|date:"M d, Y"|default:"Not reviewed" }}</div>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {% if request.director %}
+                            <div>{{ request.director.email }}</div>
+                            <div class="text-xs text-gray-500">{{ request.approved_date|date:"M d, Y"|default:"Not reviewed" }}</div>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ request.request_date|date:"M d, Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ request.approved_date|date:"M d, Y"|default:"—" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'data_request_detail' request.id %}" class="text-primary hover:text-primary-dark mr-3">View</a>
+                            <a href="{% url 'admin:datasets_datarequest_change' request.id %}" class="text-gray-600 hover:text-gray-900">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-6 py-4 text-center text-gray-500">No requests found matching your criteria</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if requests.has_other_pages %}
+        <div class="mt-6 flex justify-center">
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                {% if requests.has_previous %}
+                <a href="?page={{ requests.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_manager %}&manager={{ current_manager }}{% endif %}{% if current_director %}&director={{ current_director }}{% endif %}" 
+                   class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">Previous</span>
+                    Previous
+                </a>
+                {% endif %}
+                
+                {% for num in requests.paginator.page_range %}
+                    {% if requests.number == num %}
+                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-primary text-white text-sm font-medium">
+                        {{ num }}
+                    </span>
+                    {% elif num > requests.number|add:'-3' and num < requests.number|add:'3' %}
+                    <a href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_manager %}&manager={{ current_manager }}{% endif %}{% if current_director %}&director={{ current_director }}{% endif %}" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        {{ num }}
+                    </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if requests.has_next %}
+                <a href="?page={{ requests.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_manager %}&manager={{ current_manager }}{% endif %}{% if current_director %}&director={{ current_director }}{% endif %}" 
+                   class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                    <span class="sr-only">Next</span>
+                    Next
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

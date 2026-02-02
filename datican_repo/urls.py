@@ -8,14 +8,12 @@ from datasets import views
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('', include('core.urls')),
 
     # Dashboard URLs at root level
     path('manager/dashboard/', dataset_views.manager_dashboard, name='manager_dashboard'),
     path('director/dashboard/', dataset_views.director_dashboard, name='director_dashboard'),
     path('admin/dashboard/', dataset_views.admin_dashboard, name='admin_dashboard'),
-
 
     # Manager review URLs - FOR DATA MANAGERS
     path('review/<int:pk>/', views.manager_review_request, name='manager_review'),  # CHANGED
@@ -33,15 +31,15 @@ urlpatterns = [
     path('director/reviews/', views.director_review_list, name='director_review_list'),
     path('director/approvals/', views.director_approvals, name='director_approvals'),
     path('director/rejections/', views.director_rejections, name='director_rejections'),
-
+    path('manager/director-decisions/', views.director_decisions_for_manager, name='director_decisions_manager'),
     # Admin override URLs (for superusers)
     path('admin/requests/<int:pk>/review/', views.admin_review_request, name='admin_review_request'),
+    path('admin/all-requests/', views.admin_all_requests, name='admin_all_requests'),
     path('admin/requests/<int:pk>/approve/', views.approve_request, name='approve_request'),
     path('reports/all-requests/', views.all_requests_report, name='all_requests_report'),
 
     path('datasets/', include('datasets.urls')),
     path('accounts/', include('allauth.urls')),
-
 
     # Password reset URLs
     path(
@@ -64,6 +62,8 @@ urlpatterns = [
         auth_views.PasswordResetCompleteView.as_view(),
         name='password_reset_complete',
     ),
+    path('admin/', admin.site.urls),
+    #path('accounts/', include('allauth.urls')), 
 ]
 
 if settings.DEBUG:

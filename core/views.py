@@ -13,7 +13,75 @@ from django.http import HttpResponseRedirect
 from django.db.models import Prefetch
 from .models import UserProfile
 from django.contrib.auth import update_session_auth_hash
+# views.py
+from django.conf import settings
+from django.shortcuts import redirect
+from django.contrib.auth import login
+from django.contrib.auth.models import User
+import requests
+from urllib.parse import urlencode
 
+def google_login(request):
+    # Redirect to Google OAuth2
+    params = {
+        'client_id': settings.GOOGLE_CLIENT_ID,
+        'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+        'response_type': 'code',
+        'scope': 'openid email profile',
+        'access_type': 'online',
+    }
+    
+    auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    return redirect(auth_url)
+
+def google_callback(request):
+    code = request.GET.get('code')
+    
+    if not code:
+        return redirect('login')
+    
+    # Exchange code for tokens
+    token_url = 'https://oauth2.googleapis.com/token'
+    token_data = {
+        'code': code,
+        'client_id': settings.GOOGLE_CLIENT_ID,
+        'client_secret': settings.GOOGLE_CLIENT_SECRET,
+        'redirect_uri': settings.GOOGLE_REDIRECT_URI,
+        'grant_type': 'authorization_code',
+    }
+    
+    token_response = requests.post(token_url, data=token_data)
+    token_json = token_response.json()
+    access_token = token_json.get('access_token')
+    
+    # Get user info from Google
+    user_info_url = 'https://www.googleapis.com/oauth2/v3/userinfo'
+    headers = {'Authorization': f'Bearer {access_token}'}
+    user_info_response = requests.get(user_info_url, headers=headers)
+    user_info = user_info_response.json()
+    
+    # Extract user information
+    email = user_info.get('email')
+    first_name = user_info.get('given_name', '')
+    last_name = user_info.get('family_name', '')
+    
+    # Find or create user
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        username = email.split('@')[0]
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            first_name=first_name,
+            last_name=last_name
+        )
+        user.save()
+    
+    # Log the user in
+    login(request, user)
+    return redirect('home')
+    
 def home(request):
     featured_datasets = Dataset.objects.order_by('-rating')[:4].prefetch_related(
         Prefetch(
