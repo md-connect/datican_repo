@@ -49,7 +49,6 @@ class EmailService:
             logger.exception("Email sending failed")
             raise
 
-    
     @staticmethod
     def send_acknowledgment_email(request):
         """Send acknowledgment email to user after request submission"""

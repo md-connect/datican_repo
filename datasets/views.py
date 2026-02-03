@@ -1825,6 +1825,40 @@ def manager_review_request(request, pk):
     })
 
 @login_required
+@data_manager_required
+def manager_review_list(request):
+    """List all requests pending manager review"""
+    # Get all requests that need manager review
+    pending_requests = DataRequest.objects.filter(
+        Q(status='pending') |
+        Q(status='manager_review') |
+        Q(status='needs_revision')
+    ).select_related('user', 'dataset').order_by('-request_date')
+    
+    # Separate by status for better organization
+    new_requests = DataRequest.objects.filter(
+        status='pending'
+    ).select_related('user', 'dataset').order_by('-request_date')
+    
+    in_review_requests = DataRequest.objects.filter(
+        status='manager_review',
+        manager=request.user  # Only show requests assigned to this manager
+    ).select_related('user', 'dataset').order_by('-manager_review_date')
+    
+    needs_revision_requests = DataRequest.objects.filter(
+        status='needs_revision'
+    ).select_related('user', 'dataset').order_by('-manager_review_date')
+    
+    context = {
+        'pending_requests': pending_requests,
+        'new_requests': new_requests,
+        'in_review_requests': in_review_requests,
+        'needs_revision_requests': needs_revision_requests,
+        'total_count': pending_requests.count(),
+    }
+    return render(request, 'datasets/request_review_list.html', context)
+
+@login_required
 @user_passes_test(is_director, login_url='/login/')
 def director_review_request(request, pk):
     """View for directors to review OR view approved requests"""

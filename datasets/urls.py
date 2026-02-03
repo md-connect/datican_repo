@@ -23,6 +23,7 @@ urlpatterns = [
     path('download/<int:dataset_id>/<int:pk>/', views.dataset_download, name='download_dataset'),
 
     # Manager review URLs - FOR DATA MANAGERS
+    path('manager/review/', views.manager_review_list, name='manager_review_list'),
     path('review/<int:pk>/', views.manager_review_request, name='manager_review'),  # CHANGED
     path('manager/review/<int:pk>/', views.manager_review_request, name='manager_review_detail'),  # ALTERNATIVE
     
