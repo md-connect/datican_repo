@@ -812,7 +812,7 @@ def dataset_request(request, pk):
                     send_mail(
                         "URGENT: No Data Manager Available",
                         f"A new data request (#{data_request.id}) was submitted but no data manager is available to review it.",
-                        settings.DEFAULT_FROM_EMAIL,
+                        "no-reply@datican.org",
                         [admin_user.email],
                         fail_silently=True,
                     )
@@ -870,7 +870,7 @@ def director_review(request, pk):
                     f"Researcher: {data_request.user.get_full_name()}\n"
                     f"Approval Date: {data_request.approved_date.strftime('%Y-%m-%d %H:%M')}\n"
                     f"Director Notes: {director_comment}",
-                    settings.DEFAULT_FROM_EMAIL,
+                    "no-reply@datican.org",
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -902,7 +902,7 @@ def director_review(request, pk):
                     f"Researcher: {data_request.user.get_full_name()}\n"
                     f"Rejection Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n"
                     f"Director Notes: {director_comment}",
-                    settings.DEFAULT_FROM_EMAIL,
+                    "no-reply@datican.org",
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -953,7 +953,7 @@ def dataset_download(request, pk):
             f"- Download Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n"
             f"- Dataset: {dataset.title}\n\n"
             f"Please remember to comply with the data use agreement and citation requirements.",
-            settings.DEFAULT_FROM_EMAIL,
+            "no-reply@datican.org",
             [request.user.email],
             fail_silently=True,
         )
@@ -1366,96 +1366,6 @@ def all_requests_report(request):
     }
     
     return render(request, 'datasets/all_requests_report.html', context)
-
-def test_email_notification(request):
-    """Test all email notifications in the system"""
-    # Check if user is logged in
-    if not request.user.is_authenticated:
-        from django.contrib.auth.views import redirect_to_login
-        return redirect_to_login(request.get_full_path())
-    
-    test_results = []
-    test_email = request.user.email if request.user.email else "test@example.com"
-    
-    # Test 1: Basic email
-    try:
-        send_mail(
-            subject='✅ DATICAN - Basic Email Test',
-            message=f'This is a basic text email test.\n\n'
-                   f'User: {request.user.first_name}\n'
-                   f'Email: {test_email}\n'
-                   f'Time: {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}\n\n'
-                   f'If you see this in console, basic emails are working!',
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[test_email],
-            fail_silently=False,
-        )
-        test_results.append("✅ Basic email sent successfully")
-    except Exception as e:
-        test_results.append(f"❌ Basic email failed: {e}")
-    
-    # Test 2: HTML email
-    try:
-        from django.template.loader import render_to_string
-        from django.utils.html import strip_tags
-        
-        html_message = render_to_string('emails/test_email.html', {
-            'user': request.user,
-            'test_data': f'Test performed at {timezone.now().strftime("%Y-%m-%d %H:%M:%S")}'
-        })
-        plain_message = strip_tags(html_message)
-        
-        send_mail(
-            subject='✅ DATICAN - HTML Email Test',
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[test_email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-        test_results.append("✅ HTML email sent successfully")
-    except Exception as e:
-        test_results.append(f"❌ HTML email failed: {e}")
-    
-    # Test 3: Simulate request notification
-    try:
-        # Try to find a real DataRequest for testing
-        from .models import DataRequest
-        test_request = DataRequest.objects.first()
-        
-        if test_request:
-            subject = f'🔔 DATICAN - Simulated Notification: {test_request.dataset.title}'
-            message = f"""Test Notification Email
-
-    Request Details:
-    - Dataset: {test_request.dataset.title}
-    - Request ID: {test_request.id}
-    - User: {test_request.user.first_name}
-    - Status: {test_request.status}
-    - Date: {test_request.request_date.strftime("%Y-%m-%d")}
-
-    This is a simulated notification email to test the workflow.
-    """
-            
-            send_mail(
-                subject=subject,
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[test_email],
-                fail_silently=False,
-            )
-            test_results.append("✅ Simulated notification sent successfully")
-        else:
-            test_results.append("⚠️ No DataRequest found for simulation test")
-    except Exception as e:
-        test_results.append(f"❌ Simulation test failed: {e}")
-    
-    # System info
-    test_results.append(f"📧 Current email backend: {settings.EMAIL_BACKEND}")
-    test_results.append(f"👤 Logged in as: {request.user.first_name} ({request.user.email})")
-    test_results.append(f"📨 From email: {settings.DEFAULT_FROM_EMAIL}")
-    
-    return HttpResponse("<br>".join(test_results))
 
 @login_required
 def my_requests(request):
@@ -1915,7 +1825,7 @@ def director_review_request(request, pk):
                 send_mail(
                     f"Request #{data_request.id} Approved",
                     f"The data request you recommended has been approved by the director.",
-                    settings.DEFAULT_FROM_EMAIL,
+                    "no-reply@datican.org",
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -1952,7 +1862,7 @@ def director_review_request(request, pk):
                 send_mail(
                     f"Request #{data_request.id} Returned to Manager",
                     f"The data request you recommended has been returned to you for further review.",
-                    settings.DEFAULT_FROM_EMAIL,
+                    "no-reply@datican.org",
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -2255,64 +2165,3 @@ def redirect_after_login(request):
     else:
         # Regular users go to dataset list
         return redirect('dataset_list')
-
-# views.py
-from django.http import JsonResponse
-from django.urls import reverse
-
-def test_url_config(request):
-    """Test URLs that are actually in main urls.py"""
-    test_urls = [
-        ('manager_review', [1], 'manager_review'),
-        ('director_review', [1], 'director_review'),
-        ('review_requests_list', [], 'review_requests_list'),
-        ('director_approvals', [], 'director_approvals'),
-        ('manager_dashboard', [], 'manager_dashboard'),
-        ('director_dashboard', [], 'director_dashboard'),
-        ('login', [], 'login'),
-        ('signup', [], 'signup'),
-        ('profile', [], 'profile'),
-    ]
-    
-    results = []
-    for name, args, url_name in test_urls:
-        try:
-            url = reverse(url_name, args=args)
-            results.append({
-                'name': name,
-                'status': '✅',
-                'url': url,
-                'namespace': url_name
-            })
-        except Exception as e:
-            results.append({
-                'name': name,
-                'status': '❌',
-                'error': str(e),
-                'namespace': url_name
-            })
-    
-    return JsonResponse({'url_tests': results})
-
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-def test_resend_simple(request):
-    """Simple Resend test without dependencies"""
-    try:
-        # Simple test email using Resend
-        send_mail(
-            subject='✅ Resend Test from Django',
-            message='This is a simple test email sent via Resend.',
-            from_email='no-reply@datican.org',
-            recipient_list=[request.user.email if request.user.is_authenticated else 'mondayoke93@gmail.com'],
-            fail_silently=False,
-        )
-        
-        return HttpResponse("✅ Test email sent via Resend! Check your inbox and Resend dashboard.")
-        
-    except Exception as e:
-        logger.error(f"Resend test failed: {e}")
-        return HttpResponse(f"❌ Resend test failed: {e}")

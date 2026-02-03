@@ -190,7 +190,7 @@ SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 MANAGER_EMAIL = os.environ.get('MANAGER_EMAIL', 'mondayoke93@gmail.com')
 DIRECTOR_EMAIL = os.environ.get('DIRECTOR_EMAIL', 'mondayoke93@gmail.com')
 CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'manager.datican@gmail.com')
-SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@repo.datican.org')
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@datican.org')
 
 # Auth settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
