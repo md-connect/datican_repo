@@ -2,77 +2,616 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>New Data Request for Review</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Data Request for Review - {{ site_name }}</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #e3f2fd; padding: 20px; border-radius: 5px; }
-        .content { padding: 20px; }
-        .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
-        .btn { 
-            display: inline-block; 
-            padding: 10px 20px; 
-            background-color: #007bff; 
-            color: white; 
-            text-decoration: none; 
-            border-radius: 5px; 
-            margin: 10px 0; 
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .details { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
-        .urgent { color: #dc3545; font-weight: bold; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .email-container {
+            max-width: 620px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Header with Brand Colors */
+        .email-header {
+            background: linear-gradient(135deg, #1A252F 0%, #2C3E50 100%);
+            color: white;
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .email-header:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #E74C3C 0%, #ff6b6b 100%);
+        }
+        
+        .logo-container {
+            margin-bottom: 25px;
+        }
+        
+        .logo {
+            display: inline-block;
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            padding: 12px 24px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            border: 2px solid rgba(231, 76, 60, 0.3);
+            letter-spacing: 1px;
+        }
+        
+        /* Logo image alternative */
+        /* .logo-img {
+            height: 50px;
+            width: auto;
+            margin-bottom: 20px;
+        } */
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .header-text h1 {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: white;
+        }
+        
+        .header-text p {
+            font-size: 16px;
+            opacity: 0.95;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .priority-badge {
+            background: linear-gradient(135deg, #E74C3C 0%, #ff6b6b 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        /* Content */
+        .email-content {
+            padding: 40px 30px;
+        }
+        
+        .greeting-section {
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .greeting-section h2 {
+            color: #2C3E50;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .greeting-section p {
+            color: #4b5563;
+            font-size: 16px;
+        }
+        
+        .highlight-name {
+            color: #2C3E50;
+            font-weight: 700;
+        }
+        
+        /* Alert Section */
+        .alert-section {
+            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+            border-left: 4px solid #E74C3C;
+            padding: 24px;
+            border-radius: 8px;
+            margin: 30px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        
+        .alert-icon {
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #E74C3C 0%, #ff6b6b 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .alert-content h3 {
+            color: #2C3E50;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .alert-content p {
+            color: #4b5563;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        /* Request Details Card */
+        .details-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2C3E50;
+        }
+        
+        .details-card h3 {
+            color: #2C3E50;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .details-card h3:before {
+            content: "📋";
+            font-size: 20px;
+            color: #E74C3C;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .detail-item {
+            margin-bottom: 18px;
+        }
+        
+        .detail-label {
+            display: block;
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        
+        .detail-value {
+            font-size: 16px;
+            color: #1e293b;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+        
+        /* Project Description */
+        .project-section {
+            margin: 30px 0;
+        }
+        
+        .project-section h3 {
+            color: #2C3E50;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .project-section h3:before {
+            content: "📝";
+            font-size: 20px;
+            color: #E74C3C;
+        }
+        
+        .project-description {
+            background-color: #ffffff;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #2C3E50;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #4b5563;
+        }
+        
+        /* Attachments */
+        .attachments-section {
+            margin: 30px 0;
+        }
+        
+        .attachments-section h3 {
+            color: #2C3E50;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .attachments-section h3:before {
+            content: "📎";
+            font-size: 20px;
+            color: #E74C3C;
+        }
+        
+        .attachments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .attachment-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .attachment-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .attachment-name {
+            font-size: 15px;
+            color: #1e293b;
+            font-weight: 500;
+        }
+        
+        /* Action Section */
+        .action-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border-radius: 12px;
+            border: 2px dashed #2C3E50;
+        }
+        
+        .action-section h3 {
+            color: #2C3E50;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #E74C3C 0%, #ff6b6b 100%);
+            color: white;
+            text-decoration: none;
+            padding: 18px 40px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
+            background: linear-gradient(135deg, #ff6b6b 0%, #E74C3C 100%);
+        }
+        
+        .url-copy {
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .url-copy code {
+            display: block;
+            background-color: white;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            margin-top: 8px;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            color: #2C3E50;
+        }
+        
+        /* Footer */
+        .email-footer {
+            background: linear-gradient(135deg, #1A252F 0%, #2C3E50 100%);
+            color: #cbd5e1;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .email-footer:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #E74C3C 0%, #ff6b6b 100%);
+        }
+        
+        .footer-content {
+            max-width: 500px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .footer-logo {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 20px;
+            letter-spacing: 1.5px;
+        }
+        
+        .footer-text {
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            opacity: 0.9;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .copyright {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            
+            .email-header, .email-content, .email-footer {
+                padding: 30px 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .header-text h1 {
+                font-size: 22px;
+            }
+            
+            .logo {
+                font-size: 18px;
+                padding: 10px 20px;
+            }
+            
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-button {
+                padding: 16px 30px;
+                font-size: 15px;
+            }
+            
+            .action-section {
+                padding: 30px 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>New Data Request for Review</h2>
-            <p>Dear <strong>{{ staff_display_name }}</strong>,</p>
-        </div>
-        
-        <div class="content">
-            <p>A new data request has been submitted and requires your attention:</p>
-            
-            <div class="details">
-                <h3>Request Details:</h3>
-                <p><strong>Request ID:</strong> #{{ request.id }}</p>
-                <p><strong>Requester:</strong> {{ user_display_name }}</p>
-                <p><strong>Email:</strong> {{ request.user.email }}</p>
-                <p><strong>Dataset:</strong> {{ request.dataset.title }}</p>
-                <p><strong>Request Date:</strong> {{ request.request_date|date:"F d, Y H:i" }}</p>
-                <p><strong>Institution:</strong> {{ request.institution }}</p>
-                <p><strong>Project Title:</strong> {{ request.project_title }}</p>
-                {% if request.phone_number %}
-                <p><strong>Phone:</strong> {{ request.phone_number }}</p>
-                {% endif %}
-                {% if request.ethical_approval_no %}
-                <p><strong>Ethical Approval No:</strong> {{ request.ethical_approval_no }}</p>
-                {% endif %}
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <div class="logo-container">
+                <!-- Logo Image (uncomment if you have logo) -->
+                <!-- <img src="{{ logo_url }}" alt="{{ site_name }} Logo" class="logo-img"> -->
+                
+                <!-- Text Logo Fallback -->
+                <div class="logo">{{ site_name }}</div>
             </div>
             
-            <p><strong>Project Description:</strong></p>
-            <div style="background-color: #fff; padding: 10px; border-left: 4px solid #007bff; margin: 10px 0;">
-                {{ request.project_description|linebreaks }}
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>New Data Request for Review</h1>
+                    <p>Action Required: Manager Review Needed</p>
+                </div>
+                <div class="priority-badge">
+                    ⚡ High Priority
+                </div>
             </div>
-            
-            <p class="urgent">Action Required: Please review this request within 48 hours.</p>
-            
-            <a href="{{ review_url }}" class="btn">Review Request</a>
-            
-            <p>Or copy and paste this link in your browser:<br>
-            <small>{{ review_url }}</small></p>
-            
-            <p><strong>Attachments:</strong></p>
-            <ul>
-                <li>Form Submission: {{ request.get_form_submission_filename }}</li>
-                {% if request.get_ethical_approval_proof_filename %}
-                <li>Ethical Approval Proof: {{ request.get_ethical_approval_proof_filename }}</li>
-                {% endif %}
-            </ul>
         </div>
         
-        <div class="footer">
-            <p>This is an automated notification from the {{ site_name }} Data Portal.</p>
-            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+        <!-- Content -->
+        <div class="email-content">
+            <!-- Greeting -->
+            <div class="greeting-section">
+                <h2>Dear <span class="highlight-name">{{ staff_display_name }}</span>,</h2>
+                <p>A new data request has been submitted and requires your immediate attention.</p>
+            </div>
+            
+            <!-- Alert Section -->
+            <div class="alert-section">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-content">
+                    <h3>Review Required Within 48 Hours</h3>
+                    <p>Please review this request promptly to ensure timely processing for the researcher.</p>
+                </div>
+            </div>
+            
+            <!-- Request Details -->
+            <div class="details-card">
+                <h3>Request Details</h3>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Request ID</span>
+                        <span class="detail-value">#{{ request.id }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Requester</span>
+                        <span class="detail-value">{{ user_display_name }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Email</span>
+                        <span class="detail-value">{{ request.user.email }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Dataset</span>
+                        <span class="detail-value">{{ request.dataset.title }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Submission Date</span>
+                        <span class="detail-value">{{ request.request_date|date:"F d, Y \a\t H:i" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Institution</span>
+                        <span class="detail-value">{{ request.institution }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Project Title</span>
+                        <span class="detail-value">{{ request.project_title }}</span>
+                    </div>
+                    {% if request.phone_number %}
+                    <div class="detail-item">
+                        <span class="detail-label">Phone Number</span>
+                        <span class="detail-value">{{ request.phone_number }}</span>
+                    </div>
+                    {% endif %}
+                    {% if request.ethical_approval_no %}
+                    <div class="detail-item">
+                        <span class="detail-label">Ethical Approval</span>
+                        <span class="detail-value">{{ request.ethical_approval_no }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Project Description -->
+            <div class="project-section">
+                <h3>Project Description</h3>
+                <div class="project-description">
+                    {{ request.project_description|linebreaks }}
+                </div>
+            </div>
+            
+            <!-- Attachments -->
+            <div class="attachments-section">
+                <h3>Submitted Documents</h3>
+                <div class="attachments-list">
+                    <div class="attachment-item">
+                        <div class="attachment-icon">📄</div>
+                        <div class="attachment-name">{{ request.get_form_submission_filename }}</div>
+                    </div>
+                    {% if request.get_ethical_approval_proof_filename %}
+                    <div class="attachment-item">
+                        <div class="attachment-icon">🔒</div>
+                        <div class="attachment-name">{{ request.get_ethical_approval_proof_filename }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Action Required -->
+            <div class="action-section">
+                <h3>Review Required</h3>
+                <p style="color: #4b5563; margin-bottom: 25px; font-size: 16px;">Please review this request and take appropriate action.</p>
+                
+                <a href="{{ review_url }}" class="cta-button">
+                    Review Request Now
+                </a>
+                
+                <div class="url-copy">
+                    <p>Or copy and paste this URL into your browser:</p>
+                    <code>{{ review_url }}</code>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="email-footer">
+            <div class="footer-content">
+                <div class="footer-logo">{{ site_name }}</div>
+                <p class="footer-text">Data Access Portal - Secure Research Data Management</p>
+                
+                <div class="copyright">
+                    <p>© {% now "Y" %} {{ site_name }}. All rights reserved.</p>
+                    <p>This is an automated notification. Please do not reply to this email.</p>
+                </div>
+            </div>
         </div>
     </div>
 </body>

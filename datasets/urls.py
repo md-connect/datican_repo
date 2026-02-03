@@ -31,5 +31,4 @@ urlpatterns = [
     # Admin email functions
     path('admin/resend-notification/<int:pk>/', views.resend_notification, name='resend_notification'),
     path('preview-email/<int:pk>/', views.preview_acknowledgment_email, name='preview_acknowledgment_email'),
-
 ]

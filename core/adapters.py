@@ -1,8 +1,14 @@
+# In your existing file (probably adapters.py or similar)
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from allauth.socialaccount.models import SocialApp
+from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from accounts.models import CustomUser
 from allauth.account.adapter import DefaultAccountAdapter
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request):
@@ -10,6 +16,53 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return False
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
+    def get_app(self, request, provider, client_id=None):
+        """
+        FIX for MultipleObjectsReturned error in MySQL/AllAuth.
+        Database shows 1 row but AllAuth sometimes sees multiple due to race conditions.
+        """
+        try:
+            # Get current site
+            site = Site.objects.get_current()
+            logger.debug(f"CustomSocialAccountAdapter.get_app: provider={provider}, site={site.id}")
+            
+            # Try the standard query first
+            try:
+                app = SocialApp.objects.get(provider=provider, sites=site)
+                logger.debug(f"✅ Standard query success: app_id={app.id}")
+                return app
+                
+            except SocialApp.MultipleObjectsReturned:
+                # This should never happen since database has only 1 row
+                logger.error(f"❌ MultipleObjectsReturned for {provider} on site {site.id}")
+                
+                # Debug: Log what's actually in database
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT sa.id, sa.name, COUNT(*) as count
+                        FROM socialaccount_socialapp sa
+                        JOIN socialaccount_socialapp_sites sas ON sa.id = sas.socialapp_id
+                        WHERE sa.provider = %s AND sas.site_id = %s
+                        GROUP BY sa.id, sa.name
+                    """, [provider, site.id])
+                    results = cursor.fetchall()
+                    logger.error(f"RAW SQL shows: {results}")
+                
+                # Fix: Return first app (there should be only one)
+                apps = SocialApp.objects.filter(provider=provider, sites=site)
+                logger.warning(f"Returning first of {apps.count()} apps: {apps.first().id}")
+                return apps.first()
+                
+            except SocialApp.DoesNotExist:
+                logger.error(f"No {provider} app found for site {site.domain}")
+                raise
+                
+        except Exception as e:
+            logger.error(f"Error in CustomSocialAccountAdapter.get_app: {e}", exc_info=True)
+            # Fall back to parent implementation
+            return super().get_app(request, provider, client_id)
+
     def pre_social_login(self, request, sociallogin):
         user = sociallogin.user
         if user.id:

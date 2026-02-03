@@ -2165,3 +2165,4 @@ def redirect_after_login(request):
     else:
         # Regular users go to dataset list
         return redirect('dataset_list')
+

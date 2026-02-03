@@ -154,7 +154,8 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-SITE_ID = 2
+SITE_ID = 3
+SOCIALACCOUNT_LOGIN_ON_GET = True  # This skips the intermediate page
 
 # ====================================================
 # EMAIL CONFIGURATION FOR RESEND
@@ -179,6 +180,36 @@ if DEBUG:
     ANYMAIL.update({
         "DEBUG_API_REQUESTS": True,  # Log API requests to console
     })
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'datican_repo': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'allauth': {
+            'handlers': ['console'],
+            'level': 'INFO',  # DEBUG for more details
+            'propagate': True,
+        },
+    },
+}
 
 # ====================================================
 # Application specific settings
@@ -220,6 +251,11 @@ SOCIALACCOUNT_QUERY_EMAIL = True
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID'),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET'),
+            'key': ''
+        },
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
         'OAUTH_PKCE_ENABLED': True,
@@ -227,6 +263,7 @@ SOCIALACCOUNT_PROVIDERS = {
         'VERIFIED_EMAIL': True,
     }
 }
+
 
 # Security settings for production only
 if IS_PRODUCTION:
