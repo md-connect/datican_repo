@@ -43,9 +43,9 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ request.manager_review_date|date:"M d, Y H:i" }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <a href="{% url 'admin:datasets_datarequest_change' request.id %}" 
-                               class="text-blue-600 hover:text-blue-900 text-sm">
-                                View Details
+                            <a href="{% url 'manager_review_detail' request.id %}" 
+                            class="text-blue-600 hover:text-blue-900 text-sm">
+                                Review
                             </a>
                         </td>
                     </tr>

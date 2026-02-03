@@ -7,7 +7,7 @@
 <style>
   /* Fix for mobile navbar toggle button */
   .mobile-sticky-header {
-    z-index: 1001 !important; /* Higher than sidebar */
+    z-index: 40 !important; /* Higher than sidebar */
   }
   
   /* Fix for desktop sidebar icon visibility */
@@ -38,10 +38,6 @@
     display: block;
   }
   
-  /* Fix for navbar toggle button visibility */
-  .md\:hidden.fixed {
-    z-index: 1002 !important;
-  }
   
   /* ========== PREVIEW SECTION STYLES ========== */
   
@@ -390,71 +386,6 @@
 {% endblock %} 
 
 {% block content %}
-<!-- Mobile Sticky Header - FIXED: Higher z-index -->
-<div class="md:hidden mobile-sticky-header flex items-center justify-between px-3 py-2" style="z-index: 1001; background: white;">
-  <!-- Left: Hamburger menu button -->
-  <button 
-    @click="$dispatch('toggle-mobile-sidebar')"
-    class="p-1"
-  >
-    <svg class="h-6 w-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  </button>
-  
-  <!-- Center: Title -->
-  <div class="flex-1 px-2">
-    <h1 class="text-sm font-medium text-gray-800 truncate text-center">
-      {{ dataset.title|truncatechars:25 }}
-    </h1>
-  </div>
-  
-  <!-- Right: Auth circle - FIXED VISIBILITY -->
-  <div class="relative" x-data="{ mobileProfileOpen: false }" style="min-width: 28px;">
-    {% if user.is_authenticated %}
-      {% if user.profile.avatar %}
-        <img
-          src="{{ user.profile.avatar.url }}"
-          class="auth-circle h-7 w-7 cursor-pointer border border-gray-200"
-          @click="mobileProfileOpen = !mobileProfileOpen"
-          loading="lazy"
-          alt="Profile"
-        />
-      {% else %}
-        <div
-          class="auth-circle h-7 w-7 bg-primary text-white font-medium flex items-center justify-center cursor-pointer hover:bg-primary-dark"
-          @click="mobileProfileOpen = !mobileProfileOpen"
-        >
-          {{ user.username|first|upper }}
-        </div>
-      {% endif %}
-      
-      <!-- Mobile Profile Dropdown -->
-      <div
-        x-show="mobileProfileOpen"
-        @click.away="mobileProfileOpen = false"
-        x-cloak
-        class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
-        style="display: none;"
-      >
-        <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
-        <form action="{% url 'account_logout' %}" method="POST" class="block">
-          {% csrf_token %}
-          <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-            Logout
-          </button>
-        </form>
-      </div>
-    {% else %}
-      <a href="{% url 'login' %}?next={{ request.path }}" class="auth-circle h-7 w-7 bg-gray-100 flex items-center justify-center hover:bg-gray-200">
-        <svg class="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-        </svg>
-      </a>
-    {% endif %}
-  </div>
-</div>
-
 <!-- Desktop Sticky Header -->
 <div class="hidden md:block sticky-dataset-header">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
@@ -469,61 +400,93 @@
       </nav>
       
       <!-- Authentication Circle - FIXED: Always circular -->
-      <div class="flex items-center space-x-4">
-        {% if user.is_authenticated %}
-          <div class="relative" x-data="{ profileOpen: false }">
-            {% if user.profile.avatar %}
-              <img
-                src="{{ user.profile.avatar.url }}"
-                class="auth-circle h-10 w-10 border-2 border-transparent hover:border-primary cursor-pointer"
+              <div class="flex items-center space-x-4 ml-4">
+          {% if user.is_authenticated %}
+            <div class="relative" x-data="{ profileOpen: false }">
+              <button 
+                type="button"
+                class="focus:outline-none"
+                @click="profileOpen = !profileOpen"
                 @mouseenter="profileOpen = true"
-                @mouseleave="profileOpen = false"
-                loading="lazy"
-                alt="Profile"
-              />
-            {% else %}
-              <div
-                class="auth-circle h-10 w-10 bg-primary text-white font-medium flex items-center justify-center hover:bg-primary-dark cursor-pointer"
-                @mouseenter="profileOpen = true"
-                @mouseleave="profileOpen = false"
+                @mouseleave="setTimeout(() => { if (!profileOpen) profileOpen = false }, 100)"
               >
-                {{ user.username|first|upper }}
+                {% if user.profile.avatar %}
+                  <img
+                    src="{{ user.profile.avatar.url }}"
+                    class="auth-circle h-10 w-10 cursor-pointer border-2 border-transparent hover:border-primary rounded-full"
+                    alt="Profile"
+                  />
+                {% else %}
+                  <!-- User icon SVG -->
+                  <div class="user-icon h-10 w-10 cursor-pointer hover:opacity-90 text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+                      <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                {% endif %}
+              </button>
+              
+              <!-- Profile Dropdown - DEBUGGED VERSION -->
+              <div
+                x-show="profileOpen"
+                x-cloak
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                class="absolute right-0 mt-2 min-w-[220px] bg-white shadow-xl rounded-lg py-3 z-50 border border-gray-200"
+                style="display: none;"
+                @mouseenter="profileOpen = true"
+                @mouseleave="profileOpen = false"
+                @click.away="profileOpen = false"
+              >
+                <a href="{% url 'profile' %}" class="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="font-small">My Profile</span>
+                  </div>
+                </a>
+                
+                <a href="{% url 'account_change_password' %}" class="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                    <span class="font-small">Change Password</span>
+                  </div>
+                </a>
+                
+                <form action="{% url 'account_logout' %}" method="POST" class="block">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full text-left px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                      <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                      </svg>
+                      <span class="font-small">Logout</span>
+                    </div>
+                  </button>
+                </form>
               </div>
-            {% endif %}
-            
-            <!-- Profile Dropdown -->
-            <div
-              x-show="profileOpen"
-              @mouseenter="profileOpen = true"
-              @mouseleave="profileOpen = false"
-              x-cloak
-              class="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 z-50 border border-gray-100"
-              style="display: none;"
-            >
-              <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">My Profile</a>
-              <form action="{% url 'account_logout' %}" method="POST" class="block">
-                {% csrf_token %}
-                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  Logout
-                </button>
-              </form>
             </div>
-          </div>
-        {% else %}
-          <div class="flex items-center space-x-3">
-            <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium">Sign In</a>
-            <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium">
-              Register
-            </a>
-          </div>
-        {% endif %}
-      </div>
+          {% else %}
+            <div class="flex items-center space-x-3">
+              <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium transition-colors">Sign In</a>
+              <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium transition-colors">Register</a>
+            </div>
+          {% endif %}
+        </div>
     </div>
   </div>
 </div>
 
 <!-- Main Content -->
-<main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-6 mobile-content-padding">
+<main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 md:py-6 mt-16 sm:mt-0 mobile-content-padding">
+
   <!-- Dataset Title and Info -->
   <div class="flex flex-col mb-6 md:mb-8">
     <div class="flex-1 mb-4">

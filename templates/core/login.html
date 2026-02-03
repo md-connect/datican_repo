@@ -4,6 +4,7 @@
 {% block title %} Sign In - Datican {% endblock %} 
 
 {% block content %}
+{% url 'redirect_after_login' as default_redirect_url %}
 <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4 bg-gray-50">
   <div class="max-w-md w-full space-y-8">
     <!-- Login Card -->
@@ -12,13 +13,18 @@
         Welcome back!
       </h2>
 
+      <!-- Display messages from Allauth -->
+      {% if form.non_field_errors %}
+        <div class="p-3 bg-red-100 text-red-700 rounded-lg">
+          {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+
       <!-- Google Signup -->
-      <form method="post" action="#">
-        {% csrf_token %}
-        <!-- Pass next URL to Google login -->
-        {% if next_url %}
-          <input type="hidden" name="next" value="{{ next_url }}" />
-        {% endif %}
+      <form method="get" action="{% provider_login_url 'google' %}">
+        <input type="hidden" name="next" value="{{ request.GET.next|default:default_redirect_url }}" />
         <button type="submit" class="block w-full flex items-center justify-center gap-2 py-3 border rounded-lg hover:bg-gray-50 transition-colors">
           <svg class="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -40,39 +46,27 @@
         </div>
       </div>
 
-      <!-- Login Form -->
-      <form class="space-y-6" method="POST" action="{% url 'login' %}">
+      <!-- Login Form - UPDATED FOR ALLAUTH -->
+      <form class="space-y-6" method="POST" action="{% url 'account_login' %}">
         {% csrf_token %}
-
+        
         <!-- Pass next URL to login form -->
-        {% if next_url %}
-          <input type="hidden" name="next" value="{{ next_url }}" />
-        {% endif %}
+        <input type="hidden" name="next" value="{{ request.GET.next|default:default_redirect_url }}" />
 
-        <!-- Display form errors if any -->
-        {% if form.errors %}
-        <div class="p-3 bg-red-100 text-red-700 rounded-lg">
-          {% for error in form.non_field_errors %}
-          <p>{{ error }}</p>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        <!-- Email Field -->
+        <!-- Email Field - Allauth uses 'login' field -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Email</label
-          >
-          <input type="email" name="email" required class="w-full px-3 py-2 border rounded-lg focus:ring-2
-          focus:ring-primary focus:border-primary" placeholder="Your email
-          address" value="{{ form.email.value|default:'' }}" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" name="login" required class="w-full px-3 py-2 border rounded-lg focus:ring-2
+          focus:ring-primary focus:border-primary" placeholder="Your email address"
+          value="{{ form.login.value|default:'' }}" />
+          {% if form.login.errors %}
+            <p class="text-red-600 text-sm mt-1">{{ form.login.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
         <!-- Password Field -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Password</label
-          >
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input
             type="password"
             name="password"
@@ -80,9 +74,12 @@
             class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
             placeholder="Your password"
           />
+          {% if form.password.errors %}
+            <p class="text-red-600 text-sm mt-1">{{ form.password.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <!-- Remember Me Checkbox -->
+        <!-- Remember Me Checkbox - Allauth field -->
         <div class="flex items-center">
           <input
             type="checkbox"
@@ -106,7 +103,7 @@
       <!-- Links -->
       <div class="text-sm text-center text-gray-600">
         Don't have an account yet?
-        <a href="{% url 'signup' %}?next={{ next_url|urlencode }}" class="text-primary hover:text-secondary"
+        <a href="{% url 'account_signup' %}?next={{ request.GET.next|default:default_redirect_url|urlencode }}" class="text-primary hover:text-secondary"
           >Sign Up</a
         >
       </div>

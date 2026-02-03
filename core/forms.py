@@ -6,64 +6,52 @@ from django.core.exceptions import ValidationError
 from .models import UserProfile
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth import password_validation
+from allauth.account.forms import SignupForm
 
 User = get_user_model()
 
-class SignUpForm(UserCreationForm):
+class CustomAllauthSignupForm(SignupForm):
     first_name = forms.CharField(
-        max_length=30, 
+        max_length=30,
         required=True,
-        widget=forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'})
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary',
+            'placeholder': 'First Name'
+        })
     )
     last_name = forms.CharField(
-        max_length=30, 
+        max_length=30,
         required=True,
-        widget=forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg'})
+        widget=forms.TextInput(attrs={
+            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary',
+            'placeholder': 'Last Name'
+        })
     )
-    email = forms.EmailField(
-        required=True,
-        widget=forms.EmailInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary'})
-    )
-
-    class Meta:
-        model = User
-        fields = ('first_name', 'last_name', 'email', 'password1', 'password2')
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Customize password field widgets
-        self.fields['password1'].widget = forms.PasswordInput(attrs={
-            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary'
+        # Update email field styling
+        self.fields['email'].widget.attrs.update({
+            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary',
+            'placeholder': 'Email Address'
         })
-        self.fields['password2'].widget = forms.PasswordInput(attrs={
-            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary'
+        # Update password field styling
+        self.fields['password1'].widget.attrs.update({
+            'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary',
+            'placeholder': 'Password'
         })
+    
+    def save(self, request):
+        # First, save the user using Allauth's save method
+        user = super().save(request)
         
-        # Remove username field if it exists
-        if 'username' in self.fields:
-            del self.fields['username']
-
-    def clean_email(self):
-        email = self.cleaned_data.get('email')
-        if User.objects.filter(email=email).exists():
-            raise ValidationError("A user with this email already exists.")
-        return email
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data['email']
+        # Save custom fields
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']
+        user.save()
         
-        # If your CustomUser model has a username field but you want to use email
-        if hasattr(user, 'username'):
-            user.username = self.cleaned_data['email']  # Set username to email
-        
-        if commit:
-            user.save()
-            # Create UserProfile for the new user
-            UserProfile.objects.get_or_create(user=user)
         return user
+
 
 class LoginForm(forms.Form):
     email = forms.EmailField(
@@ -165,15 +153,24 @@ class CombinedProfileForm(forms.Form):
     
     def clean_avatar(self):
         avatar = self.cleaned_data.get('avatar')
-        if avatar:
+        
+        # If avatar is None, False, or empty string, return current avatar
+        if avatar in [None, False, '']:
+            if self.profile and self.profile.avatar:
+                return self.profile.avatar
+            return avatar
+        
+        # Check if it's an uploaded file object
+        if hasattr(avatar, 'file'):
             # Validate file size (5MB limit)
-            if avatar.size > 5 * 1024 * 1024:
+            if hasattr(avatar, 'size') and avatar.size > 5 * 1024 * 1024:
                 raise ValidationError("Profile picture must be less than 5MB.")
             
             # Validate file type
-            valid_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
-            if avatar.content_type not in valid_types:
-                raise ValidationError("Please upload a valid image file (JPG, PNG, GIF).")
+            if hasattr(avatar, 'content_type'):
+                valid_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+                if avatar.content_type not in valid_types:
+                    raise ValidationError("Please upload a valid image file (JPG, PNG, GIF, WebP).")
         
         return avatar
     
@@ -194,10 +191,22 @@ class CombinedProfileForm(forms.Form):
         
         # Save UserProfile
         if self.profile:
-            # Handle avatar separately to avoid deleting when not provided
+            # Handle avatar
             avatar = self.cleaned_data.get('avatar')
-            if avatar is not None:  # Only update if a new avatar was provided
-                self.profile.avatar = avatar
+            
+            # Check if avatar is different from current
+            if avatar != self.profile.avatar:
+                # If it's a new file upload
+                if hasattr(avatar, 'file'):
+                    # Delete old avatar if exists
+                    if self.profile.avatar:
+                        self.profile.avatar.delete(save=False)
+                    self.profile.avatar = avatar
+                # If avatar was cleared (empty string or None)
+                elif avatar in [None, '', False]:
+                    if self.profile.avatar:
+                        self.profile.avatar.delete(save=False)
+                    self.profile.avatar = None
             
             self.profile.bio = self.cleaned_data.get('bio', '')
             self.profile.organization = self.cleaned_data.get('organization', '')

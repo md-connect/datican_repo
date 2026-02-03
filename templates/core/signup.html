@@ -4,6 +4,7 @@
 {% block title %} Sign Up - Datican {% endblock %} 
 
 {% block content %}
+{% url 'redirect_after_login' as default_redirect_url %}
 <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4 bg-gray-50">
   <div class="max-w-md w-full space-y-8">
     <!-- Signup Card -->
@@ -17,9 +18,11 @@
         {% endfor %}
       </div>
       {% endif %}
+      
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
         Create your account
       </h2>
+      
       <p class="mt-2 text-center text-sm text-gray-600">
         Or
         <a href="{% url 'account_login' %}" class="font-medium text-primary hover:text-secondary">
@@ -28,8 +31,8 @@
       </p>
 
       <!-- Google Signup -->
-      <form method="post" action="#">
-        {% csrf_token %}
+      <form method="get" action="{% provider_login_url 'google' %}">
+        <input type="hidden" name="next" value="{{ request.GET.next|default:default_redirect_url }}" />
         <button type="submit" class="block w-full flex items-center justify-center gap-2 py-3 border rounded-lg hover:bg-gray-50 transition-colors">
           <svg class="w-5 h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -41,59 +44,158 @@
         </button>
       </form>
 
-      <!-- GitHub Signup Button (placeholder) -->
-      <a href="#" class="block w-full flex items-center justify-center gap-2 py-3 border rounded-lg hover:bg-gray-50 transition-colors">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-        </svg>
-        <span>Continue with GitHub</span>
-      </a>
-
       <!-- Divider -->
       <div class="relative">
         <div class="absolute inset-0 flex items-center">
           <div class="w-full border-t border-gray-300"></div>
         </div>
         <div class="relative flex justify-center text-sm">
-          <span class="px-2 bg-white text-gray-500">or</span>
+          <span class="px-2 bg-white text-gray-500">or sign up with email</span>
         </div>
       </div>
 
-      <!-- Signup Form - FIXED -->
-      <form class="space-y-6" method="POST" action="{% url 'signup' %}">
+      <!-- Signup Form - USING ALLAUTH FORM -->
+      <form class="space-y-6" method="POST" action="{% url 'account_signup' %}" id="signupForm">
         {% csrf_token %}
+        
+        <!-- Pass next URL -->
+        <input type="hidden" name="next" value="{{ request.GET.next|default:default_redirect_url }}" />
 
-        <!-- First Name -->
+        <!-- First Name Field -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-          <input type="text" name="first_name" required class="w-full px-3 py-2 border rounded-lg" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+          <input 
+            type="text" 
+            name="first_name" 
+            required 
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            value="{{ form.first_name.value|default:'' }}"
+            placeholder="Enter your first name"
+          />
+          {% if form.first_name.errors %}
+            <p class="text-red-600 text-sm mt-1">{{ form.first_name.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <!-- Last Name -->
+        <!-- Last Name Field -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-          <input type="text" name="last_name" required class="w-full px-3 py-2 border rounded-lg" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+          <input 
+            type="text" 
+            name="last_name" 
+            required 
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            value="{{ form.last_name.value|default:'' }}"
+            placeholder="Enter your last name"
+          />
+          {% if form.last_name.errors %}
+            <p class="text-red-600 text-sm mt-1">{{ form.last_name.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <!-- Email Field -->
+        <!-- Email Field (Allauth field) -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" name="email" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <input 
+            type="email" 
+            name="email" 
+            required 
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            value="{{ form.email.value|default:'' }}"
+            placeholder="Enter your email address"
+          />
+          {% if form.email.errors %}
+            <p class="text-red-600 text-sm mt-1">{{ form.email.errors|join:", " }}</p>
+          {% endif %}
         </div>
 
-        <!-- Password Field -->
+        <!-- Password Field (Allauth field) -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-          <input type="password" name="password1" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+          <input 
+            type="password" 
+            name="password1" 
+            id="password1"
+            required 
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="Create a password (min. 8 characters)"
+          />
+          <!-- Password Validation Container (Hidden by default) -->
+          <div id="passwordValidation" class="hidden mt-2 space-y-1">
+            <div class="flex items-center">
+              <div id="lengthCheck" class="w-4 h-4 rounded-full border mr-2"></div>
+              <span class="text-sm">At least 8 characters</span>
+            </div>
+            <div class="flex items-center">
+              <div id="commonCheck" class="w-4 h-4 rounded-full border mr-2"></div>
+              <span class="text-sm">Not a common password</span>
+            </div>
+            <div class="flex items-center">
+              <div id="numericCheck" class="w-4 h-4 rounded-full border mr-2"></div>
+              <span class="text-sm">Not entirely numeric</span>
+            </div>
+            <div class="flex items-center">
+              <div id="similarityCheck" class="w-4 h-4 rounded-full border mr-2"></div>
+              <span class="text-sm">Not too similar to personal info</span>
+            </div>
+          </div>
+          
+          <!-- Real-time validation feedback -->
+          <div id="passwordErrors" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <ul id="errorList" class="text-sm text-red-600 space-y-1">
+              <!-- Errors will be inserted here dynamically -->
+            </ul>
+          </div>
+          
+          {% if form.password1.errors %}
+            <div class="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <ul class="text-sm text-red-600 space-y-1">
+                {% for error in form.password1.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
         </div>
 
-        <!-- Password Confirmation -->
+        <!-- Password Confirmation (Allauth field - password2) -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-          <input type="password" name="password2" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Confirm Password *</label>
+          <input 
+            type="password" 
+            name="password2" 
+            id="password2"
+            required 
+            class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+            placeholder="Confirm your password"
+          />
+          <!-- Password match indicator -->
+          <div id="passwordMatch" class="hidden mt-2">
+            <div class="flex items-center">
+              <div id="matchCheck" class="w-4 h-4 rounded-full border mr-2"></div>
+              <span class="text-sm">Passwords match</span>
+            </div>
+          </div>
+          
+          <div id="mismatchError" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-sm text-red-600">Passwords do not match</p>
+          </div>
+          
+          {% if form.password2.errors %}
+            <div class="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <ul class="text-sm text-red-600 space-y-1">
+                {% for error in form.password2.errors %}
+                  <li>{{ error }}</li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
         </div>
 
-        <button type="submit" class="w-full bg-black text-white py-2.5 rounded-lg hover:bg-secondary transition-colors">
+        <button 
+          type="submit" 
+          class="w-full bg-black text-white py-2.5 rounded-lg hover:bg-secondary transition-colors"
+        >
           Create Account
         </button>
       </form>
@@ -101,7 +203,7 @@
       <!-- Links -->
       <div class="text-sm text-center text-gray-600">
         Already have an account?
-        <a href="{% url 'login' %}" class="text-primary hover:text-secondary">Sign in</a>
+        <a href="{% url 'account_login' %}" class="text-primary hover:text-secondary">Sign in</a>
       </div>
     </div>
   </div>
@@ -113,17 +215,253 @@
 <script>
   lucide.createIcons();
 
-  const signupForm = document.querySelector('form[action="{% url "signup" %}"]');
-  if (signupForm) {
-    signupForm.addEventListener("submit", function (e) {
-      const password1 = signupForm.querySelector('input[name="password1"]').value;
-      const password2 = signupForm.querySelector('input[name="password2"]').value;
-
-      if (password1 !== password2) {
-        e.preventDefault();
-        alert("Passwords do not match!");
+  // Password validation logic
+  document.addEventListener('DOMContentLoaded', function() {
+    const password1Input = document.getElementById('password1');
+    const password2Input = document.getElementById('password2');
+    const passwordValidation = document.getElementById('passwordValidation');
+    const passwordErrors = document.getElementById('passwordErrors');
+    const errorList = document.getElementById('errorList');
+    const passwordMatch = document.getElementById('passwordMatch');
+    const mismatchError = document.getElementById('mismatchError');
+    
+    // Password requirements elements
+    const lengthCheck = document.getElementById('lengthCheck');
+    const commonCheck = document.getElementById('commonCheck');
+    const numericCheck = document.getElementById('numericCheck');
+    const similarityCheck = document.getElementById('similarityCheck');
+    const matchCheck = document.getElementById('matchCheck');
+    
+    // Common passwords list (simplified)
+    const commonPasswords = [
+      'password', '123456', '12345678', '123456789', 'qwerty',
+      'abc123', 'password1', 'admin', 'letmein', 'welcome'
+    ];
+    
+    let typingTimer;
+    const doneTypingInterval = 800; // milliseconds
+    
+    // Show password requirements when user focuses on password field
+    password1Input.addEventListener('focus', function() {
+      passwordValidation.classList.remove('hidden');
+    });
+    
+    // Hide requirements if field is empty and loses focus
+    password1Input.addEventListener('blur', function() {
+      if (!this.value) {
+        passwordValidation.classList.add('hidden');
       }
     });
-  }
+    
+    // Real-time password validation
+    password1Input.addEventListener('input', function() {
+      clearTimeout(typingTimer);
+      
+      // Don't validate if empty
+      if (!this.value) {
+        resetValidation();
+        return;
+      }
+      
+      typingTimer = setTimeout(validatePassword, doneTypingInterval / 2);
+      validatePassword(); // Also validate immediately
+    });
+    
+    // Real-time password confirmation check
+    password2Input.addEventListener('input', function() {
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(checkPasswordMatch, doneTypingInterval / 2);
+      checkPasswordMatch();
+    });
+    
+    function validatePassword() {
+      const password = password1Input.value;
+      const errors = [];
+      
+      // Reset all checkmarks
+      resetCheckmarks();
+      
+      // Check minimum length (8 characters)
+      if (password.length >= 8) {
+        lengthCheck.classList.add('bg-green-500', 'border-green-500');
+        lengthCheck.classList.remove('border-gray-300');
+      } else {
+        lengthCheck.classList.add('border-red-500');
+        errors.push("Password must contain at least 8 characters");
+      }
+      
+      // Check if not a common password
+      if (!commonPasswords.includes(password.toLowerCase())) {
+        commonCheck.classList.add('bg-green-500', 'border-green-500');
+        commonCheck.classList.remove('border-gray-300');
+      } else {
+        commonCheck.classList.add('border-red-500');
+        errors.push("Password can't be a commonly used password");
+      }
+      
+      // Check if not entirely numeric
+      if (!/^\d+$/.test(password)) {
+        numericCheck.classList.add('bg-green-500', 'border-green-500');
+        numericCheck.classList.remove('border-gray-300');
+      } else {
+        numericCheck.classList.add('border-red-500');
+        errors.push("Password can't be entirely numeric");
+      }
+      
+      // Check similarity to personal info (simplified)
+      const firstName = document.querySelector('input[name="first_name"]')?.value.toLowerCase() || '';
+      const lastName = document.querySelector('input[name="last_name"]')?.value.toLowerCase() || '';
+      const email = document.querySelector('input[name="email"]')?.value.toLowerCase() || '';
+      const emailParts = email.split('@')[0] || '';
+      
+      const isSimilar = [firstName, lastName, emailParts].some(info => 
+        info && password.toLowerCase().includes(info)
+      );
+      
+      if (!isSimilar) {
+        similarityCheck.classList.add('bg-green-500', 'border-green-500');
+        similarityCheck.classList.remove('border-gray-300');
+      } else {
+        similarityCheck.classList.add('border-red-500');
+        errors.push("Password can't be too similar to your personal information");
+      }
+      
+      // Show/hide errors
+      if (errors.length > 0) {
+        errorList.innerHTML = '';
+        errors.forEach(error => {
+          const li = document.createElement('li');
+          li.className = 'flex items-start';
+          li.innerHTML = `
+            <svg class="w-4 h-4 mt-0.5 mr-2 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            ${error}
+          `;
+          errorList.appendChild(li);
+        });
+        passwordErrors.classList.remove('hidden');
+      } else {
+        passwordErrors.classList.add('hidden');
+      }
+    }
+    
+    function checkPasswordMatch() {
+      const password1 = password1Input.value;
+      const password2 = password2Input.value;
+      
+      if (!password2) {
+        passwordMatch.classList.add('hidden');
+        mismatchError.classList.add('hidden');
+        return;
+      }
+      
+      if (password1 === password2 && password1.length > 0) {
+        matchCheck.classList.add('bg-green-500', 'border-green-500');
+        matchCheck.classList.remove('border-gray-300');
+        passwordMatch.classList.remove('hidden');
+        mismatchError.classList.add('hidden');
+      } else {
+        matchCheck.classList.add('border-red-500');
+        passwordMatch.classList.add('hidden');
+        if (password2.length > 0) {
+          mismatchError.classList.remove('hidden');
+        }
+      }
+    }
+    
+    function resetValidation() {
+      resetCheckmarks();
+      passwordErrors.classList.add('hidden');
+      mismatchError.classList.add('hidden');
+    }
+    
+    function resetCheckmarks() {
+      // Reset all check circles to default state
+      [lengthCheck, commonCheck, numericCheck, similarityCheck, matchCheck].forEach(check => {
+        check.classList.remove('bg-green-500', 'border-green-500', 'border-red-500');
+        check.classList.add('border-gray-300');
+      });
+    }
+    
+    // Initial setup
+    resetCheckmarks();
+    
+    // Form submission validation
+    const signupForm = document.getElementById('signupForm');
+    if (signupForm) {
+      signupForm.addEventListener('submit', function(e) {
+        // Clear previous errors
+        passwordErrors.classList.add('hidden');
+        mismatchError.classList.add('hidden');
+        
+        const password1 = password1Input.value;
+        const password2 = password2Input.value;
+        const firstName = document.querySelector('input[name="first_name"]').value;
+        const lastName = document.querySelector('input[name="last_name"]').value;
+        const email = document.querySelector('input[name="email"]').value;
+
+        // Basic validation
+        let errors = [];
+        
+        if (!firstName.trim()) errors.push("First name is required");
+        if (!lastName.trim()) errors.push("Last name is required");
+        if (!email.trim()) errors.push("Email is required");
+        if (password1 !== password2) errors.push("Passwords do not match");
+        
+        // Password strength validation on submit
+        if (password1.length < 8) errors.push("Password must be at least 8 characters");
+        if (commonPasswords.includes(password1.toLowerCase())) errors.push("Password can't be a commonly used password");
+        if (/^\d+$/.test(password1)) errors.push("Password can't be entirely numeric");
+        
+        if (errors.length > 0) {
+          e.preventDefault();
+          // Show errors in a nice way
+          errorList.innerHTML = '';
+          errors.forEach(error => {
+            const li = document.createElement('li');
+            li.className = 'flex items-start';
+            li.innerHTML = `
+              <svg class="w-4 h-4 mt-0.5 mr-2 flex-shrink-0 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              ${error}
+            `;
+            errorList.appendChild(li);
+          });
+          passwordErrors.classList.remove('hidden');
+          
+          // Scroll to errors
+          passwordErrors.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+  });
 </script>
+
+<style>
+  /* Additional custom styles */
+  [id$="Check"] {
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  [id$="Check"].bg-green-500::after {
+    content: '✓';
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+  }
+  
+  #passwordValidation span {
+    font-size: 13px;
+    color: #4b5563;
+  }
+  
+  #passwordErrors ul li svg {
+    flex-shrink: 0;
+  }
+</style>
 {% endblock %}

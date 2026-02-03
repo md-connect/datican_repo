@@ -117,47 +117,114 @@
 
 {% block content %}
 <div class="p-4 md:p-6">
-  <!-- Sticky Search Bar -->
-  <div class="sticky-search py-4 bg-white px-4 sm:px-6">
-    <div class="max-w-7xl mx-auto">
-      <div class="flex items-center justify-between">
-        <div class="flex-1 max-w-2xl">
-          <!-- Search bar if needed -->
-        </div>
-        
-        <!-- User Authentication Buttons -->
-        <div class="flex items-center space-x-4 ml-4 mobile-hide-auth">
+
+<!-- Desktop Sticky Header -->
+<div class="hidden md:block sticky-dataset-header">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <div class="flex items-center justify-between">
+      <!-- Breadcrumb -->
+      <nav class="mb-6 flex items-center text-sm text-gray-600">
+        <a href="{% url 'dataset_list' %}" class="hover:text-primary">Datasets</a>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <a href="{% url 'dataset_detail' dataset.id %}" class="hover:text-primary">{{ dataset.title|truncatechars:30 }}</a>
+        <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-primary font-medium">Request Access</span>
+      </nav>
+      
+      <!-- Authentication Circle - FIXED: Always circular -->
+              <div class="flex items-center space-x-4 ml-4">
           {% if user.is_authenticated %}
-            <!-- User profile dropdown -->
+            <div class="relative" x-data="{ profileOpen: false }">
+              <button 
+                type="button"
+                class="focus:outline-none"
+                @click="profileOpen = !profileOpen"
+                @mouseenter="profileOpen = true"
+                @mouseleave="setTimeout(() => { if (!profileOpen) profileOpen = false }, 100)"
+              >
+                {% if user.profile.avatar %}
+                  <img
+                    src="{{ user.profile.avatar.url }}"
+                    class="auth-circle h-10 w-10 cursor-pointer border-2 border-transparent hover:border-primary rounded-full"
+                    alt="Profile"
+                  />
+                {% else %}
+                  <!-- User icon SVG -->
+                  <div class="user-icon h-10 w-10 cursor-pointer hover:opacity-90 text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+                      <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                {% endif %}
+              </button>
+              
+              <!-- Profile Dropdown - DEBUGGED VERSION -->
+              <div
+                x-show="profileOpen"
+                x-cloak
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 transform scale-95"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-95"
+                class="absolute right-0 mt-2 min-w-[220px] bg-white shadow-xl rounded-lg py-3 z-50 border border-gray-200"
+                style="display: none;"
+                @mouseenter="profileOpen = true"
+                @mouseleave="profileOpen = false"
+                @click.away="profileOpen = false"
+              >
+                <a href="{% url 'profile' %}" class="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span class="font-small">My Profile</span>
+                  </div>
+                </a>
+                
+                <a href="{% url 'account_change_password' %}" class="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                    <span class="font-small">Change Password</span>
+                  </div>
+                </a>
+                
+                <form action="{% url 'account_logout' %}" method="POST" class="block">
+                  {% csrf_token %}
+                  <button type="submit" class="w-full text-left px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center">
+                      <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                      </svg>
+                      <span class="font-small">Logout</span>
+                    </div>
+                  </button>
+                </form>
+              </div>
+            </div>
           {% else %}
             <div class="flex items-center space-x-3">
-              <a href="{% url 'login' %}" class="text-dark hover:text-accent transition-colors font-medium">Sign In</a>
-              <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors font-medium">Register</a>
+              <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium transition-colors">Sign In</a>
+              <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium transition-colors">Register</a>
             </div>
           {% endif %}
         </div>
-      </div>
     </div>
   </div>
+</div>
 
   <!-- Main Content -->
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <!-- Breadcrumb -->
-    <nav class="mb-6 flex items-center text-sm text-gray-600">
-      <a href="{% url 'dataset_list' %}" class="hover:text-primary">Datasets</a>
-      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-      </svg>
-      <a href="{% url 'dataset_detail' dataset.id %}" class="hover:text-primary">{{ dataset.title|truncatechars:30 }}</a>
-      <svg class="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-      </svg>
-      <span class="text-primary font-medium">Request Access</span>
-    </nav>
-
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 mt-16 sm:mt-0">     
     <!-- Page Header -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-primary mb-2">Request Access: {{ dataset.title }}</h1>
+      <h1 class="text-xl md:text-3xl font-bold text-primary mb-2 break-words">Request Access: {{ dataset.title }}</h1>
       <p class="text-gray-600">
         Complete the two-step process to request access to this dataset.
       </p>
@@ -221,13 +288,13 @@
               </a>
               <span class="text-gray-500 text-sm ml-7">(Last updated: {% now "Y-m-d" %})</span>
             </div>
-            
-            <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+
+            <div class="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
               <div class="flex items-start gap-2">
-                <i data-lucide="alert-circle" class="w-5 h-5 text-blue-500 mt-0.5"></i>
+                <i data-lucide="alert-circle" class="w-5 h-5 text-yellow-500 mt-0.5"></i>
                 <div class="text-sm">
-                  <p class="text-blue-800 font-medium">Important Notes:</p>
-                  <ul class="list-disc list-inside ml-2 text-blue-700">
+                  <p class="text-black font-medium">Important Notes:</p>
+                  <ul class="list-disc list-inside ml-2 text-black-700">
                     <li>All fields marked with * are required</li>
                     <li>Request form must be in PDF format (max 25MB)</li>
                     <li>Ethical approval proof can be PDF, JPG, or PNG</li>
@@ -254,7 +321,6 @@
     </div>
 
     <!-- Form Section (Step 2) -->
-     <!-- Form Section (Step 2) -->
 <div id="formSection" class="form-section">
   <div class="max-w-5xl mx-auto">
     <!-- Back Button -->

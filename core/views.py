@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
-from .forms import SignUpForm, LoginForm, CombinedProfileForm, PasswordChangeForm
+from .forms import CustomAllauthSignupForm, LoginForm, CombinedProfileForm, PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from datasets.models import Dataset, Thumbnail
 from allauth.socialaccount.models import SocialAccount
@@ -20,6 +20,66 @@ from django.contrib.auth import login
 from django.contrib.auth.models import User
 import requests
 from urllib.parse import urlencode
+# core/views.py - UPDATE YOUR login_view
+from allauth.account.views import LoginView
+from django.urls import reverse
+from django.contrib import messages
+from django.utils.http import url_has_allowed_host_and_scheme
+# core/views.py - UPDATE YOUR signup_view
+from allauth.account.views import SignupView
+
+class CustomSignupView(SignupView):
+    """Custom signup view that uses Allauth but our custom template"""
+    template_name = 'core/signup.html'
+    form_class = CustomAllauthSignupForm  # Use custom form
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add your custom context variables
+        context['default_redirect'] = reverse('redirect_after_login')
+        return context
+    
+    def get_success_url(self):
+        # Get the 'next' parameter from POST or GET
+        next_url = self.request.POST.get('next') or self.request.GET.get('next') or ''
+        
+        # Validate the next URL
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+            return next_url
+        
+        # Otherwise, use our custom redirect_after_login
+        return reverse('redirect_after_login')
+
+class CustomLoginView(LoginView):
+    """Custom login view that uses Allauth but our custom template"""
+    template_name = 'core/login.html'  # Your custom template
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add your custom context variables
+        context['default_redirect'] = reverse('redirect_after_login')
+        return context
+    
+    def form_valid(self, form):
+        # Call the parent form_valid to handle login
+        response = super().form_valid(form)
+        
+        # Add any custom logic here if needed
+        user = self.request.user
+        messages.success(self.request, f'Welcome back, {user.first_name or user.email}!')
+        
+        return response
+    
+    def get_success_url(self):
+        # Get the 'next' parameter from POST or GET
+        next_url = self.request.POST.get('next') or self.request.GET.get('next') or ''
+        
+        # Validate the next URL
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
+            return next_url
+        
+        # Otherwise, use our custom redirect_after_login
+        return reverse('redirect_after_login')
 
 def google_login(request):
     # Redirect to Google OAuth2
@@ -111,60 +171,6 @@ def home(request):
         'dataset_count': dataset_count,
     })
 
-# core/views.py (update your signup_view)
-def signup_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-        
-    next_url = request.GET.get('next', '')
-    
-    if request.method == 'POST':
-        form = SignUpForm(request.POST, request.FILES)
-        if form.is_valid():
-            user = form.save()
-            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            
-            # Handle redirect to next page
-            next_url = request.POST.get('next', '')
-            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
-                return redirect(next_url)
-            return redirect('home')
-        else:
-            # Add form errors to messages
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"{field}: {error}")
-    else:
-        form = SignUpForm()
-    
-    return render(request, 'core/signup.html', {'form': form, 'next_url': next_url})
-
-def login_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
-
-    # Handle both GET and POST
-    next_url = request.GET.get('next') or request.POST.get('next') or ''
-
-    if request.method == 'POST':
-        form = LoginForm(request.POST)
-        if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
-            user = authenticate(request, email=email, password=password)
-            if user is not None:
-                login(request, user)
-
-                # Redirect to next_url if it's valid
-                if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
-                    return redirect(next_url)
-                return redirect('home')
-            else:
-                form.add_error(None, 'Invalid credentials')
-    else:
-        form = LoginForm()
-
-    return render(request, 'core/login.html', {'form': form, 'next_url': next_url})
 
 @login_required
 def profile_view(request):

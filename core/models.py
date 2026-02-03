@@ -3,6 +3,11 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import FileExtensionValidator
 import os
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def user_avatar_path(instance, filename):
     """Generate path for user avatar"""
@@ -34,7 +39,7 @@ class UserProfile(models.Model):
         verbose_name_plural = 'User Profiles'
     
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return f"{self.user.email}'s Profile"
     
     @property
     def has_complete_profile(self):
@@ -44,13 +49,6 @@ class UserProfile(models.Model):
             self.organization,
             self.position
         ])
-
-# Signals to create/update profile automatically
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

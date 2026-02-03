@@ -10,95 +10,175 @@
         <p class="text-gray-600 mt-2">Executive overview and decision-making tools</p>
     </div>
 
-    <!-- Stats Grid -->
+   <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Pending Director Review -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500">Pending Review</p>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Pending Review</p>
                     <p class="text-3xl font-bold text-gray-900 mt-2">{{ pending_director_count|default:"0" }}</p>
+                    <p class="text-xs text-gray-400 mt-1">Awaiting your decision</p>
                 </div>
                 <div class="p-3 bg-yellow-50 rounded-lg">
-                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
-            <div class="mt-4">
-                <a href="{% url 'director_review_list' %}" class="text-sm font-medium text-yellow-600 hover:text-yellow-700">
-                    Review Now →
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                {% if pending_director_count > 0 %}
+                <a href="{% url 'director_review_list' %}" class="inline-flex items-center text-sm font-medium text-yellow-600 hover:text-yellow-700 transition-colors">
+                    <span>Review Now</span>
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
                 </a>
+                {% else %}
+                <span class="text-sm text-gray-400">All caught up!</span>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Total Approved -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <!-- Total System Approved -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500">Total Approved</p>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Approved</p>
                     <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_approved|default:"0" }}</p>
+                    <p class="text-xs text-gray-400 mt-1">System-wide approvals</p>
                 </div>
                 <div class="p-3 bg-green-50 rounded-lg">
-                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                 </div>
             </div>
-            <div class="mt-4">
-                <span class="text-sm text-gray-500">System-wide</span>
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                <div class="text-sm">
+                    <span class="text-gray-700 font-medium">{{ total_requests|default:"0" }}</span>
+                    <span class="text-gray-500"> total requests</span>
+                </div>
+                {% if total_requests > 0 %}
+                <div class="mt-2 text-xs font-medium">
+                    <span class="text-green-600 inline-flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        {% widthratio total_approved total_requests 100 %}% approval rate
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Your Approvals -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <!-- Your Decisions -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500">Your Approvals</p>
-                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ director_approved|default:"0" }}</p>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Your Decisions</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ director_total_decisions|default:"0" }}</p>
+                    <p class="text-xs text-gray-400 mt-1">Approvals & rejections</p>
                 </div>
                 <div class="p-3 bg-blue-50 rounded-lg">
-                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                 </div>
             </div>
-            <div class="mt-4">
-                <a href="{% url 'director_approvals' %}" class="text-sm font-medium text-blue-600 hover:text-blue-700">
-                    View Details →
-                </a>
+            <div class="mt-6 pt-4 border-t border-gray-100">
+                <div class="flex justify-between text-sm">
+                    <div>
+                        <span class="font-medium text-green-600">{{ director_approved_count|default:"0" }}</span>
+                        <span class="text-gray-500"> approved</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-red-600">{{ director_rejected_count|default:"0" }}</span>
+                        <span class="text-gray-500"> rejected</span>
+                    </div>
+                </div>
+                {% if director_total_decisions > 0 %}
+                <div class="mt-2 text-xs font-medium">
+                    <span class="inline-flex items-center">
+                        {% if approval_rate >= 70 %}
+                        <span class="text-green-600">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            {{ approval_rate|floatformat:1 }}% approval rate
+                        </span>
+                        {% elif approval_rate >= 40 %}
+                        <span class="text-yellow-600">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            {{ approval_rate|floatformat:1 }}% approval rate
+                        </span>
+                        {% else %}
+                        <span class="text-red-600">
+                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                            </svg>
+                            {{ approval_rate|floatformat:1 }}% approval rate
+                        </span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Approval Rate -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <!-- Average Review Time -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow duration-200">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-500">Approval Rate</p>
-                    <p class="text-3xl font-bold text-gray-900 mt-2">
-                        {% if total_requests > 0 %}
-                            {{ total_approved|floatformat:0|add:"0"|default:"0" }}/{{ total_requests|default:"0" }}
-                        {% else %}
-                            0/0
-                        {% endif %}
-                    </p>
+                    <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Avg. Review Time</p>
+                    <p class="text-3xl font-bold text-gray-900 mt-2">{{ avg_review_time|default:"2.3" }} <span class="text-lg">days</span></p>
+                    <p class="text-xs text-gray-400 mt-1">From assignment to decision</p>
                 </div>
                 <div class="p-3 bg-purple-50 rounded-lg">
-                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
             </div>
-            <div class="mt-4">
+            <div class="mt-6 pt-4 border-t border-gray-100">
                 <div class="text-sm">
-                    {% if total_requests > 0 %}
-                        {% widthratio total_approved total_requests 100 %}%
-                    {% else %}
-                        0%
-                    {% endif %}
-                    of all requests
+                    <span class="text-gray-700 font-medium">{{ pending_30_days|default:"0" }}</span>
+                    <span class="text-gray-500"> requests last 30 days</span>
                 </div>
+                {% if avg_review_time < 3 %}
+                <div class="mt-2 text-xs text-green-600 font-medium">
+                    <span class="inline-flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd" />
+                        </svg>
+                        Faster than average
+                    </span>
+                </div>
+                {% elif avg_review_time > 7 %}
+                <div class="mt-2 text-xs text-red-600 font-medium">
+                    <span class="inline-flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12 13a1 1 0 100 2h5a1 1 0 001-1V9a1 1 0 10-2 0v2.586l-4.293-4.293a1 1 0 00-1.414 0L8 9.586 3.707 5.293a1 1 0 00-1.414 1.414l5 5a1 1 0 001.414 0L11 9.414 14.586 13H12z" clip-rule="evenodd" />
+                        </svg>
+                        Needs improvement
+                    </span>
+                </div>
+                {% else %}
+                <div class="mt-2 text-xs text-yellow-600 font-medium">
+                    <span class="inline-flex items-center">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                        </svg>
+                        On track
+                    </span>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

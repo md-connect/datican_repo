@@ -1,191 +1,170 @@
 {% extends 'base.html' %}
-{% load static %}
 
-{% block title %}Director Review - Pending Manager Recommendations{% endblock %}
+{% block title %}Director Review - Pending Requests{% endblock %}
 
 {% block content %}
 <div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">🎬 Director Review - Manager Recommendations</h1>
-        <div class="text-sm text-gray-500">
-            <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full">
-                {{ pending_recommendations.count }} recommendation{{ pending_recommendations.count|pluralize }}
-            </span>
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">🎬 Director Review</h1>
+                <p class="text-gray-600 mt-2">Pending requests awaiting your review and decision</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'director_dashboard' %}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    ← Back to Dashboard
+                </a>
+            </div>
         </div>
     </div>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
-                {{ message }}
+    <!-- Stats Banner -->
+    <div class="bg-blue-50 border border-blue-100 rounded-xl p-6 mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900">Pending Reviews: {{ pending_count }}</h2>
+                <p class="text-gray-600 mt-1">These requests have been recommended by managers and need your final decision.</p>
             </div>
-        {% endfor %}
-    {% endif %}
+            <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+            </div>
+        </div>
+    </div>
 
-    {% if pending_recommendations %}
-        <div class="bg-white shadow-md rounded-lg overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Researcher</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dataset</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager Action</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for request in pending_recommendations %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ request.id }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ request.user.get_full_name|default:request.user.email|default:request.user.get_username }}</div>
-                                <div class="text-sm text-gray-500">{{ request.user.email }}</div>
-                                <div class="text-xs text-gray-400">{{ request.institution }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ request.dataset.title|truncatechars:30 }}</div>
-                                <div class="text-sm text-gray-500">ID: {{ request.dataset.id }}</div>
-                                {% if request.dataset.primary_researcher %}
-                                <div class="text-xs text-gray-400">Researcher: {{ request.dataset.primary_researcher }}</div>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ request.request_date|date:"M d, Y H:i" }}
-                                <div class="text-xs text-gray-400">{{ request.request_date|timesince }} ago</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {% if request.reviewed_by %}
-                                <div class="text-sm text-gray-900">{{ request.reviewed_by.get_full_name|default:request.reviewed_by.email }}</div>
-                                <div class="text-xs text-gray-500">{{ request.manager_review_date|date:"M d, Y" }}</div>
+    {% if pending_requests %}
+    <!-- Requests Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ID
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            User
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Dataset
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Project
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Manager
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                        </th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for request in pending_requests %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm font-medium text-gray-900">#{{ request.id }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ request.user.get_full_name|default:request.user.email }}</div>
+                                    <div class="text-sm text-gray-500">{{ request.user.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ request.dataset.title|truncatechars:30 }}</div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ request.project_title|truncatechars:40 }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if request.manager %}
+                                    {{ request.manager.get_full_name|default:request.manager.email }}
                                 {% else %}
-                                <span class="text-xs text-gray-400">Not assigned</span>
+                                    <span class="text-gray-400">—</span>
                                 {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {% if request.manager_review_status == 'recommended' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        ✅ Recommended
-                                    </span>
-                                    {% if request.manager_comments %}
-                                    <div class="text-xs text-gray-500 mt-1" title="{{ request.manager_comments }}">
-                                        {{ request.manager_comments|truncatechars:30 }}
-                                    </div>
-                                    {% endif %}
-                                {% elif request.manager_review_status == 'rejected' %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        ❌ Rejected
-                                    </span>
-                                    {% if request.manager_comments %}
-                                    <div class="text-xs text-gray-500 mt-1" title="{{ request.manager_comments }}">
-                                        {{ request.manager_comments|truncatechars:30 }}
-                                    </div>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                        ⏳ Pending
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                <a href="{% url 'director_review_request' request.id %}" class="inline-flex items-center px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm">
-                                    👁️ Review
-                                </a>
-                                <a href="{% url 'admin:datasets_datarequest_change' request.id %}" class="inline-flex items-center px-3 py-1 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm" target="_blank">
-                                    ⚙️ Admin
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ request.manager_review_date|date:"M d, Y" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <a href="{% url 'director_review_request' request.id %}" 
+                               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                Review
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
+    </div>
 
-        <div class="mt-8 bg-gray-50 p-4 rounded-lg">
-            <h3 class="text-lg font-medium text-gray-800 mb-2">📊 Director Dashboard Stats</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div class="bg-white p-4 rounded shadow">
-                    <div class="text-sm text-gray-500">Pending Review</div>
-                    <div class="text-2xl font-bold text-purple-600">{{ pending_recommendations.count }}</div>
-                </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <div class="text-sm text-gray-500">Oldest Pending</div>
-                    <div class="text-lg font-semibold">
-                        {% with oldest=pending_recommendations.0.request_date %}
-                        {{ oldest|timesince }} ago
-                        {% endwith %}
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <div class="text-sm text-gray-500">Different Managers</div>
-                    <div class="text-lg font-semibold">
-                        {{ unique_managers_count }}
-                    </div>
-                </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <div class="text-sm text-gray-500">Different Datasets</div>
-                    <div class="text-lg font-semibold">
-                        {{ unique_datasets_count }}
-                    </div>
-                </div>
-            </div>
+    <!-- Pagination -->
+    {% if pending_requests.has_other_pages %}
+    <div class="mt-6 flex items-center justify-between">
+        <div class="text-sm text-gray-700">
+            Showing {{ pending_requests.start_index }} to {{ pending_requests.end_index }} of {{ pending_requests.paginator.count }} results
         </div>
-    {% else %}
-        <div class="bg-white shadow-md rounded-lg p-8 text-center">
-            <div class="text-6xl mb-4">🎊</div>
-            <h3 class="text-2xl font-bold text-gray-800 mb-2">No Pending Recommendations!</h3>
-            <p class="text-gray-600 mb-6">All manager recommendations have been reviewed. Excellent oversight!</p>
-            <div class="space-x-4">
-                <a href="{% url 'dataset_list' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                    ← Browse Datasets
-                </a>
-                <a href="{% url 'director_approvals' %}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    View Approved Requests →
-                </a>
-            </div>
-        </div>
-    {% endif %}
-
-    <div class="mt-8 flex justify-between items-center pt-6 border-t border-gray-200">
-        <div class="text-sm text-gray-500">
-            Director: {{ request.user.get_full_name|default:request.user.email|default:request.user.get_username }}
-        </div>
-        <div class="space-x-4">
-            <a href="{% url 'director_approvals' %}" class="text-green-600 hover:text-green-800 font-medium">
-                ✅ View Approved
+        <div class="flex space-x-2">
+            {% if pending_requests.has_previous %}
+            <a href="?page={{ pending_requests.previous_page_number }}" class="px-3 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+                Previous
             </a>
-            <a href="{% url 'director_rejections' %}" class="text-red-600 hover:text-red-800 font-medium">
-                ❌ View Rejected
-            </a>
-            {% if request.user.is_superuser or request.user.role in 'director,data_manager' or request.user.is_staff %}
-            <a href="{% url 'all_requests_report' %}" class="text-blue-600 hover:text-blue-800 font-medium">
-                📊 Full Report →
+            {% endif %}
+            
+            {% for num in pending_requests.paginator.page_range %}
+                {% if pending_requests.number == num %}
+                <span class="px-3 py-2 border border-blue-500 bg-blue-50 text-blue-600 rounded-lg">
+                    {{ num }}
+                </span>
+                {% else %}
+                <a href="?page={{ num }}" class="px-3 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+                    {{ num }}
+                </a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pending_requests.has_next %}
+            <a href="?page={{ pending_requests.next_page_number }}" class="px-3 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+                Next
             </a>
             {% endif %}
         </div>
     </div>
-</div>
+    {% endif %}
 
-<style>
-    @media (max-width: 768px) {
-        .container {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-        table {
-            display: block;
-            overflow-x: auto;
-        }
-        .space-x-4 > * + * {
-            margin-left: 0.5rem;
-        }
-        .space-x-2 > * + * {
-            margin-left: 0.25rem;
-        }
-    }
-</style>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
+        <svg class="w-20 h-20 text-green-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-6 text-2xl font-bold text-gray-900">🎊 All Caught Up!</h3>
+        <p class="mt-2 text-gray-600 max-w-md mx-auto">
+            No pending requests for review. All manager recommendations have been reviewed.
+        </p>
+        <div class="mt-8 flex justify-center space-x-4">
+            <a href="{% url 'director_approvals' %}" 
+               class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                View Approved Requests
+            </a>
+            <a href="{% url 'dataset_list' %}" 
+               class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                ← Browse Datasets
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

@@ -5,6 +5,9 @@ Django settings for datican_repo project.
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import ssl
+import certifi
+
 
 load_dotenv()
 
@@ -41,7 +44,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "anymail",
     
     # Allauth apps
     'django.contrib.sites',
@@ -63,6 +65,7 @@ SESSION_COOKIE_PATH = '/'
 # Admin-specific settings
 ADMIN_SESSION_COOKIE_NAME = 'admin_sessionid'
 ADMIN_SESSION_COOKIE_PATH = '/admin/'
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -92,6 +95,7 @@ TEMPLATES = [
                 "core.context_processors.admin_stats",
                 'datasets.context_processor.auth_redirects',
                 'datasets.context_processor.dataset_filters',
+                
             ],
         },
     },
@@ -153,33 +157,18 @@ AUTHENTICATION_BACKENDS = [
 
 SITE_ID = 2
 
-# ====================================================
-# EMAIL CONFIGURATION FOR RESEND
-# ====================================================
+# Email configuration (update with your production email settings)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() == 'true'
+EMAIL_USE_SSL = False  # Must be False when using TLS
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', 'info.datican@gmail.com')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', 'hoowicpekknteogn')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@repo.datican.org')
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@repo.datican.org')
 
-# Resend Email Backend
-EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
-
-# Resend API Configuration
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-ANYMAIL = {
-    "RESEND_API_KEY": RESEND_API_KEY,
-}
-
-# Default email settings
-DEFAULT_FROM_EMAIL = "no-reply@datican.org"  # Default Resend test domain
-SERVER_EMAIL = DEFAULT_FROM_EMAIL  # For error messages
-EMAIL_SUBJECT_PREFIX = "[DATICAN] "
-
-# For debugging
-if DEBUG:
-    ANYMAIL.update({
-        "DEBUG_API_REQUESTS": True,  # Log API requests to console
-    })
-
-# ====================================================
 # Application specific settings
-# ====================================================
 SITE_NAME = 'DATICAN Repository'
 SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 
@@ -187,7 +176,10 @@ SITE_URL = os.environ.get('SITE_URL', 'http://localhost:8000')
 MANAGER_EMAIL = os.environ.get('MANAGER_EMAIL', 'mondayoke93@gmail.com')
 DIRECTOR_EMAIL = os.environ.get('DIRECTOR_EMAIL', 'mondayoke93@gmail.com')
 CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'manager.datican@gmail.com')
-SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@repo.datican.org')
+
+# Use certifi certificates
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+EMAIL_SSL_CONTEXT = ssl_context
 
 # Auth settings
 AUTH_USER_MODEL = 'accounts.CustomUser'
@@ -236,12 +228,8 @@ if IS_PRODUCTION:
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    # Use your verified domain in production
-    DEFAULT_FROM_EMAIL = "noreply@repo.datican.org"
 else:
     # Development-specific settings
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
-    # Use Resend test domain in development
-    DEFAULT_FROM_EMAIL = "onboarding@resend.dev"

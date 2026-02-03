@@ -28,9 +28,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import DataRequest
 from django.db.models import Count, Q
 
-
 User = get_user_model()
-
 
 def download_request_form(request):
     form_path = os.path.join(settings.STATIC_ROOT, 'forms', 'Dataset_Request_Form_Template.pdf')
@@ -41,7 +39,6 @@ def download_request_form(request):
         return response
     messages.error(request, "Dataset Request Form template not found")
     return redirect('dataset_list')
-
 
 def dataset_list(request):
     # Get filter parameters from request
@@ -841,7 +838,6 @@ def dataset_request(request, pk):
         'dataset': dataset
     })
 
-
 @login_required
 @director_required
 def director_review(request, pk):
@@ -1115,14 +1111,18 @@ def request_status(request, pk):  # Keep as pk
 @login_required
 @director_required
 def director_review_list(request):
-    """Show all requests pending director review"""
-    pending_reviews = DataRequest.objects.filter(
-        status='director_review'
-    ).select_related('user', 'dataset', 'manager').order_by('manager_review_date')
+    """List all requests pending director review"""
+    # Get all requests that need director review
+    pending_requests = DataRequest.objects.filter(
+        Q(status='director_review') |
+        Q(manager_action='recommended', director_action='pending')
+    ).select_related('user', 'manager', 'dataset').order_by('-submitted_to_director_date', '-request_date')
     
-    return render(request, 'datasets/director_review_list.html', {
-        'pending_reviews': pending_reviews
-    })
+    context = {
+        'pending_requests': pending_requests,
+        'pending_count': pending_requests.count(),
+    }
+    return render(request, 'datasets/director_review_list.html', context)
 
 # Admin approval view (for superusers)
 @login_required
@@ -1488,10 +1488,9 @@ def is_superuser(user):
 @data_manager_required
 def manager_recommendations(request):
     """Show data manager's recommended requests"""
-    # Use status='director_review' instead of manager_action='recommended' for consistency
     recommendations = DataRequest.objects.filter(
         manager=request.user,
-        status='director_review'  # CHANGED FROM manager_action='recommended'
+        manager_action='recommended'  # Now this matches properly
     ).select_related('user', 'dataset', 'director')
     
     return render(request, 'datasets/manager_recommendations.html', {
@@ -1502,11 +1501,9 @@ def manager_recommendations(request):
 @data_manager_required
 def manager_rejections(request):
     """Show data manager's rejected requests"""
-    # Use status='rejected' and manager_action='rejected' for accuracy
     rejections = DataRequest.objects.filter(
         manager=request.user,
-        status='rejected',
-        manager_action='rejected'  # Added this to ensure it was manager's rejection
+        manager_action='rejected'  # Now this matches properly
     ).select_related('user', 'dataset')
     
     return render(request, 'datasets/manager_rejections.html', {
@@ -1541,103 +1538,135 @@ def director_rejections(request):
         'rejections': rejections
     })
 
-# Fix the dashboard views to use correct status values:
-
 @login_required
 @user_passes_test(is_manager, login_url='/login/')
 def manager_dashboard(request):
-    # Get pending requests for this manager
+    # Get ALL pending requests for this manager (both 'pending' and 'manager_review' status)
     pending_requests = DataRequest.objects.filter(
-        status='manager_review',  # This should be the correct status
         manager_id=request.user.id
+    ).filter(
+        status__in=['pending', 'manager_review']  # Include both statuses
+    ).exclude(
+        manager_action__in=['recommended', 'rejected', 'approved']  # Exclude where manager has already acted
     ).count()
     
-    # Get requests recommended by this manager (sent to director)
-    recommended_by_manager = DataRequest.objects.filter(
-        status='director_review',
-        manager_id=request.user.id
-    ).count()
-    
-    # Get requests rejected by this manager
-    rejected_by_manager = DataRequest.objects.filter(
-        status='rejected',
+    # Alternative: Get requests that need manager attention
+    pending_requests = DataRequest.objects.filter(
         manager_id=request.user.id,
-        manager_action='rejected'  # Ensure it was manager's rejection
+        manager_action='pending'  # Manager hasn't taken action yet
     ).count()
     
-    # Get list of requests recommended by this manager
-    manager_recommended_list = DataRequest.objects.filter(
-        status='director_review',
+    # Or even better, combine both conditions:
+    pending_requests = DataRequest.objects.filter(
         manager_id=request.user.id
-    ).select_related('dataset', 'director').order_by('-manager_review_date')[:10]
+    ).filter(
+        Q(status__in=['pending', 'manager_review']) | 
+        Q(manager_action='pending')
+    ).distinct().count()
     
-    # Get list of requests rejected by this manager
-    manager_rejected_list = DataRequest.objects.filter(
-        status='rejected',
+    # Get requests with different manager actions
+    recommended_by_manager = DataRequest.objects.filter(
+        manager_id=request.user.id,
+        manager_action='recommended'
+    ).count()
+    
+    rejected_by_manager = DataRequest.objects.filter(
         manager_id=request.user.id,
         manager_action='rejected'
-    ).select_related('dataset').order_by('-manager_review_date')[:10]
-    
-    # Get list of director decisions on manager's requests
-    director_decisions_for_manager = DataRequest.objects.filter(
-        manager_id=request.user.id,
-        status__in=['approved', 'rejected']
-    ).select_related('dataset', 'director').order_by('-approved_date', '-manager_review_date')[:10]
-    
-    # Calculate completion rate
-    total_assigned = DataRequest.objects.filter(manager_id=request.user.id).count()
-    completed = DataRequest.objects.filter(
-        manager_id=request.user.id,
-        status__in=['director_review', 'approved', 'rejected']
     ).count()
+    
+    requested_changes = DataRequest.objects.filter(
+        manager_id=request.user.id,
+        manager_action='requested_changes'
+    ).count()
+    
+    awaiting_info = DataRequest.objects.filter(
+        manager_id=request.user.id,
+        manager_action='pending_info'
+    ).count()
+    
+    # Get breakdown of manager actions
+    manager_action_breakdown = DataRequest.objects.filter(
+        manager_id=request.user.id
+    ).exclude(manager_action='pending').values('manager_action').annotate(
+        count=Count('id')
+    ).order_by('-count')
     
     context = {
         'pending_count': pending_requests,
         'recommended_by_manager_count': recommended_by_manager,
         'rejected_by_manager_count': rejected_by_manager,
-        'total_assigned': total_assigned,
-        'completion_rate': (completed / total_assigned * 100) if total_assigned > 0 else 0,
-        
-        # Lists for the template
-        'manager_recommended_list': manager_recommended_list,
-        'manager_rejected_list': manager_rejected_list,
-        'director_decisions_list': director_decisions_for_manager,
+        'requested_changes_count': requested_changes,
+        'awaiting_info_count': awaiting_info,
+        'manager_action_breakdown': manager_action_breakdown,
     }
     return render(request, 'dashboard/manager_dashboard.html', context)
 
 @login_required
 @user_passes_test(is_director, login_url='/login/')
 def director_dashboard(request):
-    # Get requests pending director review
+    # Get ALL pending requests for director review
     pending_director_reviews = DataRequest.objects.filter(
-        status='director_review'
+        Q(status='director_review') |  # Status is director_review
+        Q(manager_action='recommended', director_action='pending')  # OR manager recommended but director hasn't acted
     ).count()
     
     # Get requests approved by this director
     director_approved = DataRequest.objects.filter(
-        status='approved',
-        director_id=request.user.id
+        director_id=request.user.id,
+        director_action='approved'
     ).count()
     
     # Get requests rejected by this director
     director_rejected = DataRequest.objects.filter(
-        status='rejected',
         director_id=request.user.id,
         director_action='rejected'
     ).count()
     
-    # Get lists for display
+    # Calculate approval rate
+    director_total_decisions = director_approved + director_rejected
+    approval_rate = (director_approved / director_total_decisions * 100) if director_total_decisions > 0 else 0
+    
+    # Get system-wide stats
+    total_approved = DataRequest.objects.filter(status='approved').count()
+    total_requests = DataRequest.objects.count()
+    
+    # Calculate average review time (in days)
+    approved_requests = DataRequest.objects.filter(
+        director_id=request.user.id,
+        director_action='approved'
+    ).exclude(approved_date__isnull=True).exclude(submitted_to_director_date__isnull=True)
+    
+    total_days = 0
+    count = 0
+    for req in approved_requests:  # Changed variable name from 'request' to 'req'
+        if req.approved_date and req.submitted_to_director_date:
+            review_time = (req.approved_date - req.submitted_to_director_date).total_seconds() / 86400  # Convert to days
+            total_days += review_time
+            count += 1
+    
+    avg_review_time = round(total_days / count, 1) if count > 0 else 2.3  # Default to 2.3 days
+    
+    # Get pending requests from last 30 days
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    pending_30_days = DataRequest.objects.filter(
+        Q(status='director_review') |
+        Q(manager_action='recommended', director_action='pending'),
+        submitted_to_director_date__gte=thirty_days_ago
+    ).count()
+    
+    # Get lists for display - RENAME 'request' to avoid conflict
     pending_director_list = DataRequest.objects.filter(
-        status='director_review'
-    ).select_related('user', 'manager', 'dataset').order_by('-manager_review_date')[:10]
+        Q(status='director_review') |
+        Q(manager_action='recommended', director_action='pending')
+    ).select_related('user', 'manager', 'dataset').order_by('-submitted_to_director_date', '-request_date')[:10]
     
     director_approved_list = DataRequest.objects.filter(
-        status='approved',
-        director_id=request.user.id
+        director_id=request.user.id,
+        director_action='approved'
     ).select_related('user', 'manager', 'dataset').order_by('-approved_date')[:10]
     
     director_rejected_list = DataRequest.objects.filter(
-        status='rejected',
         director_id=request.user.id,
         director_action='rejected'
     ).select_related('user', 'manager', 'dataset').order_by('-approved_date')[:10]
@@ -1646,15 +1675,17 @@ def director_dashboard(request):
         'pending_director_count': pending_director_reviews,
         'director_approved_count': director_approved,
         'director_rejected_count': director_rejected,
+        'director_total_decisions': director_total_decisions,
+        'approval_rate': approval_rate,
+        'total_approved': total_approved,
+        'total_requests': total_requests,
+        'avg_review_time': avg_review_time,
+        'pending_30_days': pending_30_days,
         
-        # Lists
-        'pending_director_list': pending_director_list,
-        'director_approved_list': director_approved_list,
-        'director_rejected_list': director_rejected_list,
-        
-        # Statistics
-        'director_total_decisions': director_approved + director_rejected,
-        'approval_rate': (director_approved / (director_approved + director_rejected) * 100) if (director_approved + director_rejected) > 0 else 0,
+        # Lists - Use different variable names
+        'pending_requests_list': pending_director_list,  # Changed from 'pending_director_list'
+        'approved_requests_list': director_approved_list,  # Changed from 'director_approved_list'
+        'rejected_requests_list': director_rejected_list,  # Changed from 'director_rejected_list'
     }
     return render(request, 'dashboard/director_dashboard.html', context)
 
@@ -1698,28 +1729,25 @@ def admin_dashboard(request):
     }
     return render(request, 'dashboard/admin_dashboard.html', context)
 
-# Update the review functions to properly set both status and action fields:
-
 @login_required
 @data_manager_required
 def manager_review_request(request, pk): 
     data_request = get_object_or_404(DataRequest, pk=pk)
     
-    # Check if this data manager can review this request
-    if data_request.status not in ['pending', 'manager_review']:
-        messages.error(request, 'This request is not available for review.')
-        return redirect('review_requests_list')
-    
     if request.method == 'POST':
         action = request.POST.get('action')
         manager_comment = request.POST.get('manager_comment', '').strip()
+        rejection_reason = request.POST.get('rejection_reason', '')
+        manager_action_notes = request.POST.get('manager_action_notes', '').strip()
         
         if action == 'recommend':
             data_request.status = 'director_review'
             data_request.manager = request.user
             data_request.data_manager_comment = manager_comment
             data_request.manager_review_date = timezone.now()
-            data_request.manager_action = 'recommended'  # Set action field
+            data_request.manager_action = 'recommended'
+            data_request.manager_action_notes = manager_action_notes
+            data_request.manager_action_date = timezone.now()
             
             # Find and assign a director
             directors = CustomUser.objects.filter(role='director', is_active=True)
@@ -1727,28 +1755,15 @@ def manager_review_request(request, pk):
                 data_request.director = directors.first()
                 messages.success(request, 'Request recommended and sent to director for final review.')
             else:
-                # If no director found, keep in manager_review and notify admin
                 data_request.status = 'manager_review'
-                messages.warning(request, 'Request recommended but no director available. Notified administrators.')
-                
-                # Notify admin
-                admin_users = CustomUser.objects.filter(is_staff=True, is_active=True)
-                for admin_user in admin_users:
-                    send_mail(
-                        "URGENT: No Director Available",
-                        f"A data request (#{data_request.id}) needs director approval but no director is available.",
-                        settings.DEFAULT_FROM_EMAIL,
-                        [admin_user.email],
-                        fail_silently=True,
-                    )
+                messages.warning(request, 'Request recommended but no director available.')
             
             data_request.save()
             
-            # Send email notifications
+            # Send notifications
             if data_request.director:
                 EmailService.send_staff_notification(data_request, data_request.director, 'director')
             
-            # Send status update to user
             EmailService.send_status_update_email(data_request, 'pending', request.user)
             
         elif action == 'reject':
@@ -1756,40 +1771,104 @@ def manager_review_request(request, pk):
             data_request.manager = request.user
             data_request.data_manager_comment = manager_comment
             data_request.manager_review_date = timezone.now()
-            data_request.manager_action = 'rejected'  # Set action field
+            data_request.manager_action = 'rejected'
+            data_request.manager_action_notes = manager_action_notes
+            data_request.manager_action_date = timezone.now()
+            data_request.manager_rejection_reason = rejection_reason
+            data_request.final_decision = 'rejected'
             
             data_request.save()
             messages.success(request, 'Request has been rejected.')
             
-            # Send rejection email to user
             EmailService.send_rejection_email(
                 data_request, 
                 request.user, 
                 manager_comment, 
                 'manager'
             )
+            
+        elif action == 'request_changes':
+            data_request.status = 'pending'  # Send back to user
+            data_request.manager = request.user
+            data_request.data_manager_comment = manager_comment
+            data_request.manager_review_date = timezone.now()
+            data_request.manager_action = 'requested_changes'
+            data_request.manager_action_notes = manager_action_notes
+            data_request.manager_action_date = timezone.now()
+            
+            data_request.save()
+            messages.success(request, 'Changes requested from user.')
+            
+            # Send email requesting changes
+            EmailService.send_change_request_email(data_request, request.user, manager_action_notes)
+            
+        elif action == 'await_info':
+            data_request.status = 'pending'
+            data_request.manager = request.user
+            data_request.data_manager_comment = manager_comment
+            data_request.manager_review_date = timezone.now()
+            data_request.manager_action = 'pending_info'
+            data_request.manager_action_notes = manager_action_notes
+            data_request.manager_action_date = timezone.now()
+            
+            data_request.save()
+            messages.success(request, 'Request marked as awaiting additional information.')
+            
+            EmailService.send_info_request_email(data_request, request.user, manager_action_notes)
         
         return redirect('review_requests_list')
     
+    # Add rejection reasons to context
     return render(request, 'datasets/manager_review.html', {
-        'data_request': data_request
+        'data_request': data_request,
+        'rejection_reasons': DataRequest.REASON_CHOICES,
     })
 
 @login_required
-@director_required  
+@user_passes_test(is_director, login_url='/login/')
 def director_review_request(request, pk):
-    data_request = get_object_or_404(DataRequest, pk=pk, status='director_review')
+    """View for directors to review OR view approved requests"""
+    data_request = get_object_or_404(DataRequest, pk=pk)
+    
+    # Check if this request is already approved
+    if data_request.director_action == 'approved' or data_request.status == 'approved':
+        # Show read-only view for approved requests
+        return render(request, 'datasets/director_review.html', {
+            'data_request': data_request,
+            'rejection_reasons': DataRequest.REASON_CHOICES,
+        })
+    
+    # If NOT approved, then do the review checks
+    # Check if manager has recommended it
+    if data_request.manager_action != 'recommended':
+        messages.error(request, 'This request has not been recommended by a manager for director review.')
+        return redirect('director_dashboard')
+    
+    # Check if director hasn't already acted on it
+    if data_request.director_action != 'pending':
+        messages.warning(request, f'You have already taken action on this request: {data_request.get_director_action_display()}')
+        return redirect('director_dashboard')
+    
+    # Check status
+    if data_request.status not in ['director_review', 'manager_review']:
+        messages.error(request, f'This request is not in a reviewable status. Current status: {data_request.get_status_display()}')
+        return redirect('director_dashboard')
     
     if request.method == 'POST':
         action = request.POST.get('action')
         director_comment = request.POST.get('director_comment', '').strip()
+        rejection_reason = request.POST.get('rejection_reason', '')
+        director_action_notes = request.POST.get('director_action_notes', '').strip()
         
         if action == 'approve':
             data_request.status = 'approved'
             data_request.director = request.user
             data_request.director_comment = director_comment
             data_request.approved_date = timezone.now()
-            data_request.director_action = 'approved'  # Set action field
+            data_request.director_action = 'approved'
+            data_request.director_action_notes = director_action_notes
+            data_request.director_action_date = timezone.now()
+            data_request.final_decision = 'approved'
             
             data_request.save()
             messages.success(request, 'Request approved successfully!')
@@ -1811,36 +1890,59 @@ def director_review_request(request, pk):
             data_request.status = 'rejected'
             data_request.director = request.user
             data_request.director_comment = director_comment
-            data_request.director_action = 'rejected'  # Set action field
+            data_request.director_action = 'rejected'
+            data_request.director_action_notes = director_action_notes
+            data_request.director_action_date = timezone.now()
+            data_request.director_rejection_reason = rejection_reason
+            data_request.final_decision = 'rejected'
             
             data_request.save()
             messages.success(request, 'Request has been rejected.')
+
+            # Send rejection email
+            EmailService.send_rejection_email(data_request)
+
+        elif action == 'return_to_manager':
+            data_request.status = 'manager_review'
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.director_action = 'returned_to_manager'
+            data_request.director_action_notes = director_action_notes
+            data_request.director_action_date = timezone.now()
             
-            # Send rejection email to user
-            EmailService.send_rejection_email(
-                data_request, 
-                request.user, 
-                director_comment, 
-                'director'
-            )
-            
-            # Notify data manager about rejection
+            data_request.save()
+            messages.success(request, 'Request returned to manager for further review.')
+
+            # Notify data manager about return
             if data_request.manager:
                 send_mail(
-                    f"Request #{data_request.id} Rejected",
-                    f"The data request you recommended has been rejected by the director.",
+                    f"Request #{data_request.id} Returned to Manager",
+                    f"The data request you recommended has been returned to you for further review.",
                     settings.DEFAULT_FROM_EMAIL,
                     [data_request.manager.email],
                     fail_silently=True,
                 )
+
+        elif action == 'request_changes':
+            data_request.status = 'pending'  # Return to user
+            data_request.director = request.user
+            data_request.director_comment = director_comment
+            data_request.director_action = 'requested_changes'
+            data_request.director_action_notes = director_action_notes
+            data_request.director_action_date = timezone.now()
+            
+            data_request.save()
+            messages.success(request, 'Changes requested from user.')
+            
+            # Send email requesting changes
+            EmailService.send_changes_requested_email(data_request)
         
-        return redirect('director_review_list')
+        return redirect('director_dashboard')
     
     return render(request, 'datasets/director_review.html', {
-        'data_request': data_request
+        'data_request': data_request,
+        'rejection_reasons': DataRequest.REASON_CHOICES,
     })
-
-# Update the admin review to be consistent:
 
 @login_required
 @permission_required('datasets.review_datarequest', raise_exception=True)
@@ -1919,8 +2021,6 @@ def admin_review_request(request, pk):
         'data_request': data_request,
         'is_admin': True,
     })
-
-# Add these missing view functions if they don't exist:
 
 @login_required
 @user_passes_test(is_manager, login_url='/login/')
@@ -2004,8 +2104,6 @@ def admin_all_requests(request):
     }
     return render(request, 'dashboard/admin_requests.html', context)
 
-# Fix the review_requests_list to use correct status:
-
 @login_required
 @data_manager_required
 def review_requests_list(request):
@@ -2017,8 +2115,6 @@ def review_requests_list(request):
     return render(request, 'datasets/review_requests_list.html', {
         'pending_requests': pending_requests
     })
-
-# Fix the all_requests_report function to use correct status values:
 
 def all_requests_report(request):
     """
@@ -2110,3 +2206,79 @@ def all_requests_report(request):
         'current_director': director_filter,
     }
     return render(request, 'dashboard/admin_requests.html', context)
+
+@login_required
+def redirect_after_login(request):
+    """Redirect users based on their role after login"""
+    user = request.user
+    
+    if user.is_superuser:
+        return redirect('admin_dashboard')
+    elif user.role == 'director':
+        return redirect('director_dashboard')
+    elif user.role == 'data_manager':
+        return redirect('manager_dashboard')
+    else:
+        # Regular users go to dataset list
+        return redirect('dataset_list')
+
+# views.py
+from django.http import JsonResponse
+from django.urls import reverse
+
+def test_url_config(request):
+    """Test URLs that are actually in main urls.py"""
+    test_urls = [
+        ('manager_review', [1], 'manager_review'),
+        ('director_review', [1], 'director_review'),
+        ('review_requests_list', [], 'review_requests_list'),
+        ('director_approvals', [], 'director_approvals'),
+        ('manager_dashboard', [], 'manager_dashboard'),
+        ('director_dashboard', [], 'director_dashboard'),
+        ('login', [], 'login'),
+        ('signup', [], 'signup'),
+        ('profile', [], 'profile'),
+    ]
+    
+    results = []
+    for name, args, url_name in test_urls:
+        try:
+            url = reverse(url_name, args=args)
+            results.append({
+                'name': name,
+                'status': '✅',
+                'url': url,
+                'namespace': url_name
+            })
+        except Exception as e:
+            results.append({
+                'name': name,
+                'status': '❌',
+                'error': str(e),
+                'namespace': url_name
+            })
+    
+    return JsonResponse({'url_tests': results})
+
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+def test_resend_simple(request):
+    """Simple Resend test without dependencies"""
+    try:
+        # Simple test email using Resend
+        send_mail(
+            subject='✅ Resend Test from Django',
+            message='This is a simple test email sent via Resend.',
+            from_email='no-reply@datican.org',
+            recipient_list=[request.user.email if request.user.is_authenticated else 'mondayoke93@gmail.com'],
+            fail_silently=False,
+        )
+        
+        return HttpResponse("✅ Test email sent via Resend! Check your inbox and Resend dashboard.")
+        
+    except Exception as e:
+        logger.error(f"Resend test failed: {e}")
+        return HttpResponse(f"❌ Resend test failed: {e}")

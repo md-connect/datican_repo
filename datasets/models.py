@@ -324,21 +324,127 @@ class DataRequest(models.Model):
         ('rejected', 'Rejected'),
     ]
     
+    # Existing fields...
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     request_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     
-    # Updated fields
+    # Remove or update existing action fields:
+    # REMOVE THESE:
+    # manager_action = models.CharField(...)
+    # director_action = models.CharField(...)
+    
+    # Add new specific action fields:
+    MANAGER_ACTION_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('recommended', 'Recommended for Director Review'),
+        ('rejected', 'Rejected by Manager'),
+        ('requested_changes', 'Requested Changes'),
+        ('pending_info', 'Awaiting Additional Information'),
+        ('approved', 'Approved (Direct Approval)'),
+    ]
+    
+    manager_action = models.CharField(
+        max_length=20,
+        choices=MANAGER_ACTION_CHOICES,
+        default='pending',
+        verbose_name="Manager Decision"
+    )
+    
+    manager_action_date = models.DateTimeField(null=True, blank=True)
+    manager_action_notes = models.TextField(blank=True, null=True, verbose_name="Manager Action Notes")
+    
+    DIRECTOR_ACTION_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('returned_to_manager', 'Returned to Manager'),
+        ('requested_changes', 'Requested Changes'),
+        ('pending_info', 'Awaiting Additional Information'),
+    ]
+    
+    director_action = models.CharField(
+        max_length=20,
+        choices=DIRECTOR_ACTION_CHOICES,
+        default='pending',
+        verbose_name="Director Decision"
+    )
+    
+    director_action_date = models.DateTimeField(null=True, blank=True)
+    director_action_notes = models.TextField(blank=True, null=True, verbose_name="Director Action Notes")
+    
+    # Add a field to track overall decision (final decision)
+    FINAL_DECISION_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('conditional_approval', 'Conditional Approval'),
+        ('returned_for_revision', 'Returned for Revision'),
+    ]
+    
+    final_decision = models.CharField(
+        max_length=25,
+        choices=FINAL_DECISION_CHOICES,
+        default='pending',
+        verbose_name="Final Decision"
+    )
+    
+    # Add reason fields for better tracking
+    REASON_CHOICES = [
+        ('', '-- Select Reason --'),
+        ('insufficient_info', 'Insufficient Information'),
+        ('ethics_concern', 'Ethics Concern'),
+        ('methodology_issue', 'Methodology Issue'),
+        ('data_not_suitable', 'Data Not Suitable for Purpose'),
+        ('budget_constraints', 'Budget/Resource Constraints'),
+        ('timing_issue', 'Timing Issue'),
+        ('other', 'Other'),
+    ]
+    
+    manager_rejection_reason = models.CharField(
+        max_length=20,
+        choices=REASON_CHOICES,
+        blank=True,
+        null=True,
+        verbose_name="Rejection Reason (Manager)"
+    )
+    
+    director_rejection_reason = models.CharField(
+        max_length=20,
+        choices=REASON_CHOICES,
+        blank=True,
+        null=True,
+        verbose_name="Rejection Reason (Director)"
+    )
+    
+    # Add escalation field
+    ESCALATION_CHOICES = [
+        ('none', 'Not Escalated'),
+        ('to_director', 'Escalated to Director'),
+        ('to_committee', 'Escalated to Ethics Committee'),
+        ('to_legal', 'Escalated to Legal Department'),
+    ]
+    
+    escalation_status = models.CharField(
+        max_length=20,
+        choices=ESCALATION_CHOICES,
+        default='none',
+        verbose_name="Escalation Status"
+    )
+    
+    escalation_notes = models.TextField(blank=True, null=True, verbose_name="Escalation Notes")
+    
+    # Existing fields continue...
     institution = models.CharField(max_length=255)
-    phone_number = models.CharField(max_length=20, blank=True, null=True)  # NEW FIELD
-    ethical_approval_no = models.CharField(max_length=100, blank=True, null=True)  # NEW FIELD
+    phone_number = models.CharField(max_length=20, blank=True, null=True)
+    ethical_approval_no = models.CharField(max_length=100, blank=True, null=True)
     project_title = models.CharField(max_length=255)
     project_description = models.TextField(max_length=500)
     
     # File uploads
     form_submission = models.FileField(upload_to='requests/forms/')
-    ethical_approval_proof = models.FileField(  # NEW FIELD
+    ethical_approval_proof = models.FileField(
         upload_to='requests/ethical_approvals/',
         blank=True,
         null=True,
@@ -355,12 +461,6 @@ class DataRequest(models.Model):
     )
     data_manager_comment = models.TextField(blank=True, null=True, verbose_name="Manager Notes")
     manager_review_date = models.DateTimeField(blank=True, null=True)
-    manager_action = models.CharField(
-        max_length=20,
-        choices=(('recommended', 'Recommended'), ('rejected', 'Rejected')),
-        blank=True,
-        null=True
-    )
     
     director = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -371,27 +471,155 @@ class DataRequest(models.Model):
     )
     director_comment = models.TextField(blank=True, null=True, verbose_name="Director Notes")
     approved_date = models.DateTimeField(blank=True, null=True)
-    director_action = models.CharField(
-        max_length=20,
-        choices=(('approved', 'Approved'), ('rejected', 'Rejected')),
-        blank=True,
-        null=True
-    )
     
     # Download tracking
     download_count = models.PositiveIntegerField(default=0)
     last_download = models.DateTimeField(blank=True, null=True)
     max_downloads = models.PositiveIntegerField(default=3)
     
+    # Add timeline tracking
+    submitted_to_manager_date = models.DateTimeField(null=True, blank=True)
+    submitted_to_director_date = models.DateTimeField(null=True, blank=True)
+    decision_date = models.DateTimeField(null=True, blank=True)
+    
+    # Add priority field
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    priority = models.CharField(
+        max_length=10,
+        choices=PRIORITY_CHOICES,
+        default='normal',
+        verbose_name="Priority Level"
+    )
+    
+    # Add SLA tracking
+    sla_due_date = models.DateTimeField(null=True, blank=True, verbose_name="SLA Due Date")
+    sla_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('on_track', 'On Track'),
+            ('at_risk', 'At Risk'),
+            ('breached', 'Breached'),
+        ],
+        default='on_track',
+        verbose_name="SLA Status"
+    )
+    
     class Meta:
         ordering = ['-request_date']
         permissions = [
             ('review_datarequest', 'Can review data requests'),
             ('approve_datarequest', 'Can approve data requests'),
+            ('escalate_datarequest', 'Can escalate data requests'),
+            ('assign_priority', 'Can assign priority to requests'),
         ]
     
     def __str__(self):
         return f"Request #{self.id} - {self.dataset.title}"
+    
+    # Add helper methods
+    def get_manager_action_display_text(self):
+        """Get display text for manager action"""
+        action_map = {
+            'pending': '🔄 Pending Review',
+            'recommended': '✅ Recommended',
+            'rejected': '❌ Rejected',
+            'requested_changes': '📝 Requested Changes',
+            'pending_info': '⏳ Awaiting Information',
+            'approved': '✅ Approved',
+        }
+        return action_map.get(self.manager_action, self.get_manager_action_display())
+    
+    def get_director_action_display_text(self):
+        """Get display text for director action"""
+        action_map = {
+            'pending': '🔄 Pending Review',
+            'approved': '✅ Approved',
+            'rejected': '❌ Rejected',
+            'returned_to_manager': '↩️ Returned to Manager',
+            'requested_changes': '📝 Requested Changes',
+            'pending_info': '⏳ Awaiting Information',
+        }
+        return action_map.get(self.director_action, self.get_director_action_display())
+    
+    def get_final_decision_display_text(self):
+        """Get display text for final decision"""
+        decision_map = {
+            'pending': '🔄 Pending',
+            'approved': '✅ Approved',
+            'rejected': '❌ Rejected',
+            'conditional_approval': '⚠️ Conditional Approval',
+            'returned_for_revision': '↩️ Returned for Revision',
+        }
+        return decision_map.get(self.final_decision, self.get_final_decision_display())
+    
+    def get_priority_badge_class(self):
+        """Get CSS class for priority badge"""
+        classes = {
+            'low': 'bg-gray-100 text-gray-800',
+            'normal': 'bg-blue-100 text-blue-800',
+            'high': 'bg-yellow-100 text-yellow-800',
+            'urgent': 'bg-red-100 text-red-800',
+        }
+        return classes.get(self.priority, 'bg-gray-100 text-gray-800')
+    
+    def get_status_badge_class(self):
+        """Get CSS class for status badge"""
+        classes = {
+            'pending': 'bg-gray-100 text-gray-800',
+            'manager_review': 'bg-yellow-100 text-yellow-800',
+            'director_review': 'bg-blue-100 text-blue-800',
+            'approved': 'bg-green-100 text-green-800',
+            'rejected': 'bg-red-100 text-red-800',
+        }
+        return classes.get(self.status, 'bg-gray-100 text-gray-800')
+    
+    def calculate_sla_due_date(self):
+        """Calculate SLA due date based on priority"""
+        from datetime import timedelta
+        
+        sla_days = {
+            'low': 14,      # 2 weeks
+            'normal': 7,    # 1 week
+            'high': 3,      # 3 days
+            'urgent': 1,    # 1 day
+        }
+        
+        if self.submitted_to_manager_date:
+            days = sla_days.get(self.priority, 7)
+            self.sla_due_date = self.submitted_to_manager_date + timedelta(days=days)
+            self.save()
+    
+    def update_sla_status(self):
+        """Update SLA status based on due date"""
+        if not self.sla_due_date:
+            self.sla_status = 'on_track'
+            return
+        
+        now = timezone.now()
+        time_remaining = self.sla_due_date - now
+        
+        if time_remaining.days > 1:
+            self.sla_status = 'on_track'
+        elif time_remaining.days >= 0:
+            self.sla_status = 'at_risk'
+        else:
+            self.sla_status = 'breached'
+        
+        self.save()
+    
+    def get_processing_time(self):
+        """Calculate processing time"""
+        if not self.decision_date or not self.request_date:
+            return None
+        
+        processing_time = self.decision_date - self.request_date
+        return processing_time.days
     
     def can_download(self):
         return self.status == 'approved' and self.download_count < self.max_downloads
@@ -401,17 +629,26 @@ class DataRequest(models.Model):
         self.last_download = timezone.now()
         self.save()
     
-    def get_form_submission_filename(self):
-        """Extract filename from form_submission path"""
-        if self.form_submission:
-            return os.path.basename(self.form_submission.name)
-        return None
-    
-    def get_ethical_approval_proof_filename(self):  # NEW METHOD
-        """Extract filename from ethical_approval_proof path"""
-        if self.ethical_approval_proof:
-            return os.path.basename(self.ethical_approval_proof.name)
-        return None
+    def save(self, *args, **kwargs):
+        # Auto-calculate SLA dates
+        if self.pk is None or 'priority' in self.__dict__:
+            self.calculate_sla_due_date()
+        
+        # Update SLA status
+        self.update_sla_status()
+        
+        # Set submission dates
+        if self.status == 'manager_review' and not self.submitted_to_manager_date:
+            self.submitted_to_manager_date = timezone.now()
+        
+        if self.status == 'director_review' and not self.submitted_to_director_date:
+            self.submitted_to_director_date = timezone.now()
+        
+        # Set decision date when final decision is made
+        if self.final_decision in ['approved', 'rejected', 'conditional_approval'] and not self.decision_date:
+            self.decision_date = timezone.now()
+        
+        super().save(*args, **kwargs)
 
 class DatasetRating(models.Model):
     """Model for users to rate datasets"""

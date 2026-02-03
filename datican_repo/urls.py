@@ -64,6 +64,9 @@ urlpatterns = [
     ),
     path('admin/', admin.site.urls),
     #path('accounts/', include('allauth.urls')), 
+
+    path('redirect-after-login/', views.redirect_after_login, name='redirect_after_login'),
+
 ]
 
 if settings.DEBUG:
