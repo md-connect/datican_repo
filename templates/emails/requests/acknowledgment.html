@@ -1,562 +1,225 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Request Confirmation - {{ site_name }}</title>
-    <style>
-        /* Base Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            background-color: #f8fafc;
-            margin: 0;
-            padding: 20px;
-        }
-        
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 15px rgba(0, 0, 0, 0.05);
-        }
-        
-        /* Header with Brand Colors */
-        .email-header {
-            background: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
-            color: white;
-            padding: 40px 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .email-header:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #E74C3C 0%, #ff6b6b 100%);
-        }
-        
-        .logo-container {
-            margin-bottom: 25px;
-            padding: 15px;
-        }
-        
-        .logo {
-            display: inline-block;
-            font-size: 24px;
-            font-weight: 700;
-            color: white;
-            padding: 12px 24px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            border: 2px solid rgba(231, 76, 60, 0.3);
-            letter-spacing: 1px;
-        }
-        
-        /* If you have an actual logo image, use this instead: */
-        /* .logo-img {
-            height: 60px;
-            width: auto;
-            margin-bottom: 20px;
-        } */
-        
-        .email-header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            letter-spacing: -0.5px;
-            color: white;
-        }
-        
-        .email-header p {
-            font-size: 16px;
-            opacity: 0.95;
-            margin-top: 8px;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        
-        /* Content */
-        .email-content {
-            padding: 40px 30px;
-        }
-        
-        .welcome-section {
-            margin-bottom: 30px;
-        }
-        
-        .welcome-section h2 {
-            color: #2C3E50;
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
-        
-        .welcome-section p {
-            color: #4b5563;
-            font-size: 16px;
-            line-height: 1.7;
-        }
-        
-        .highlight-name {
-            color: #2C3E50;
-            font-weight: 700;
-        }
-        
-        /* Request Details Card */
-        .details-card {
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 10px;
-            padding: 30px;
-            margin: 30px 0;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #2C3E50;
-        }
-        
-        .details-card h3 {
-            color: #2C3E50;
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .details-card h3:before {
-            content: "📊";
-            font-size: 20px;
-            color: #E74C3C;
-        }
-        
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-        
-        .detail-item {
-            margin-bottom: 18px;
-        }
-        
-        .detail-label {
-            display: block;
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 600;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-        }
-        
-        .detail-value {
-            font-size: 16px;
-            color: #1e293b;
-            font-weight: 500;
-            line-height: 1.5;
-        }
-        
-        /* Status Badge */
-        .status-section {
-            text-align: center;
-            margin: 35px 0;
-        }
-        
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            color: #92400e;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 15px;
-            border: 2px solid #fbbf24;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-badge:before {
-            content: "⏳";
-            font-size: 20px;
-        }
-        
-        /* Timeline/Process Section */
-        .process-section {
-            margin: 40px 0;
-        }
-        
-        .process-section h3 {
-            color: #2C3E50;
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
-        }
-        
-        .process-section h3:before {
-            content: "📋";
-            font-size: 20px;
-            color: #E74C3C;
-        }
-        
-        .process-steps {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-        
-        .process-step {
-            display: flex;
-            align-items: flex-start;
-            gap: 18px;
-            padding: 20px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #2C3E50;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .process-step:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.1);
-        }
-        
-        .step-icon {
-            flex-shrink: 0;
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #2C3E50 0%, #1A252F 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 14px;
-            font-weight: 700;
-        }
-        
-        .step-content p {
-            color: #4b5563;
-            font-size: 15px;
-            line-height: 1.6;
-        }
-        
-        .step-content strong {
-            color: #2C3E50;
-        }
-        
-        /* Call to Action */
-        .cta-section {
-            text-align: center;
-            margin: 40px 0;
-            padding: 30px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
-        }
-        
-        .cta-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #E74C3C 0%, #ff6b6b 100%);
-            color: white;
-            text-decoration: none;
-            padding: 16px 36px;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .cta-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
-            background: linear-gradient(135deg, #ff6b6b 0%, #E74C3C 100%);
-        }
-        
-        /* Important Note */
-        .important-note {
-            background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
-            border-left: 4px solid #E74C3C;
-            padding: 24px;
-            border-radius: 8px;
-            margin: 30px 0;
-        }
-        
-        .important-note h4 {
-            color: #2C3E50;
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .important-note h4:before {
-            content: "⚠️";
-            color: #E74C3C;
-            font-size: 18px;
-        }
-        
-        .important-note p {
-            color: #4b5563;
-            font-size: 15px;
-            line-height: 1.6;
-        }
-        
-        /* Footer */
-        .email-footer {
-            background: linear-gradient(135deg, #1A252F 0%, #2C3E50 100%);
-            color: #cbd5e1;
-            padding: 40px 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .email-footer:before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #E74C3C 0%, #ff6b6b 100%);
-        }
-        
-        .footer-content {
-            max-width: 500px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-        
-        .footer-logo {
-            font-size: 20px;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 20px;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-        }
-        
-        .footer-text {
-            font-size: 14px;
-            line-height: 1.7;
-            margin-bottom: 25px;
-            opacity: 0.9;
-            color: rgba(255, 255, 255, 0.9);
-        }
-        
-        .contact-info {
-            font-size: 14px;
-            margin: 25px 0;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .contact-info a {
-            color: #E74C3C;
-            text-decoration: none;
-            font-weight: 600;
-        }
-        
-        .contact-info a:hover {
-            color: #ff6b6b;
-            text-decoration: underline;
-        }
-        
-        .copyright {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            
-            .email-header, .email-content, .email-footer {
-                padding: 30px 20px;
-            }
-            
-            .email-header h1 {
-                font-size: 24px;
-            }
-            
-            .logo {
-                font-size: 20px;
-                padding: 10px 20px;
-            }
-            
-            .detail-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .process-step {
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .cta-button {
-                padding: 14px 28px;
-                font-size: 15px;
-            }
-        }
-        
-        /* Animation for status badge */
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-            100% { transform: scale(1); }
-        }
-        
-        .status-badge {
-            animation: pulse 2s infinite;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Data Request Confirmation - {{ site_name }}</title>
+
+<style>
+/* Outlook-safe reset */
+table {
+    border-collapse: collapse;
+}
+img {
+    border: 0;
+    outline: none;
+}
+a {
+    text-decoration: none;
+}
+
+/* Mobile */
+@media only screen and (max-width: 600px) {
+    .container {
+        width: 100% !important;
+    }
+    .padding {
+        padding: 24px !important;
+    }
+}
+</style>
 </head>
-<body>
-    <div class="email-container">
-        <!-- Header with Logo -->
-        <div class="email-header">
-            <div class="logo-container">
-                <!-- Use this if you have a logo image -->
-                <!-- <img src="{{ logo_url }}" alt="{{ site_name }} Logo" class="logo-img"> -->
-                
-                <!-- Text logo fallback -->
-                <div class="logo">{{ site_name }}</div>
+
+<body style="margin:0; padding:0; background-color:#F8FAFC; font-family:Arial, Helvetica, sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" bgcolor="#F8FAFC">
+<tr>
+<td align="center">
+
+<!-- Container -->
+<table width="600" class="container" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
+
+    <!-- Header -->
+    <tr>
+        <td align="center" bgcolor="#0F172A" style="padding:40px 32px;">
+            <div style="font-size:22px; font-weight:bold; letter-spacing:1px; color:#FFFFFF;">
+                {{ site_name }}
             </div>
-            <h1>Data Request Confirmation</h1>
-            <p>Your research data request has been successfully submitted</p>
-        </div>
-        
-        <!-- Content -->
-        <div class="email-content">
-            <!-- Welcome Section -->
-            <div class="welcome-section">
-                <h2>Dear <span class="highlight-name">{{ user_display_name }}</span>,</h2>
-                <p>Thank you for submitting your data request through the {{ site_name }} Data Portal. We have successfully received your application and will begin processing it shortly.</p>
+            <div style="font-size:26px; font-weight:bold; color:#FFFFFF; margin-top:16px;">
+                Data Request Submitted
             </div>
-            
-            <!-- Request Details Card -->
-            <div class="details-card">
-                <h3>Request Details</h3>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <span class="detail-label">Dataset Requested</span>
-                        <span class="detail-value">{{ dataset.title }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Submission Date</span>
-                        <span class="detail-value">{{ request.request_date|date:"F d, Y \a\t H:i" }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Project Title</span>
-                        <span class="detail-value">{{ request.project_title }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="detail-label">Institution</span>
-                        <span class="detail-value">{{ request.institution }}</span>
-                    </div>
-                </div>
+            <div style="font-size:16px; color:#CBD5F5; margin-top:8px;">
+                Your request is now under review
             </div>
-            
-            <!-- Status Badge -->
-            <div class="status-section">
-                <div class="status-badge">
-                    Status: {{ request.get_status_display|upper }}
-                </div>
+        </td>
+    </tr>
+
+    <!-- Body -->
+    <tr>
+        <td class="padding" style="padding:40px 32px; color:#020617;">
+
+            <p style="font-size:18px; font-weight:bold; margin:0 0 12px 0;">
+                Hello {{ user_display_name }},
+            </p>
+
+            <p style="font-size:16px; line-height:1.7; color:#475569; margin:0 0 32px 0;">
+                Thank you for submitting your data request through the {{ site_name }} platform.
+                We’ve received your application and our team will begin reviewing it shortly.
+            </p>
+
+            <!-- Details Card -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                   style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; padding:24px;">
+                <tr>
+                    <td colspan="2" style="font-size:18px; font-weight:bold; padding-bottom:16px;">
+                        Request Summary
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:.08em;">
+                        Dataset
+                    </td>
+                    <td style="padding:8px 0; font-size:16px;">
+                        {{ dataset.title }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                        Submitted
+                    </td>
+                    <td style="padding:8px 0; font-size:16px;">
+                        {{ request.request_date|date:"F d, Y \a\t H:i" }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                        Project
+                    </td>
+                    <td style="padding:8px 0; font-size:16px;">
+                        {{ request.project_title }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                        Institution
+                    </td>
+                    <td style="padding:8px 0; font-size:16px;">
+                        {{ request.institution }}
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Status -->
+            <div style="text-align:center; margin:32px 0;">
+                <span style="display:inline-block; background:#FFF1F2; color:#9F1239;
+                             padding:10px 22px; border-radius:999px;
+                             font-size:14px; font-weight:bold;">
+                    {{ request.get_status_display|upper }}
+                </span>
             </div>
-            
-            <!-- Process Timeline -->
-            <div class="process-section">
-                <h3>What Happens Next?</h3>
-                <div class="process-steps">
-                    <div class="process-step">
-                        <div class="step-icon">1</div>
-                        <div class="step-content">
-                            <p><strong>Initial Review</strong> – Our data manager will review your request within 3-5 business days</p>
+
+            <!-- Steps -->
+            <p style="font-size:18px; font-weight:bold; margin:32px 0 16px;">
+                What happens next?
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                    <td width="32" valign="top">
+                        <div style="width:28px; height:28px; background:#0F172A; color:#FFFFFF;
+                                    text-align:center; line-height:28px; border-radius:50%; font-weight:bold;">
+                            1
                         </div>
-                    </div>
-                    <div class="process-step">
-                        <div class="step-icon">2</div>
-                        <div class="step-content">
-                            <p><strong>Director Approval</strong> – Approved requests proceed to the director for final authorization</p>
+                    </td>
+                    <td style="padding-left:12px; font-size:15px; color:#475569;">
+                        <strong>Initial Review</strong> by the data manager
+                    </td>
+                </tr>
+
+                <tr><td height="12"></td></tr>
+
+                <tr>
+                    <td width="32" valign="top">
+                        <div style="width:28px; height:28px; background:#0F172A; color:#FFFFFF;
+                                    text-align:center; line-height:28px; border-radius:50%; font-weight:bold;">
+                            2
                         </div>
-                    </div>
-                    <div class="process-step">
-                        <div class="step-icon">3</div>
-                        <div class="step-content">
-                            <p><strong>Data Access</strong> – Once approved, you'll receive secure download instructions</p>
+                    </td>
+                    <td style="padding-left:12px; font-size:15px; color:#475569;">
+                        <strong>Director Approval</strong> for eligible requests
+                    </td>
+                </tr>
+
+                <tr><td height="12"></td></tr>
+
+                <tr>
+                    <td width="32" valign="top">
+                        <div style="width:28px; height:28px; background:#0F172A; color:#FFFFFF;
+                                    text-align:center; line-height:28px; border-radius:50%; font-weight:bold;">
+                            3
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Important Note -->
-            <div class="important-note">
-                <h4>Important Information</h4>
-                <p>Please retain this email for your records. You will receive email notifications at each stage of the review process. You can also check your request status anytime by logging into your {{ site_name }} account.</p>
-            </div>
-            
-            <!-- Call to Action -->
-            <div class="cta-section">
-                <p style="margin-bottom: 20px; color: #2C3E50; font-size: 16px; font-weight: 600;">Monitor your request status</p>
-                <a href="{{ site_url }}{% url 'request_status' request.id %}" class="cta-button">
+                    </td>
+                    <td style="padding-left:12px; font-size:15px; color:#475569;">
+                        <strong>Secure Access</strong> details sent by email
+                    </td>
+                </tr>
+            </table>
+
+            <!-- CTA -->
+            <div style="text-align:center; margin:40px 0;">
+                <a href="{{ site_url }}{% url 'request_status' request.id %}"
+                   style="display:inline-block; background:#E11D48; color:#FFFFFF;
+                          padding:16px 36px; border-radius:10px;
+                          font-size:16px; font-weight:bold;">
                     View Request Dashboard
                 </a>
             </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="email-footer">
-            <div class="footer-content">
-                <div class="footer-logo">{{ site_name }}</div>
-                <p class="footer-text">Advancing research through secure data sharing and collaboration.</p>
-                
-                <div class="contact-info">
-                    <p style="margin-bottom: 10px; color: rgba(255, 255, 255, 0.9);">Need assistance? Contact our support team:</p>
-                    <p><a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
-                </div>
-                
-                <div class="copyright">
-                    <p>© {% now "Y" %} {{ site_name }}. All rights reserved.</p>
-                    <p>This is an automated message. Please do not reply to this email.</p>
-                </div>
+
+            <!-- Note -->
+            <div style="background:#FFF7ED; border-left:4px solid #E11D48;
+                        padding:20px; border-radius:10px;">
+                <strong>Important:</strong>
+                <p style="margin:8px 0 0; font-size:15px; color:#475569;">
+                    Please keep this email for your records. You’ll receive updates as your
+                    request progresses.
+                </p>
             </div>
-        </div>
-    </div>
+
+        </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+        <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
+            <div style="font-weight:bold; color:#FFFFFF; margin-bottom:8px;">
+                {{ site_name }}
+            </div>
+
+            <p style="font-size:14px; margin:0 0 20px;">
+                Secure data access for impactful research.
+            </p>
+
+            <p style="font-size:14px; margin:0;">
+                Support: <a href="mailto:{{ support_email }}" style="color:#38BDF8;">
+                    {{ support_email }}
+                </a>
+            </p>
+
+            <p style="font-size:12px; margin-top:24px;">
+                © {% now "Y" %} {{ site_name }} · Automated message
+            </p>
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
 </body>
 </html>

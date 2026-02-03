@@ -1,535 +1,226 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Request Status Update</title>
-    <style>
-        /* Base Styles */
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; 
-            line-height: 1.6; 
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f8fafc;
-        }
-        
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        
-        /* Your Colors */
-        :root {
-            --primary: #2C3E50;
-            --secondary: #1A252F;
-            --accent: #E74C3C;
-            --info: #3498db;
-        }
-        
-        /* Content */
-        .content { 
-            padding: 32px 24px; 
-        }
-        
-        /* Header */
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .header-icon {
-            font-size: 32px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            width: 56px;
-            height: 56px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .header-text h2 {
-            margin: 0 0 4px 0;
-            color: var(--primary);
-            font-size: 24px;
-            font-weight: 700;
-        }
-        
-        .header-text p {
-            margin: 0;
-            color: #6c757d;
-        }
-        
-        /* Status Badge */
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 14px;
-            margin: 8px 0 20px 0;
-        }
-        
-        .status-new {
-            background-color: rgba(52, 152, 219, 0.1);
-            color: var(--info);
-            border: 1px solid rgba(52, 152, 219, 0.3);
-        }
-        
-        .status-updated {
-            background-color: rgba(46, 204, 113, 0.1);
-            color: #2ecc71;
-            border: 1px solid rgba(46, 204, 113, 0.3);
-        }
-        
-        /* Status Card */
-        .status-card {
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02));
-            border-radius: 12px;
-            padding: 24px;
-            margin: 24px 0;
-            border: 1px solid rgba(52, 152, 219, 0.2);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .status-card::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 6px;
-            height: 100%;
-            background: linear-gradient(to bottom, var(--info), #2980b9);
-        }
-        
-        .status-card h3 {
-            margin-top: 0;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* Status Flow */
-        .status-flow {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin: 20px 0;
-            position: relative;
-        }
-        
-        .status-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            z-index: 1;
-            flex: 1;
-        }
-        
-        .status-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 8px;
-            font-weight: bold;
-            background-color: white;
-            border: 2px solid #dee2e6;
-            color: #adb5bd;
-        }
-        
-        .status-current .status-icon {
-            background-color: var(--info);
-            color: white;
-            border-color: var(--info);
-        }
-        
-        .status-previous .status-icon {
-            background-color: #6c757d;
-            color: white;
-            border-color: #6c757d;
-        }
-        
-        .status-label {
-            font-size: 12px;
-            color: #6c757d;
-            margin-top: 4px;
-        }
-        
-        .status-flow::before {
-            content: "";
-            position: absolute;
-            top: 20px;
-            left: 50px;
-            right: 50px;
-            height: 2px;
-            background-color: #dee2e6;
-            z-index: 0;
-        }
-        
-        /* Data Grid */
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-        
-        .data-item {
-            margin-bottom: 12px;
-        }
-        
-        .data-label {
-            font-size: 13px;
-            color: #6c757d;
-            font-weight: 500;
-            display: block;
-            margin-bottom: 4px;
-        }
-        
-        .data-value {
-            font-weight: 600;
-            color: var(--secondary);
-            font-size: 15px;
-        }
-        
-        /* Next Steps */
-        .next-steps {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 24px;
-            margin: 28px 0;
-            border: 1px solid #e9ecef;
-        }
-        
-        .next-steps h3 {
-            color: var(--primary);
-            margin-top: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .status-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .status-list li {
-            padding: 12px 0;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-        
-        .status-list li:last-child {
-            border-bottom: none;
-        }
-        
-        .status-list li.active {
-            background-color: rgba(52, 152, 219, 0.05);
-            margin: 0 -24px;
-            padding: 12px 24px;
-            border-radius: 4px;
-            border-left: 4px solid var(--info);
-        }
-        
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-top: 6px;
-            flex-shrink: 0;
-        }
-        
-        .status-list li.active .status-indicator {
-            background-color: var(--info);
-        }
-        
-        .status-list li:not(.active) .status-indicator {
-            background-color: #adb5bd;
-        }
-        
-        /* Contact */
-        .contact-box {
-            text-align: center;
-            margin: 32px 0;
-            padding: 24px;
-            background: linear-gradient(135deg, rgba(52, 152, 219, 0.05), rgba(52, 152, 219, 0.02));
-            border-radius: 12px;
-            border: 1px solid rgba(52, 152, 219, 0.1);
-        }
-        
-        .contact-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            background-color: var(--primary);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            margin-top: 12px;
-            transition: all 0.3s ease;
-        }
-        
-        .contact-btn:hover {
-            background-color: var(--secondary);
-            transform: translateY(-2px);
-        }
-        
-        /* Footer */
-        .footer { 
-            margin-top: 32px; 
-            padding: 24px; 
-            border-top: 1px solid #e9ecef; 
-            font-size: 13px; 
-            color: #6c757d;
-            text-align: center;
-            background-color: #f8f9fa;
-        }
-        
-        .footer-links {
-            margin-bottom: 16px;
-        }
-        
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        
-        .footer a:hover {
-            color: var(--accent);
-        }
-        
-        /* Responsive */
-        @media (max-width: 640px) {
-            .container {
-                margin: 0 12px;
-                border-radius: 8px;
-            }
-            
-            .content {
-                padding: 24px 16px;
-            }
-            
-            .header {
-                flex-direction: column;
-                text-align: center;
-                gap: 12px;
-            }
-            
-            .data-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .status-flow {
-                flex-direction: column;
-                gap: 24px;
-            }
-            
-            .status-flow::before {
-                display: none;
-            }
-            
-            .status-list li.active {
-                margin: 0 -16px;
-                padding: 12px 16px;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Data Request Status Update</title>
+<style>
+body { margin:0; padding:0; background:#F8FAFC; font-family:Arial, Helvetica, sans-serif; color:#333; }
+table { border-collapse:collapse; }
+a { text-decoration:none; color:inherit; }
+img { border:0; display:block; }
+
+@media only screen and (max-width:600px){
+  .container { width:100% !important; }
+  .padding { padding:24px !important; }
+}
+</style>
 </head>
+
 <body>
-    <div class="container">
-        <div class="content">
-            <div class="header">
-                <div class="header-icon">🔄</div>
-                <div class="header-text">
-                    <h2>Data Request Status Update</h2>
-                    <p>Your request status has changed</p>
-                </div>
-            </div>
-            
-            <p>Dear <strong>{{ user_display_name }}</strong>,</p>
-            
-            <div class="status-badge status-updated">Status Updated</div>
-            
-            <p>Your data request status has been updated. Here are the details:</p>
-            
-            <div class="status-card">
-                <h3>📊 Status Change Details</h3>
-                
-                <div class="status-flow">
-                    <div class="status-item status-previous">
-                        <div class="status-icon">←</div>
-                        <div class="data-value">{{ previous_status|title }}</div>
-                        <div class="status-label">Previous</div>
-                    </div>
-                    <div class="status-item status-current">
-                        <div class="status-icon">→</div>
-                        <div class="data-value">{{ current_status|title }}</div>
-                        <div class="status-label">Current</div>
-                    </div>
-                </div>
-                
-                <div class="data-grid">
-                    <div class="data-item">
-                        <span class="data-label">Request ID</span>
-                        <span class="data-value">#{{ request.id }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Dataset</span>
-                        <span class="data-value">{{ request.dataset.title }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Updated By</span>
-                        <span class="data-value">{{ updated_by_name }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Update Date</span>
-                        <span class="data-value">{{ update_date|date:"F d, Y H:i" }}</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="next-steps">
-                <h3>📋 What happens next?</h3>
-                <ul class="status-list">
-                    {% if request.status == 'manager_review' %}
-                    <li class="active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Manager Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Your request is being reviewed by a data manager. You will be notified when a decision is made.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Director Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">After manager approval, it goes to director for final decision.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Final Decision</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">You'll receive notification once a final decision is made.</p>
-                        </div>
-                    </li>
-                    {% elif request.status == 'director_review' %}
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Manager Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Manager review completed successfully.</p>
-                        </div>
-                    </li>
-                    <li class="active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Director Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">The data manager has recommended your request. It is now awaiting final approval from the director.</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Final Decision</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">You'll receive notification once a final decision is made.</p>
-                        </div>
-                    </li>
-                    {% elif request.status == 'approved' %}
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Manager Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Completed ✓</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Director Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Completed ✓</p>
-                        </div>
-                    </li>
-                    <li class="active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Approved</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Your request has been approved! You should receive a separate email with download instructions.</p>
-                        </div>
-                    </li>
-                    {% elif request.status == 'rejected' %}
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Manager Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Completed ✓</p>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Director Review</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Completed ✓</p>
-                        </div>
-                    </li>
-                    <li class="active">
-                        <div class="status-indicator"></div>
-                        <div>
-                            <strong>Rejected</strong>
-                            <p style="margin: 4px 0 0 0; color: #6c757d;">Your request was not approved. You should receive a separate email with details and next steps.</p>
-                        </div>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-            
-            <div class="contact-box">
-                <h3 style="margin-top: 0; color: var(--primary);">Need Assistance?</h3>
-                <p>If you have any questions about this status update or need further clarification, our support team is here to help.</p>
-                <a href="mailto:{{ support_email }}" class="contact-btn">
-                    <span>Contact Support</span>
-                    <span>✉️</span>
-                </a>
-                <p style="margin-top: 12px; font-size: 14px; color: #6c757d;">
-                    Email: <a href="mailto:{{ support_email }}" style="color: var(--info);">{{ support_email }}</a>
-                </p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <div class="footer-links">
-                <a href="{{ site_url }}">View Request</a> | 
-                <a href="{{ portal_url }}">Data Portal</a> | 
-                <a href="{{ help_url }}">Help Center</a>
-            </div>
-            <p>This is an automated message from <strong>{{ site_name }}</strong> Data Portal.</p>
-            <p>Please do not reply to this email.</p>
-            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
-        </div>
-    </div>
+
+<table width="100%" bgcolor="#F8FAFC" cellpadding="0" cellspacing="0">
+<tr>
+<td align="center">
+
+<!-- Container -->
+<table width="620" class="container" bgcolor="#FFFFFF" cellpadding="0" cellspacing="0" style="border-radius:16px; overflow:hidden;">
+    
+    <!-- Header -->
+    <tr>
+        <td bgcolor="#0F172A" style="padding:40px 32px; text-align:center; color:#FFFFFF;">
+            <div style="font-size:26px; font-weight:bold;">Data Request Status Update</div>
+            <div style="font-size:16px; color:#FECACA; margin-top:8px;">Dear {{ user_display_name }},</div>
+        </td>
+    </tr>
+
+    <!-- Body -->
+    <tr>
+        <td style="padding:40px 32px; color:#020617;">
+
+            <!-- Status Badge -->
+            <table align="center" cellpadding="0" cellspacing="0" style="margin:20px 0; border-radius:999px; border:1px solid rgba(231,76,60,0.5); background:#FEE2E2;">
+                <tr>
+                    <td style="padding:8px 18px; font-size:14px; font-weight:bold; color:#E74C3C;">
+                        Status Updated
+                    </td>
+                </tr>
+            </table>
+
+            <p style="font-size:16px; line-height:1.7; color:#475569;">
+                Your data request status has been updated. Here are the details:
+            </p>
+
+            <!-- Status Card -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0; border-radius:12px; border:1px solid rgba(231,76,60,0.2); background:#FEE2E2;">
+                <tr>
+                    <td style="padding:24px;">
+                        <div style="font-size:18px; font-weight:bold; margin-bottom:16px; color:#0F172A;">📊 Status Change Details</div>
+                        
+                        <!-- Previous / Current -->
+                        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                            <tr>
+                                <td width="50%" align="center" style="padding:8px;">
+                                    <div style="width:40px; height:40px; border-radius:50%; background:#6B7280; color:#FFFFFF; line-height:40px; font-weight:bold; margin:0 auto;">←</div>
+                                    <div style="font-size:15px; font-weight:bold; margin-top:4px;">{{ previous_status|title }}</div>
+                                    <div style="font-size:12px; color:#6B7280;">Previous</div>
+                                </td>
+                                <td width="50%" align="center" style="padding:8px;">
+                                    <div style="width:40px; height:40px; border-radius:50%; background:#E74C3C; color:#FFFFFF; line-height:40px; font-weight:bold; margin:0 auto;">→</div>
+                                    <div style="font-size:15px; font-weight:bold; margin-top:4px;">{{ current_status|title }}</div>
+                                    <div style="font-size:12px; color:#6B7280;">Current</div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Data Grid -->
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="font-size:12px; color:#64748B; padding:8px 0;">Request ID</td>
+                                <td style="font-size:15px; font-weight:bold; color:#1E293B; padding:8px 0;">#{{ request.id }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B; padding:8px 0;">Dataset</td>
+                                <td style="font-size:15px; font-weight:bold; color:#1E293B; padding:8px 0;">{{ request.dataset.title }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B; padding:8px 0;">Updated By</td>
+                                <td style="font-size:15px; font-weight:bold; color:#1E293B; padding:8px 0;">{{ updated_by_name }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B; padding:8px 0;">Update Date</td>
+                                <td style="font-size:15px; font-weight:bold; color:#1E293B; padding:8px 0;">{{ update_date|date:"F d, Y H:i" }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Next Steps -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA; background:#FEE2E2; border-radius:12px; padding:24px; margin:28px 0;">
+                <tr>
+                    <td>
+                        <div style="font-size:18px; font-weight:bold; margin-bottom:12px; color:#0F172A;">📋 What Happens Next?</div>
+
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            {% if request.status == 'manager_review' %}
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA; background:#FEE2E2; border-left:4px solid #E74C3C;">
+                                    <strong>Manager Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Your request is being reviewed by a data manager. You will be notified when a decision is made.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
+                                    <strong>Director Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">After manager approval, it goes to director for final decision.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px;">
+                                    <strong>Final Decision</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">You'll receive notification once a final decision is made.</p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if request.status == 'director_review' %}
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
+                                    <strong>Manager Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Manager review completed successfully.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA; background:#FEE2E2; border-left:4px solid #E74C3C;">
+                                    <strong>Director Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">The data manager has recommended your request. It is now awaiting final approval from the director.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px;">
+                                    <strong>Final Decision</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">You'll receive notification once a final decision is made.</p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if request.status == 'approved' %}
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
+                                    <strong>Manager Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
+                                    <strong>Director Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px; background:#FEE2E2; border-left:4px solid #E74C3C;">
+                                    <strong>Approved</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Your request has been approved! You should receive a separate email with download instructions.</p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if request.status == 'rejected' %}
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
+                                    <strong>Manager Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
+                                    <strong>Director Review</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:12px; background:#FECACA; border-left:4px solid #DC2626;">
+                                    <strong>Rejected</strong>
+                                    <p style="margin:4px 0 0 0; color:#475569;">Your request was not approved. You should receive a separate email with details and next steps.</p>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Contact Box -->
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0; border-radius:12px; border:1px solid rgba(231,76,60,0.3); background:#FEE2E2; text-align:center; padding:24px;">
+                <tr>
+                    <td>
+                        <div style="font-size:18px; font-weight:bold; color:#0F172A;">Need Assistance?</div>
+                        <p style="color:#475569; margin:8px 0;">If you have questions about this status update, our support team is here to help.</p>
+                        <a href="mailto:{{ support_email }}" style="display:inline-block; padding:12px 24px; background:#E74C3C; color:#FFFFFF; border-radius:8px; font-weight:bold; margin-top:12px;">Contact Support ✉️</a>
+                        <p style="margin-top:12px; font-size:14px; color:#6B7280;">Email: <a href="mailto:{{ support_email }}" style="color:#E74C3C;">{{ support_email }}</a></p>
+                    </td>
+                </tr>
+            </table>
+
+        </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+        <td bgcolor="#0F172A" style="padding:36px 32px; text-align:center; color:#94A3B8;">
+            <div style="font-weight:bold; color:#FFFFFF;">{{ site_name }}</div>
+            <p style="font-size:14px; margin:10px 0;">
+                <a href="{{ site_url }}" style="color:#FECACA;">View Request</a> · 
+                <a href="{{ portal_url }}" style="color:#FECACA;">Data Portal</a> · 
+                <a href="{{ help_url }}" style="color:#FECACA;">Help Center</a>
+            </p>
+            <p style="font-size:12px;">© {% now "Y" %} {{ site_name }}. Automated notification. Do not reply.</p>
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
 </body>
 </html>

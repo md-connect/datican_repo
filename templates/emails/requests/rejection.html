@@ -1,399 +1,209 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Request Decision</title>
-    <style>
-        /* Base Styles */
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; 
-            line-height: 1.6; 
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f8fafc;
-        }
-        
-        .container { 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        
-        /* Your Colors */
-        :root {
-            --primary: #2C3E50;
-            --secondary: #1A252F;
-            --accent: #E74C3C;
-        }
-        
-        /* Header */
-        .header { 
-            background: linear-gradient(135deg, var(--accent), #c0392b);
-            color: white; 
-            padding: 32px 24px;
-            text-align: center;
-            position: relative;
-        }
-        
-        .header h2 { 
-            margin: 0 0 16px 0; 
-            font-size: 28px;
-            font-weight: 700;
-        }
-        
-        .header p { 
-            margin: 0; 
-            opacity: 0.95;
-            font-size: 16px;
-        }
-        
-        /* Status Indicator */
-        .status-indicator {
-            display: inline-flex;
-            align-items: center;
-            background-color: rgba(231, 76, 60, 0.15);
-            color: var(--accent);
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 15px;
-            margin-bottom: 24px;
-            border: 1px solid rgba(231, 76, 60, 0.3);
-        }
-        
-        .status-indicator::before {
-            content: "⚠️";
-            margin-right: 10px;
-            font-size: 18px;
-        }
-        
-        /* Content */
-        .content { 
-            padding: 32px 24px; 
-        }
-        
-        /* Cards */
-        .details-card {
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 24px;
-            border: 1px solid #e9ecef;
-            background-color: #f8f9fa;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .reason-card {
-            border-radius: 8px;
-            padding: 20px;
-            margin: 24px 0;
-            border: 1px solid rgba(231, 76, 60, 0.2);
-            background-color: rgba(231, 76, 60, 0.05);
-            border-left: 4px solid var(--accent);
-        }
-        
-        /* Data Grid */
-        .data-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
-            margin-top: 12px;
-        }
-        
-        .data-item {
-            margin-bottom: 10px;
-        }
-        
-        .data-label {
-            font-size: 13px;
-            color: #6c757d;
-            font-weight: 500;
-            display: block;
-            margin-bottom: 4px;
-        }
-        
-        .data-value {
-            font-weight: 600;
-            color: var(--secondary);
-        }
-        
-        /* Action Sections */
-        .action-section {
-            margin: 28px 0;
-            padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .action-section h4 {
-            color: var(--primary);
-            margin-top: 0;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* Lists */
-        .steps-list, .options-list {
-            padding-left: 20px;
-            margin: 16px 0;
-        }
-        
-        .steps-list li, .options-list li {
-            margin-bottom: 12px;
-            padding-left: 8px;
-            line-height: 1.5;
-        }
-        
-        .steps-list li::marker {
-            color: var(--primary);
-        }
-        
-        .options-list li::marker {
-            color: var(--accent);
-        }
-        
-        /* Buttons */
-        .btn-group {
-            display: flex;
-            gap: 12px;
-            margin: 24px 0;
-            flex-wrap: wrap;
-        }
-        
-        .btn { 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 14px 28px; 
-            background-color: var(--primary); 
-            color: white; 
-            text-decoration: none; 
-            border-radius: 8px; 
-            font-weight: 600;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(44, 62, 80, 0.1);
-            border: none;
-            cursor: pointer;
-        }
-        
-        .btn:hover {
-            background-color: var(--secondary);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(44, 62, 80, 0.15);
-        }
-        
-        .btn-secondary {
-            background-color: #6c757d;
-        }
-        
-        .btn-secondary:hover {
-            background-color: #5a6268;
-        }
-        
-        /* Contact Info */
-        .contact-info {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 24px 0;
-            border-left: 4px solid #6c757d;
-        }
-        
-        .contact-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 12px;
-            gap: 12px;
-        }
-        
-        .contact-label {
-            font-weight: 600;
-            color: var(--primary);
-            min-width: 120px;
-        }
-        
-        .contact-value {
-            color: var(--secondary);
-            flex: 1;
-        }
-        
-        /* Footer */
-        .footer { 
-            margin-top: 32px; 
-            padding: 24px; 
-            border-top: 1px solid #e9ecef; 
-            font-size: 13px; 
-            color: #6c757d;
-            text-align: center;
-            background-color: #f8f9fa;
-        }
-        
-        .footer-links {
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        
-        .footer a {
-            color: var(--primary);
-            text-decoration: none;
-        }
-        
-        .footer a:hover {
-            color: var(--accent);
-        }
-        
-        /* Responsive */
-        @media (max-width: 640px) {
-            .container {
-                margin: 0 12px;
-                border-radius: 8px;
-            }
-            
-            .content, .header {
-                padding: 24px 16px;
-            }
-            
-            .data-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .btn-group {
-                flex-direction: column;
-            }
-            
-            .btn {
-                width: 100%;
-                text-align: center;
-            }
-            
-            .contact-item {
-                flex-direction: column;
-                gap: 4px;
-            }
-            
-            .contact-label {
-                min-width: auto;
-            }
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Data Request Decision</title>
+
+<style>
+table { border-collapse: collapse; }
+img { border: 0; }
+a { text-decoration: none; }
+
+@media only screen and (max-width:600px) {
+    .container { width:100% !important; }
+    .padding { padding:24px !important; }
+}
+</style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>Update on Your Data Request</h2>
-            <p>Dear <strong>{{ user_display_name }}</strong>,</p>
-        </div>
-        
-        <div class="content">
-            <div class="status-indicator">Request Rejected</div>
-            
-            <p>After careful review, we regret to inform you that your data request has been <strong>REJECTED</strong>.</p>
-            
-            <div class="details-card">
-                <h3>Request Details</h3>
-                <div class="data-grid">
-                    <div class="data-item">
-                        <span class="data-label">Request ID</span>
-                        <span class="data-value">#{{ request.id }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Dataset</span>
-                        <span class="data-value">{{ request.dataset.title }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Decision Date</span>
-                        <span class="data-value">{% now "F d, Y H:i" %}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Decision By</span>
-                        <span class="data-value">{{ decision_by_name }}</span>
-                    </div>
-                    <div class="data-item">
-                        <span class="data-label">Position</span>
-                        <span class="data-value">{{ decision_position|title }}</span>
-                    </div>
-                </div>
+
+<body style="margin:0; padding:0; background:#F8FAFC; font-family:Arial, Helvetica, sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC">
+<tr>
+<td align="center">
+
+<!-- Container -->
+<table width="620" class="container" cellpadding="0" cellspacing="0"
+       style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
+
+    <!-- Header -->
+    <tr>
+        <td bgcolor="#0F172A" style="padding:40px 32px; text-align:center;">
+            <div style="font-size:26px; font-weight:bold; color:#FFFFFF;">
+                Update on Your Data Request
             </div>
-            
-            {% if rejection_reason %}
-            <div class="reason-card">
-                <h4>📝 Reason for Rejection</h4>
-                <p style="margin: 0; line-height: 1.6;">{{ rejection_reason|linebreaks }}</p>
+            <div style="font-size:16px; color:#CBD5F5; margin-top:8px;">
+                Dear {{ user_display_name }},
             </div>
-            {% endif %}
-            
-            <div class="action-section">
-                <h4>🔄 Next Steps</h4>
-                <ul class="steps-list">
-                    <li>You may submit a revised request addressing the concerns mentioned above</li>
-                    <li>Ensure all required documents are complete and properly submitted</li>
-                    <li>Provide more detailed project description if needed</li>
-                    <li>Verify that your ethical approval documents are valid and current</li>
-                </ul>
-            </div>
-            
-            <div class="contact-info">
-                <h4>📞 Contact Information</h4>
-                <div class="contact-item">
-                    <span class="contact-label">Data Manager:</span>
-                    <span class="contact-value">{{ manager_email }}</span>
-                </div>
-                <div class="contact-item">
-                    <span class="contact-label">Director Appeal:</span>
-                    <span class="contact-value">{{ director_email }}</span>
-                </div>
-                <div class="contact-item">
-                    <span class="contact-label">General Support:</span>
-                    <span class="contact-value">{{ contact_email }}</span>
-                </div>
-            </div>
-            
-            <p>If you believe this decision was made in error, or if you have additional information to provide:</p>
-            
-            <ol class="options-list">
-                <li>Submit a new request with additional documentation</li>
-                <li>Contact the data manager for clarification</li>
-                <li>Appeal the decision by contacting the director</li>
-            </ol>
-            
-            <div class="btn-group">
-                <a href="{{ new_request_url }}" class="btn">
-                    <span>Submit Revised Request</span>
-                    <span>📄</span>
-                </a>
-                <a href="mailto:{{ manager_email }}" class="btn btn-secondary">
-                    <span>Contact Manager</span>
-                    <span>✉️</span>
-                </a>
-            </div>
-            
-            <p style="color: #6c757d; font-style: italic; margin-top: 24px;">
-                Thank you for your interest in our datasets. We encourage you to review our data access policies and submit a revised application if appropriate.
+        </td>
+    </tr>
+
+    <!-- Body -->
+    <tr>
+        <td class="padding" style="padding:40px 32px; color:#020617;">
+
+            <!-- Status -->
+            <table cellpadding="0" cellspacing="0" align="center"
+                   style="background:#FFF1F2; border:1px solid #FECACA;
+                          border-radius:999px; margin-bottom:28px;">
+                <tr>
+                    <td style="padding:10px 18px; font-size:14px; font-weight:bold; color:#9F1239;">
+                        ⚠ Request Rejected
+                    </td>
+                </tr>
+            </table>
+
+            <p style="font-size:16px; color:#475569; line-height:1.7; margin:0 0 28px;">
+                After careful review, we regret to inform you that your data request has been
+                <strong>declined</strong> at this time.
             </p>
-        </div>
-        
-        <div class="footer">
-            <div class="footer-links">
-                <a href="{{ site_url }}">Data Portal</a> | 
-                <a href="{{ policy_url }}">Access Policies</a> | 
-                <a href="{{ help_url }}">Help Center</a>
+
+            <!-- Details -->
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="background:#F8FAFC; border:1px solid #E2E8F0;
+                          border-left:4px solid #0F172A;
+                          border-radius:12px; padding:24px;">
+
+                <tr>
+                    <td colspan="2" style="font-size:18px; font-weight:bold; padding-bottom:16px;">
+                        Request Details
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:12px; color:#64748B;">Request ID</td>
+                    <td style="font-size:16px;">#{{ request.id }}</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:12px; color:#64748B;">Dataset</td>
+                    <td style="font-size:16px;">{{ request.dataset.title }}</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:12px; color:#64748B;">Decision Date</td>
+                    <td style="font-size:16px;">{% now "F d, Y H:i" %}</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:12px; color:#64748B;">Decision By</td>
+                    <td style="font-size:16px;">{{ decision_by_name }}</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:12px; color:#64748B;">Position</td>
+                    <td style="font-size:16px;">{{ decision_position|title }}</td>
+                </tr>
+            </table>
+
+            <!-- Reason -->
+            {% if rejection_reason %}
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="background:#FFF1F2; border:1px solid #FECACA;
+                          border-left:4px solid #E11D48;
+                          border-radius:12px; padding:20px; margin:32px 0;">
+                <tr>
+                    <td>
+                        <div style="font-size:16px; font-weight:bold; color:#9F1239; margin-bottom:6px;">
+                            📝 Reason for Rejection
+                        </div>
+                        <div style="font-size:15px; color:#475569; line-height:1.6;">
+                            {{ rejection_reason|linebreaks }}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+            {% endif %}
+
+            <!-- Next Steps -->
+            <p style="font-size:18px; font-weight:bold; margin-bottom:12px;">
+                🔄 Recommended Next Steps
+            </p>
+
+            <ul style="padding-left:18px; color:#475569; font-size:15px; line-height:1.7;">
+                <li>Submit a revised request addressing the points above</li>
+                <li>Ensure all required documentation is complete and valid</li>
+                <li>Provide a clearer or more detailed project description</li>
+                <li>Confirm ethical approval documents are current</li>
+            </ul>
+
+            <!-- Contact -->
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="background:#F8FAFC; border:1px solid #E2E8F0;
+                          border-left:4px solid #64748B;
+                          border-radius:12px; padding:20px; margin:32px 0;">
+                <tr>
+                    <td colspan="2" style="font-size:16px; font-weight:bold; padding-bottom:12px;">
+                        📞 Contact Information
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:14px; color:#64748B;">Data Manager</td>
+                    <td style="font-size:15px;">{{ manager_email }}</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:14px; color:#64748B;">Director (Appeal)</td>
+                    <td style="font-size:15px;">{{ director_email }}</td>
+                </tr>
+
+                <tr>
+                    <td style="font-size:14px; color:#64748B;">General Support</td>
+                    <td style="font-size:15px;">{{ contact_email }}</td>
+                </tr>
+            </table>
+
+            <!-- Actions -->
+            <div style="text-align:center; margin:36px 0;">
+                <a href="{{ new_request_url }}"
+                   style="display:inline-block; background:#0F172A; color:#FFFFFF;
+                          padding:14px 32px; border-radius:10px;
+                          font-size:15px; font-weight:bold; margin-right:8px;">
+                    Submit Revised Request
+                </a>
+
+                <a href="mailto:{{ manager_email }}"
+                   style="display:inline-block; background:#64748B; color:#FFFFFF;
+                          padding:14px 32px; border-radius:10px;
+                          font-size:15px; font-weight:bold; margin-top:12px;">
+                    Contact Manager
+                </a>
             </div>
-            <p>This is an automated message from the <strong>{{ site_name }}</strong> Data Portal.</p>
-            <p>For questions about this decision, contact: {{ contact_email }}</p>
-            <p>&copy; {% now "Y" %} {{ site_name }}. All rights reserved.</p>
-        </div>
-    </div>
+
+            <p style="font-size:14px; color:#64748B; font-style:italic;">
+                Thank you for your interest in our datasets. You are welcome to submit a revised
+                application if appropriate.
+            </p>
+
+        </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+        <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
+            <div style="font-weight:bold; color:#FFFFFF;">
+                {{ site_name }}
+            </div>
+
+            <p style="font-size:14px; margin:10px 0;">
+                <a href="{{ site_url }}" style="color:#CBD5F5;">Data Portal</a> ·
+                <a href="{{ policy_url }}" style="color:#CBD5F5;">Access Policies</a> ·
+                <a href="{{ help_url }}" style="color:#CBD5F5;">Help Center</a>
+            </p>
+
+            <p style="font-size:12px;">
+                © {% now "Y" %} {{ site_name }} · Automated notification
+            </p>
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
 </body>
 </html>
