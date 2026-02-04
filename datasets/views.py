@@ -1214,7 +1214,7 @@ def preview_acknowledgment_email(request, request_id):
         'request': data_request,
         'dataset': data_request.dataset,
         'site_name': getattr(settings, 'SITE_NAME', 'Data Portal'),
-        'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@example.com'),
+        'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@datican.org'),
     }
     
     return render(request, 'emails/requests/acknowledgment.html', context)

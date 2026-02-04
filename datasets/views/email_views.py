@@ -31,7 +31,7 @@ def preview_acknowledgment_email(request, request_id):
         'request': data_request,
         'dataset': data_request.dataset,
         'site_name': 'DATICAN Repo',
-        'support_email': 'support@repo.datican.org',
+        'support_email': 'support@datican.org',
     }
     
     return render(request, 'emails/requests/acknowledgment.html', context)

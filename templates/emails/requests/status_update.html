@@ -33,15 +33,14 @@ img { border:0; display:block; }
             <div style="font-size:16px; color:#FECACA; margin-top:8px;">Dear {{ user_display_name }},</div>
         </td>
     </tr>
-
+    
     <!-- Body -->
     <tr>
         <td style="padding:40px 32px; color:#020617;">
-
             <!-- Status Badge -->
-            <table align="center" cellpadding="0" cellspacing="0" style="margin:20px 0; border-radius:999px; border:1px solid rgba(231,76,60,0.5); background:#FEE2E2;">
+            <table align="center" cellpadding="0" cellspacing="0" style="margin:20px 0; border:1px solid #009b2c; background:#009b2c;">
                 <tr>
-                    <td style="padding:8px 18px; font-size:14px; font-weight:bold; color:#E74C3C;">
+                    <td style="padding:8px 18px; font-size:14px; font-weight:bold; color:#ffffff;">
                         Status Updated
                     </td>
                 </tr>
@@ -52,10 +51,10 @@ img { border:0; display:block; }
             </p>
 
             <!-- Status Card -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0; border-radius:12px; border:1px solid rgba(231,76,60,0.2); background:#FEE2E2;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0; background:#fafafa;">
                 <tr>
                     <td style="padding:24px;">
-                        <div style="font-size:18px; font-weight:bold; margin-bottom:16px; color:#0F172A;">📊 Status Change Details</div>
+                        <div style="font-size:18px; font-weight:bold; margin-bottom:16px; color:#0F172A;">Status Change Details</div>
                         
                         <!-- Previous / Current -->
                         <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
@@ -76,10 +75,6 @@ img { border:0; display:block; }
                         <!-- Data Grid -->
                         <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
-                                <td style="font-size:12px; color:#64748B; padding:8px 0;">Request ID</td>
-                                <td style="font-size:15px; font-weight:bold; color:#1E293B; padding:8px 0;">#{{ request.id }}</td>
-                            </tr>
-                            <tr>
                                 <td style="font-size:12px; color:#64748B; padding:8px 0;">Dataset</td>
                                 <td style="font-size:15px; font-weight:bold; color:#1E293B; padding:8px 0;">{{ request.dataset.title }}</td>
                             </tr>
@@ -96,105 +91,222 @@ img { border:0; display:block; }
                 </tr>
             </table>
 
-            <!-- Next Steps -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #FECACA; background:#FEE2E2; border-radius:12px; padding:24px; margin:28px 0;">
+            <!-- Next Steps (3-Stage Progress) -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                style="background:#FFFFFF; padding:24px; margin:28px 0;">
                 <tr>
-                    <td>
-                        <div style="font-size:18px; font-weight:bold; margin-bottom:12px; color:#0F172A;">📋 What Happens Next?</div>
+                    <td style="padding:24px;">
 
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            {% if request.status == 'manager_review' %}
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA; background:#FEE2E2; border-left:4px solid #E74C3C;">
-                                    <strong>Manager Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Your request is being reviewed by a data manager. You will be notified when a decision is made.</p>
+                        <div style="font-size:18px; font-weight:bold; margin-bottom:20px; color:#0F172A;">
+                            What Happens Next?
+                        </div>
+
+                        <!-- Stages Row -->
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tr valign="top" align="center">
+
+                                {% if request.status == 'manager_review' %}
+                                <!-- Stage 1: Manager Review (Active) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#E74C3C; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        1
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Manager Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Your request is being reviewed by a data manager. You will be notified when a decision is made.
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
-                                    <strong>Director Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">After manager approval, it goes to director for final decision.</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 2: Director Review (Inactive) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#E5E7EB; color:#64748B;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        2
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold; color:#64748B;">Director Review</div>
+                                    <div style="font-size:13px; color:#94A3B8; margin-top:6px;">
+                                        After manager approval, it goes to director for final decision.
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px;">
-                                    <strong>Final Decision</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">You'll receive notification once a final decision is made.</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 3: Final Decision (Inactive) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#E5E7EB; color:#64748B;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        3
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold; color:#64748B;">Final Decision</div>
+                                    <div style="font-size:13px; color:#94A3B8; margin-top:6px;">
+                                        You'll receive notification once a final decision is made.
+                                    </div>
                                 </td>
-                            </tr>
-                            {% endif %}
-                            {% if request.status == 'director_review' %}
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
-                                    <strong>Manager Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Manager review completed successfully.</p>
+                                {% endif %}
+
+                                {% if request.status == 'director_review' %}
+                                <!-- Stage 1: Manager Review (Completed) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#16A34A; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        1
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Manager Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Manager review completed successfully.
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA; background:#FEE2E2; border-left:4px solid #E74C3C;">
-                                    <strong>Director Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">The data manager has recommended your request. It is now awaiting final approval from the director.</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 2: Director Review (Active) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#E74C3C; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        2
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Director Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        The data manager has recommended your request. It is now awaiting final approval from the director.
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px;">
-                                    <strong>Final Decision</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">You'll receive notification once a final decision is made.</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 3: Final Decision (Inactive) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#E5E7EB; color:#64748B;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        3
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold; color:#64748B;">Final Decision</div>
+                                    <div style="font-size:13px; color:#94A3B8; margin-top:6px;">
+                                        You'll receive notification once a final decision is made.
+                                    </div>
                                 </td>
-                            </tr>
-                            {% endif %}
-                            {% if request.status == 'approved' %}
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
-                                    <strong>Manager Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+                                {% endif %}
+
+                                {% if request.status == 'approved' %}
+                                <!-- Stage 1: Manager Review (Completed) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#16A34A; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        1
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Manager Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Completed ✓
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
-                                    <strong>Director Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 2: Director Review (Completed) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#16A34A; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        2
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Director Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Completed ✓
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px; background:#FEE2E2; border-left:4px solid #E74C3C;">
-                                    <strong>Approved</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Your request has been approved! You should receive a separate email with download instructions.</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 3: Approved (Active) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#E74C3C; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        3
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Approved</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Your request has been approved! You should receive a separate email with download instructions.
+                                    </div>
                                 </td>
-                            </tr>
-                            {% endif %}
-                            {% if request.status == 'rejected' %}
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
-                                    <strong>Manager Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+                                {% endif %}
+
+                                {% if request.status == 'rejected' %}
+                                <!-- Stage 1: Manager Review (Completed) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#16A34A; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        1
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Manager Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Completed ✓
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px; border-bottom:1px solid #FECACA;">
-                                    <strong>Director Review</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Completed ✓</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 2: Director Review (Completed) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#16A34A; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        2
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Director Review</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Completed ✓
+                                    </div>
                                 </td>
-                            </tr>
-                            <tr>
-                                <td style="padding:12px; background:#FECACA; border-left:4px solid #DC2626;">
-                                    <strong>Rejected</strong>
-                                    <p style="margin:4px 0 0 0; color:#475569;">Your request was not approved. You should receive a separate email with details and next steps.</p>
+
+                                <!-- Arrow -->
+                                <td width="5%" style="font-size:20px; color:#94A3B8; padding-top:28px;">→</td>
+
+                                <!-- Stage 3: Rejected (Active) -->
+                                <td width="33%" style="padding:8px;">
+                                    <div style="width:52px; height:52px; border-radius:50%;
+                                                background:#DC2626; color:#FFFFFF;
+                                                line-height:52px; font-weight:bold; margin:0 auto;">
+                                        3
+                                    </div>
+                                    <div style="margin-top:10px; font-weight:bold;">Rejected</div>
+                                    <div style="font-size:13px; color:#475569; margin-top:6px;">
+                                        Your request was not approved. You should receive a separate email with details and next steps.
+                                    </div>
                                 </td>
+                                {% endif %}
+
                             </tr>
-                            {% endif %}
                         </table>
+
                     </td>
                 </tr>
             </table>
-
+            <hr>
             <!-- Contact Box -->
-            <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0; border-radius:12px; border:1px solid rgba(231,76,60,0.3); background:#FEE2E2; text-align:center; padding:24px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0; background:#fafafa; text-align:center; padding:24px;">
                 <tr>
-                    <td>
+                    <td style="padding:24px;">
                         <div style="font-size:18px; font-weight:bold; color:#0F172A;">Need Assistance?</div>
                         <p style="color:#475569; margin:8px 0;">If you have questions about this status update, our support team is here to help.</p>
-                        <a href="mailto:{{ support_email }}" style="display:inline-block; padding:12px 24px; background:#E74C3C; color:#FFFFFF; border-radius:8px; font-weight:bold; margin-top:12px;">Contact Support ✉️</a>
+                        <a href="mailto:{{ support_email }}" style="display:inline-block; padding:12px 24px; background:#E74C3C; color:#FFFFFF; border-radius:8px; font-weight:bold; margin-top:12px;">Contact Support</a>
                         <p style="margin-top:12px; font-size:14px; color:#6B7280;">Email: <a href="mailto:{{ support_email }}" style="color:#E74C3C;">{{ support_email }}</a></p>
                     </td>
                 </tr>
@@ -212,7 +324,8 @@ img { border:0; display:block; }
                 <a href="{{ portal_url }}" style="color:#FECACA;">Data Portal</a> · 
                 <a href="{{ help_url }}" style="color:#FECACA;">Help Center</a>
             </p>
-            <p style="font-size:12px;">© {% now "Y" %} {{ site_name }}. Automated notification. Do not reply.</p>
+            <p style="font-size:12px;">Automated notification. Do not reply.</p>
+            <p style="font-size:12px;">© {% now "Y" %} {{ site_name }}. All rights reserved.</p>
         </td>
     </tr>
 

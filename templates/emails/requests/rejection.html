@@ -38,6 +38,7 @@ a { text-decoration: none; }
             </div>
         </td>
     </tr>
+    
 
     <!-- Body -->
     <tr>
@@ -60,42 +61,70 @@ a { text-decoration: none; }
             </p>
 
             <!-- Details -->
-            <table width="100%" cellpadding="0" cellspacing="0"
-                   style="background:#F8FAFC; border:1px solid #E2E8F0;
-                          border-left:4px solid #0F172A;
-                          border-radius:12px; padding:24px;">
-
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                style="background:#F8FAFC; border:1px solid #E2E8F0;
+                        border-left:4px solid #0F172A;
+                        border-radius:12px;">
                 <tr>
-                    <td colspan="2" style="font-size:18px; font-weight:bold; padding-bottom:16px;">
-                        Request Details
+                    <td style="padding:24px 32px;">
+                        
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                            <tr>
+                                <td colspan="2" style="font-size:18px; font-weight:bold; padding-bottom:16px;">
+                                    Request Details
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:.08em;">
+                                    Request ID
+                                </td>
+                                <td style="padding:8px 0; font-size:16px;">
+                                    #{{ request.id }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                                    Dataset
+                                </td>
+                                <td style="padding:8px 0; font-size:16px;">
+                                    {{ request.dataset.title }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                                    Decision Date
+                                </td>
+                                <td style="padding:8px 0; font-size:16px;">
+                                    {% now "F d, Y H:i" %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                                    Decision By
+                                </td>
+                                <td style="padding:8px 0; font-size:16px;">
+                                    {{ decision_by_name }}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
+                                    Position
+                                </td>
+                                <td style="padding:8px 0; font-size:16px;">
+                                    {{ decision_position|title }}
+                                </td>
+                            </tr>
+                        </table>
+
                     </td>
                 </tr>
-
-                <tr>
-                    <td style="font-size:12px; color:#64748B;">Request ID</td>
-                    <td style="font-size:16px;">#{{ request.id }}</td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:12px; color:#64748B;">Dataset</td>
-                    <td style="font-size:16px;">{{ request.dataset.title }}</td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:12px; color:#64748B;">Decision Date</td>
-                    <td style="font-size:16px;">{% now "F d, Y H:i" %}</td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:12px; color:#64748B;">Decision By</td>
-                    <td style="font-size:16px;">{{ decision_by_name }}</td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:12px; color:#64748B;">Position</td>
-                    <td style="font-size:16px;">{{ decision_position|title }}</td>
-                </tr>
             </table>
+
 
             <!-- Reason -->
             {% if rejection_reason %}
@@ -194,7 +223,7 @@ a { text-decoration: none; }
             </p>
 
             <p style="font-size:12px;">
-                © {% now "Y" %} {{ site_name }} · Automated notification
+                © {% now "Y" %} {{ site_name }} · All rights reserved.
             </p>
         </td>
     </tr>

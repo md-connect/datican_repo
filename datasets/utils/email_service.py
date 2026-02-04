@@ -74,7 +74,7 @@ class EmailService:
     # =========================
     @staticmethod
     def send_acknowledgment_email(request):
-        subject = f"Data Request Received - #{request.id}"
+        subject = f"{request.dataset} Data Request Received"
         context = {
             'user': request.user,
             'request': request,
@@ -135,7 +135,7 @@ class EmailService:
 
     @staticmethod
     def send_status_update_email(request, previous_status, updated_by):
-        subject = f"🔄 Data Request Status Update - #{request.id}"
+        subject = f"{request.dataset} Data Request Status Update"
         status_map = {
             'pending': 'Pending',
             'manager_review': 'Under Manager Review',
@@ -166,10 +166,10 @@ class EmailService:
     @staticmethod
     def send_staff_notification(request, staff_member, role='manager'):
         if role == 'manager':
-            subject = f"New Data Request for Review - #{request.id}"
+            subject = f"New {request.dataset} Data Request for Review"
             review_url = settings.SITE_URL + reverse('manager_review', args=[request.id])
         else:
-            subject = f"Data Request Ready for Final Approval - #{request.id}"
+            subject = f"{request.dataset} Data Request Ready for Final Approval"
             review_url = settings.SITE_URL + reverse('director_review', args=[request.id])
         context = {
             'staff_member': staff_member,
