@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dataset Download Confirmation</title>
+    <style>
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.6; color: #374151; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #00106B 0%, #002B7F 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; }
+        .content { background: white; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 12px 12px; }
+        .stats { background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .stat-item { display: inline-block; margin-right: 30px; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #00106B; }
+        .stat-label { font-size: 14px; color: #6b7280; }
+        .warning { background: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; }
+        .footer { margin-top: 30px; font-size: 14px; color: #6b7280; text-align: center; }
+        .button { display: inline-block; background: #00106B; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin:0; font-size:24px;">📥 Download Confirmed</h1>
+        </div>
+        <div class="content">
+            <h2 style="color:#00106B; margin-top:0;">Hello {{ user_display_name }},</h2>
+            
+            <p style="font-size:16px;">You have successfully downloaded:</p>
+            
+            <div style="background:#f9fafb; padding:20px; border-radius:8px; margin:20px 0;">
+                <h3 style="margin:0 0 10px 0; color:#00106B;">{{ dataset.title }}</h3>
+                <p style="margin:0; color:#6b7280;">Request ID: #{{ request.id }}</p>
+                <p style="margin:5px 0 0 0; color:#6b7280;">Download Date: {{ download_date|date:"F j, Y H:i T" }}</p>
+            </div>
+            
+            <div class="stats">
+                <h3 style="color:#374151; margin-top:0; font-size:18px;">📊 Download Statistics</h3>
+                <div class="stat-item">
+                    <div class="stat-value">{{ download_count }}</div>
+                    <div class="stat-label">Downloads Used</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ remaining_downloads }}</div>
+                    <div class="stat-label">Downloads Remaining</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">{{ max_downloads }}</div>
+                    <div class="stat-label">Total Allowed</div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <strong>⚠️ Important Reminders:</strong>
+                <ul style="margin:10px 0 0 0; padding-left:20px;">
+                    <li>This dataset is for your approved research use only</li>
+                    <li>Do not share the dataset or download links with others</li>
+                    <li>Cite the dataset appropriately in any publications</li>
+                    <li><strong>Download links expire 5 minutes after generation</strong></li>
+                </ul>
+            </div>
+            
+            <p style="margin:30px 0 0 0;">
+                Need additional downloads? 
+                <a href="{{ support_url }}" style="color:#00106B; text-decoration:underline;">Contact support</a>
+            </p>
+            
+            <hr style="border:none; border-top:1px solid #e5e7eb; margin:30px 0;">
+            
+            <p style="color:#6b7280; font-size:14px;">
+                Thank you for using DATICAN Repository. Your contribution to medical imaging research is invaluable.
+            </p>
+            
+            <p style="color:#6b7280; font-size:14px; margin-top:20px;">
+                Best regards,<br>
+                <strong>DATICAN Team</strong>
+            </p>
+        </div>
+        <div class="footer">
+            <p>© {% now "Y" %} DATICAN. All rights reserved.</p>
+            <p style="margin-top:10px;">
+                <a href="{{ site_url }}" style="color:#6b7280; text-decoration:none;">{{ site_name }}</a> • 
+                <a href="mailto:{{ support_email }}" style="color:#6b7280; text-decoration:none;">{{ support_email }}</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

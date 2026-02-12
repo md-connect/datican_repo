@@ -53,7 +53,6 @@ class DatasetAdminForm(forms.ModelForm):
             self.fields['preview_type'].widget.attrs['readonly'] = True
             self.fields['preview_type'].help_text = 'Auto-detected from preview file'
 
-# datasets/admin.py
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
     form = DatasetAdminForm
@@ -61,7 +60,22 @@ class DatasetAdmin(admin.ModelAdmin):
     list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'dimension', 'has_preview', 'has_readme']
     list_filter = ['modality', 'format', 'upload_date', 'dimension', 'preview_type']
     search_fields = ['title', 'description', 'body_part', 'dimension']
-    readonly_fields = ('readme_updated', 'readme_file_size', 'size', 'download_count', 'upload_date', 'update_date', 'thumbnail_preview', 'preview_type', 'owner')
+    readonly_fields = (
+        'readme_updated', 
+        'readme_file_size', 
+        'size', 
+        'download_count', 
+        'upload_date', 
+        'update_date', 
+        'thumbnail_preview', 
+        'preview_type', 
+        'owner',
+        'b2_file_id',
+        'b2_file_info',
+        'file_download_link',
+        'preview_download_link',
+        'readme_download_link',
+        )
     
     # UPDATED: Add preview file section
     fieldsets = (
@@ -88,7 +102,12 @@ class DatasetAdmin(admin.ModelAdmin):
         ('System Information', {
             'fields': ('upload_date', 'update_date'),
             'classes': ('collapse',)
-        })
+        }),
+        ('B2 Cloud Storage', {
+            'fields': ('b2_file_id', 'b2_file_info', 'file_download_link'),
+            'classes': ('collapse',),
+        }),
+
     )
     # Add a property for admin list display
     def has_readme(self, obj):
@@ -98,8 +117,13 @@ class DatasetAdmin(admin.ModelAdmin):
 
     def thumbnail_preview(self, obj):
         primary = obj.thumbnails.filter(is_primary=True).first()
-        if primary:
-            return mark_safe(f'<img src="{primary.image.url}" style="max-height: 100px;" />')
+        if primary and primary.image:
+            try:
+                # Generate signed URL for thumbnail (24h expiry)
+                thumb_url = primary.image.storage.url(primary.image.name, expire=86400)
+                return mark_safe(f'<img src="{thumb_url}" style="max-height: 100px;" />')
+            except Exception:
+                return "Error loading thumbnail"
         return "No thumbnail"
     thumbnail_preview.allow_tags = True
     thumbnail_preview.short_description = 'Primary Thumbnail'
@@ -113,31 +137,67 @@ class DatasetAdmin(admin.ModelAdmin):
     has_preview.short_description = 'Preview'
     has_preview.admin_order_field = 'preview_type'
     
-    def save_model(self, request, obj, form, change):
-        # Handle owner and uploaded_by for new datasets
-        if not change:
-            obj.owner = request.user.email
-            if not obj.uploaded_by:
-                obj.uploaded_by = request.user
-        
-        # Save the model first to process the file
+    def file_download_link(self, obj):
+        """Generate temporary admin download link"""
+        if obj.file and obj.file.name:
+            try:
+                url = obj.get_download_url(expiration=3600)
+                return format_html('<a href="{}" target="_blank">📥 Download File (expires in 1 hour)</a>', url)
+            except Exception as e:
+                return format_html('<span style="color: red;">Error: {}</span>', str(e))
+        return "No file"
+
+
+    file_download_link.short_description = 'Download Link'
+    
+    def b2_file_info_display(self, obj):
+        """Pretty display of B2 file information"""
+        if obj.b2_file_id:
+            return format_html(
+                '<span title="{}">📁 {}</span>',
+                obj.b2_file_id,
+                obj.b2_file_id.split('/')[-1] if '/' in obj.b2_file_id else obj.b2_file_id
+            )
+        return "—"
+    b2_file_info_display.short_description = 'B2 File'
+
+    def preview_download_link(self, obj):
+        if obj.preview_file:
+            url = obj.get_preview_url(expiration=3600)
+            return format_html('<a href="{}" target="_blank">View Preview</a>', url)
+        return "No preview"
+    preview_download_link.short_description = 'Preview Link'
+    
+    def readme_download_link(self, obj):
+        if obj.readme_file:
+            url = obj.get_readme_url(expiration=3600)
+            return format_html('<a href="{}" target="_blank">View README</a>', url)
+        return "No README"
+    readme_download_link.short_description = 'README Link'
+
+   def save_model(self, request, obj, form, change):
+        # First, let the model save handle the file uploads
         super().save_model(request, obj, form, change)
         
-        # Now check if preview_file was uploaded and detect its type
+        # Then handle preview_type detection
         if 'preview_file' in form.changed_data and obj.preview_file:
-            file_name = obj.preview_file.name.lower()
-            if file_name.endswith('.csv'):
-                obj.preview_type = 'csv'
-            elif file_name.endswith(('.xlsx', '.xls')):
-                obj.preview_type = 'excel'
-            elif file_name.endswith('.json'):
-                obj.preview_type = 'json'
-            else:
-                obj.preview_type = 'none'
-            
-            # Save just the preview_type field
+            # ... set preview_type code ...
             Dataset.objects.filter(pk=obj.pk).update(preview_type=obj.preview_type)
-    
+        
+        # Then store B2 file info
+        if obj.file and obj.file.name:
+            try:
+                storage = obj.file.storage
+                if hasattr(storage, 'bucket'):
+                    obj.b2_file_id = f"{storage.bucket.name}/{obj.file.name}"
+                    Dataset.objects.filter(pk=obj.pk).update(
+                        b2_file_id=obj.b2_file_id,
+                        b2_file_info={'updated_at': timezone.now().isoformat()}
+                    )
+            except Exception:
+                pass
+
+
     def has_add_permission(self, request):
         return can_manage_datasets(request.user)
     

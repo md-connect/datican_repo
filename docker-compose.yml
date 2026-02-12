@@ -4,18 +4,57 @@ services:
   mysql:
     image: mysql:8.0
     container_name: datican_mysql
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: datican_db
-      MYSQL_USER: datican
-      MYSQL_PASSWORD: datican123
+      MYSQL_DATABASE: ${DB_NAME:-datican_db}
+      MYSQL_USER: ${DB_USER:-datican}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-datican123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword123}
+      MYSQL_ROOT_HOST: '%'
+      DJANGO_SETTINGS_MODULE: datican_repo.settings_docker
+      PYTHONUNBUFFERED: 1
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql-init:/docker-entrypoint-initdb.d
-    command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - datican_network
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --sql_mode=STRICT_TRANS_TABLES
+      - --authentication_policy=caching_sha2_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-datican}", "-p${DB_PASSWORD:-datican123}"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+
+  django:
+    build: .
+    container_name: datican_django
     restart: unless-stopped
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - ./media:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - datican_network
 
 volumes:
   mysql_data:
+  static_volume:
+  media_volume:
+
+networks:
+  datican_network:
+    driver: bridge

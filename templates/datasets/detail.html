@@ -579,11 +579,25 @@
                 </div>
               </div>
             </div>
-            {% if can_download %}
-            <a href="{{ dataset.file.url }}" class="text-primary hover:text-primary-dark font-medium ml-2 flex-shrink-0">
-              <i data-lucide="download" class="w-4 h-4"></i>
+
+            <!-- Preview file link -->
+            {% if dataset.preview_file %}
+            <a href="{% url 'dataset_preview' dataset.id %}" 
+              target="_blank"
+              class="btn btn-sm btn-outline-info">
+                <i class="fas fa-file-alt"></i> View Preview
             </a>
             {% endif %}
+
+            <!-- README link -->
+            {% if dataset.readme_file %}
+            <a href="{% url 'dataset_readme' dataset.id %}" 
+              target="_blank"
+              class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-book"></i> View README
+            </a>
+            {% endif %}
+
           </div>
         </div>
       </div>
@@ -600,14 +614,14 @@
                 {% if data_request.status == 'approved' and data_request.can_download %}
                   <a href="{% url 'request_status' data_request.id %}" 
                     class="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-lg">
-                    <i data-lucide="download" class="w-6 h-6"></i>
+                    <i data-lucide="download" class="w-4 h-4 md:w-5 md:h-5 mr-2"></i>
                     Download Dataset
                   </a>
                 {% elif data_request.status == 'approved' and not data_request.can_download %}
                   <!-- Download limit exceeded - can request again -->
                   <a href="{% url 'dataset_request' dataset.id %}" 
                     class="bg-accent text-white px-8 py-4 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-lg">
-                    <i data-lucide="file-text" class="w-6 h-6"></i>
+                    <i data-lucide="file-text" class="w-4 h-4 md:w-5 md:h-5 mr-2"></i>
                     Request Access
                   </a>
                   <p class="text-sm text-yellow-600 text-center mt-2">
@@ -876,7 +890,7 @@
                         </div>
                         <div class="flex items-center gap-3">
                             {% if dataset.readme_file %}
-                            <a href="{{ dataset.readme_file.url }}" 
+                            <a href="{% url 'dataset_readme' dataset.id %}"
                               download
                               class="text-sm text-gray-600 hover:text-primary flex items-center gap-1 px-3 py-1 border rounded hover:bg-gray-50">
                                 <i data-lucide="download" class="w-4 h-4"></i>
@@ -1405,7 +1419,7 @@
         document.getElementById('ratingModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
       {% else %}
-        window.location.href = "{% url 'login' %}?next={{ request.path %}";
+        window.location.href = "{% url 'login' %}?next={{ request.path }}";
       {% endif %}
     };
     

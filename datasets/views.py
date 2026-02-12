@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
-from django.http import FileResponse, HttpResponseForbidden, JsonResponse, HttpResponse
+from django.http import FileResponse, HttpResponseForbidden, JsonResponse, HttpResponse, HttpResponseRedirect
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -27,18 +27,11 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import DataRequest
 from django.db.models import Count, Q
+import logging
+logger = logging.getLogger(__name__)
+
 
 User = get_user_model()
-
-def download_request_form(request):
-    form_path = os.path.join(settings.STATIC_ROOT, 'forms', 'Dataset_Request_Form_Template.pdf')
-    if os.path.exists(form_path):
-        response = FileResponse(open(form_path, 'rb'), as_attachment=True)
-        response['Content-Type'] = 'application/pdf'
-        response['Content-Disposition'] = 'attachment; filename="Dataset_Request_Form_Template.pdf"'
-        return response
-    messages.error(request, "Dataset Request Form template not found")
-    return redirect('dataset_list')
 
 def dataset_list(request):
     # Get filter parameters from request
@@ -395,50 +388,63 @@ def dataset_detail(request, pk):
     return render(request, 'datasets/detail.html', context)
 
 def get_preview_data(dataset, max_rows=100):
-    """Extract preview data from CSV/Excel/JSON file"""
+    """Extract preview data from CSV/Excel/JSON file with minimal memory usage"""
+    import tempfile
+    import pandas as pd
+    import json
+    import os
+    
     if not hasattr(dataset, 'preview_file') or not dataset.preview_file:
         return None
     
+    file_obj = dataset.preview_file
+    file_extension = file_obj.name.lower()
+    
+    # For CSV files, we can read directly from the file object without saving
     try:
-        # Handle file field properly
-        file_obj = dataset.preview_file
-        if hasattr(file_obj, 'path'):
-            file_path = file_obj.path
-        else:
-            # For in-memory files or URLs
-            import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_obj.name)[1]) as tmp:
+        if file_extension.endswith('.csv'):
+            # Try to read directly from the file object
+            if hasattr(file_obj, 'read'):
+                file_obj.seek(0)  # Reset pointer to beginning
+                df = pd.read_csv(file_obj, nrows=max_rows)
+                return {
+                    'columns': list(df.columns),
+                    'rows': df.head(max_rows).to_dict('records'),
+                    'total_rows': len(df),
+                    'total_columns': len(df.columns)
+                }
+        
+        # For other formats, fall back to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_obj.name)[1]) as tmp:
+            if hasattr(file_obj, 'read'):
+                tmp.write(file_obj.read())
+            elif hasattr(file_obj, 'path'):
+                with open(file_obj.path, 'rb') as f:
+                    tmp.write(f.read())
+            else:
                 for chunk in file_obj.chunks():
                     tmp.write(chunk)
-                file_path = tmp.name
+            tmp_path = tmp.name
         
-        file_extension = file_obj.name.lower()
-        
+        # Read based on extension
         if file_extension.endswith('.csv'):
-            # Read CSV with pandas
-            df = pd.read_csv(file_path, nrows=max_rows)
+            df = pd.read_csv(tmp_path, nrows=max_rows)
         elif file_extension.endswith(('.xlsx', '.xls')):
-            # Read Excel with pandas
-            df = pd.read_excel(file_path, nrows=max_rows)
+            df = pd.read_excel(tmp_path, nrows=max_rows)
         elif file_extension.endswith('.json'):
-            # Read JSON
-            with open(file_path, 'r') as f:
+            with open(tmp_path, 'r') as f:
                 data = json.load(f)
-            # Convert JSON to DataFrame for consistency
             if isinstance(data, list):
                 df = pd.DataFrame(data[:max_rows])
             elif isinstance(data, dict):
-                # If JSON is a single object
                 df = pd.DataFrame([data])
             else:
                 return None
         else:
             return None
         
-        # Convert DataFrame to list of dictionaries
+        # Process and return
         rows = df.head(max_rows).to_dict('records')
-        
-        # Clean NaN values
         for row in rows:
             for key, value in row.items():
                 if pd.isna(value):
@@ -452,13 +458,14 @@ def get_preview_data(dataset, max_rows=100):
         }
         
     except Exception as e:
-        print(f"Error reading preview file: {e}")
+        print(f"Preview error: {e}")
         return None
+        
     finally:
-        # Clean up temporary file if created
-        if 'tmp' in locals():
+        # Clean up temp file
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
             try:
-                os.unlink(file_path)
+                os.unlink(tmp_path)
             except:
                 pass
 
@@ -564,17 +571,27 @@ def dataset_preview_api(request, pk):
                 pass
 
 def get_total_rows(file_obj):
-    """Get total number of rows in file"""
+    """Get total number of rows in file (supports B2)"""
+    import tempfile
+    import pandas as pd
+    import json
+    import os
+    
+    tmp_file = None
+    file_path = None
+    
     try:
-        if hasattr(file_obj, 'path'):
+        # Handle B2 files
+        if hasattr(file_obj, 'read'):
+            tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_obj.name)[1])
+            file_path = tmp_file.name
+            tmp_file.write(file_obj.read())
+            tmp_file.close()
+            file_obj.seek(0)  # Reset pointer
+        elif hasattr(file_obj, 'path'):
             file_path = file_obj.path
         else:
-            # Handle in-memory files
-            import tempfile
-            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file_obj.name)[1]) as tmp:
-                for chunk in file_obj.chunks():
-                    tmp.write(chunk)
-                file_path = tmp.name
+            return 0
         
         file_extension = file_obj.name.lower()
         
@@ -583,11 +600,9 @@ def get_total_rows(file_obj):
             with open(file_path, 'r', encoding='utf-8') as f:
                 return sum(1 for _ in f) - 1  # Subtract header
         elif file_extension.endswith(('.xlsx', '.xls')):
-            # Count Excel rows
             df = pd.read_excel(file_path)
             return len(df)
         elif file_extension.endswith('.json'):
-            # Count JSON rows
             with open(file_path, 'r') as f:
                 data = json.load(f)
             if isinstance(data, list):
@@ -595,16 +610,17 @@ def get_total_rows(file_obj):
             else:
                 return 1
         return 0
-    except:
+    except Exception as e:
+        print(f"Error counting rows: {e}")
         return 0
     finally:
-        # Clean up temporary file if created
-        if 'tmp' in locals():
+        # Clean up temp file
+        if tmp_file and os.path.exists(file_path):
             try:
                 os.unlink(file_path)
             except:
                 pass
-
+                
 @login_required
 @require_POST
 def rate_dataset(request, pk):
@@ -714,9 +730,9 @@ def toggle_collection(request, pk):
 @login_required
 def download_request_form(request):
     # Path to your form template
-    form_path = os.path.join(settings.BASE_DIR, 'static', 'forms', 'Data_Request_Form.pdf')
+    form_path = os.path.join(settings.BASE_DIR, 'static', 'forms', 'Data_Request_Form.docx')
     if os.path.exists(form_path):
-        return FileResponse(open(form_path, 'rb'), as_attachment=True, filename='Data_Request_Form.pdf')
+        return FileResponse(open(form_path, 'rb'), as_attachment=True, filename='Data_Request_Form.docx')
     messages.error(request, 'The request form template is not currently available.')
     return redirect('dataset_list')
 
@@ -915,93 +931,11 @@ def director_review(request, pk):
 
 @login_required
 def dataset_download(request, pk):
-    dataset = get_object_or_404(Dataset, pk=pk)
-    
-    # Find approved request for this user and dataset
-    data_request = DataRequest.objects.filter(
-        user=request.user,
-        dataset=dataset,
-        status='approved'
-    ).order_by('-approved_date').first()
-    
-    if not data_request:
-        messages.error(request, 'You do not have an approved request for this dataset.')
-        return redirect('dataset_detail', pk=pk)
-    
-    if not data_request.can_download():
-        messages.error(request, 
-            f'You have reached your download limit ({data_request.max_downloads} downloads). '
-            f'Please contact support if you need access to the data again.'
-        )
-        return redirect('request_status', pk=data_request.pk)
-    
-    # Record the download
-    data_request.record_download()
-    
-    # Increment dataset download count
-    dataset.download_count += 1
-    dataset.save()
-    
-    # Send download confirmation email (optional)
-    try:
-        send_mail(
-            f"Dataset Downloaded: {dataset.title}",
-            f"You have successfully downloaded the dataset '{dataset.title}'.\n\n"
-            f"Download Details:\n"
-            f"- Request ID: {data_request.id}\n"
-            f"- Download Count: {data_request.download_count} of {data_request.max_downloads}\n"
-            f"- Download Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n"
-            f"- Dataset: {dataset.title}\n\n"
-            f"Please remember to comply with the data use agreement and citation requirements.",
-            "no-reply@datican.org",
-            [request.user.email],
-            fail_silently=True,
-        )
-    except Exception as e:
-        # Log error but don't prevent download
-        pass
-    
-    # Serve the file
-    if dataset.file and dataset.file.name:
-        file_path = dataset.file.path
-        if os.path.exists(file_path):
-            response = FileResponse(open(file_path, 'rb'), as_attachment=True)
-            
-            # Set appropriate filename and Content-Type
-            filename = os.path.basename(dataset.file.name)
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
-            # Set Content-Type based on file extension
-            ext = os.path.splitext(filename)[1].lower()
-            content_types = {
-                '.csv': 'text/csv',
-                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                '.xls': 'application/vnd.ms-excel',
-                '.pdf': 'application/pdf',
-                '.zip': 'application/zip',
-                '.rar': 'application/x-rar-compressed',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.dcm': 'application/dicom',
-                '.nii': 'application/octet-stream',
-                '.gz': 'application/gzip',
-            }
-            response['Content-Type'] = content_types.get(ext, 'application/octet-stream')
-            
-            return response
-        else:
-            messages.error(request, 'The dataset file is not available. Please contact support.')
-            return redirect('dataset_detail', pk=pk)
-    else:
-        # Check for multiple files in a dataset
-        if hasattr(dataset, 'files') and dataset.files.exists():
-            # Handle multiple files - could create a ZIP archive
-            messages.info(request, 'This dataset contains multiple files. Download functionality for multiple files is under development.')
-            return redirect('dataset_detail', pk=pk)
-        else:
-            messages.error(request, 'No files available for this dataset.')
-            return redirect('dataset_detail', pk=pk)
+    """
+    Legacy download view - redirects to B2 download
+    Maintained for backward compatibility
+    """
+    return redirect('dataset_download_b2', pk=pk)
 
 @login_required
 def request_status(request, pk):  # Keep as pk
@@ -1204,9 +1138,7 @@ def resend_notification(request, request_id):
 @login_required
 def preview_acknowledgment_email(request, request_id):
     """Preview acknowledgment email (for testing)"""
-    from .models import DataRequest
-    from django.conf import settings
-    
+    from .models import DataRequest    
     data_request = get_object_or_404(DataRequest, id=request_id, user=request.user)
     
     context = {
@@ -2166,3 +2098,176 @@ def redirect_after_login(request):
         # Regular users go to dataset list
         return redirect('dataset_list')
 
+@login_required
+@require_GET
+def dataset_download_b2(request, pk):
+    """
+    Generate a signed B2 URL and redirect the user.
+    Requires approved DataRequest with remaining downloads.
+    """
+    # Basic bot detection
+    user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
+    bot_patterns = ['bot', 'crawler', 'spider', 'scrape', 'curl', 'wget', 'python']
+    
+    if any(pattern in user_agent for pattern in bot_patterns):
+        logger.warning(f"Blocked potential bot download attempt: {user_agent}")
+        return HttpResponseForbidden("Automated downloads are not allowed.")
+
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    # Find approved request for this user and dataset
+    data_request = DataRequest.objects.filter(
+        user=request.user,
+        dataset=dataset,
+        status='approved'
+    ).order_by('-approved_date').first()
+    
+    # Authorization check
+    if not data_request:
+        messages.error(request, 'You do not have an approved request for this dataset.')
+        return redirect('dataset_detail', pk=pk)
+    
+    if not data_request.can_download():
+        messages.error(request, 
+            f'You have reached your download limit ({data_request.max_downloads} downloads). '
+            f'Please contact support if you need access to the data again.'
+        )
+        return redirect('request_status', pk=data_request.pk)
+    
+    try:
+        # Generate signed URL (valid for 5 minutes)
+        download_url = dataset.get_download_url(expiration=300)
+        
+        if not download_url:
+            messages.error(request, 'The dataset file is not available. Please contact support.')
+            return redirect('dataset_detail', pk=pk)
+        
+        # Record the download
+        data_request.record_download()
+        
+        # Increment dataset download count
+        dataset.download_count += 1
+        dataset.save(update_fields=['download_count'])
+        
+        # Log the download
+        logger.info(f"User {request.user.email} downloaded dataset {dataset.id} (Request #{data_request.id})")
+        
+        # Send download confirmation email (async recommended)
+        try:
+            from .utils.email_service import EmailService
+            EmailService.send_download_confirmation(data_request, dataset)
+        except Exception as e:
+            logger.error(f"Failed to send download confirmation email: {e}")
+        
+        # Redirect to the signed URL
+        return HttpResponseRedirect(download_url)
+        
+    except Exception as e:
+        logger.error(f"Download failed for dataset {dataset.id}: {str(e)}")
+        messages.error(request, 'Download failed. Please try again or contact support.')
+        return redirect('dataset_detail', pk=pk)
+
+
+@login_required
+def get_dataset_download_url_api(request, pk):
+    """
+    API endpoint to get a signed URL (for AJAX requests)
+    Returns JSON with the download URL
+    """
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    # Check authorization (similar to above)
+    data_request = DataRequest.objects.filter(
+        user=request.user,
+        dataset=dataset,
+        status='approved'
+    ).first()
+    
+    if not data_request or not data_request.can_download():
+        return JsonResponse({
+            'success': False,
+            'error': 'Not authorized to download this dataset'
+        }, status=403)
+    
+    try:
+        download_url = dataset.get_download_url(expiration=300)
+        
+        if download_url:
+            # Record download
+            data_request.record_download()
+            dataset.download_count += 1
+            dataset.save(update_fields=['download_count'])
+            
+            return JsonResponse({
+                'success': True,
+                'url': download_url,
+                'filename': os.path.basename(dataset.file.name),
+                'expires_in': 300
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'error': 'File not available'
+            }, status=404)
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+@login_required
+def preview_dataset_file(request, pk):
+    """
+    Generate signed URL for preview file
+    Less restrictive - any authenticated user can view previews
+    """
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    if not dataset.preview_file:
+        return JsonResponse({'error': 'No preview file available'}, status=404)
+    
+    try:
+        preview_url = dataset.get_preview_url(expiration=3600)
+        return HttpResponseRedirect(preview_url)
+    except Exception as e:
+        logger.error(f"Preview failed for dataset {dataset.id}: {e}")
+        return JsonResponse({'error': 'Preview unavailable'}, status=500)
+
+
+@login_required
+def get_readme_url(request, pk):
+    """Generate signed URL for README file"""
+    dataset = get_object_or_404(Dataset, pk=pk)
+    
+    if not dataset.readme_file:
+        return JsonResponse({'error': 'No README file available'}, status=404)
+    
+    try:
+        readme_url = dataset.get_readme_url(expiration=3600)
+        return JsonResponse({'url': readme_url})
+    except Exception as e:
+        logger.error(f"README access failed for dataset {dataset.id}: {e}")
+        return JsonResponse({'error': 'README unavailable'}, status=500)
+
+@login_required
+def request_document_download(request, pk, doc_type):
+    """Generate signed URL for request documents"""
+    data_request = get_object_or_404(DataRequest, pk=pk)
+    
+    # Check permission
+    if data_request.user != request.user and not request.user.is_staff:
+        return HttpResponseForbidden()
+    
+    file_field = data_request.form_submission if doc_type == 'form' else data_request.ethical_approval_proof
+    
+    if not file_field:
+        return JsonResponse({'error': 'Document not found'}, status=404)
+    
+    try:
+        url = file_field.storage.url(file_field.name, expire=3600)  # 1 hour
+        return HttpResponseRedirect(url)
+    except Exception as e:
+        logger.error(f"Document download failed: {e}")
+        return JsonResponse({'error': 'Download failed'}, status=500)

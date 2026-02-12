@@ -10,6 +10,40 @@ from datasets.utilities import convert_to_png
 from django.core.validators import FileExtensionValidator
 import markdown
 from django.utils.safestring import mark_safe
+from .storage import get_dataset_storage, get_preview_storage, get_readme_storage
+import uuid
+import logging
+logger = logging.getLogger(__name__)
+
+def dataset_file_path(instance, filename):
+    """Generate unique file path for dataset files in B2"""
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    return f"{instance.id}/{filename}"
+
+def preview_file_path(instance, filename):
+    """Generate file path for preview files"""
+    ext = filename.split('.')[-1]
+    filename = f"preview_{uuid.uuid4().hex}.{ext}"
+    return f"{instance.id}/{filename}"
+
+def readme_file_path(instance, filename):
+    """Generate file path for README files"""
+    ext = filename.split('.')[-1]
+    filename = f"readme_{uuid.uuid4().hex}.{ext}"
+    return f"{instance.id}/{filename}"
+
+def thumbnail_file_path(instance, filename):
+    """Generate unique path for thumbnail images in B2"""
+    ext = filename.split('.')[-1]
+    filename = f"thumb_{uuid.uuid4().hex}.{ext}"
+    return f"{instance.dataset_id}/{filename}"
+
+def request_document_path(instance, filename):
+    """Generate unique path for request documents in B2"""
+    ext = filename.split('.')[-1]
+    filename = f"request_{instance.id}_{uuid.uuid4().hex[:8]}.{ext}"
+    return f"requests/{instance.id}/{filename}"
 
 def validate_thumbnail(value):
     """Validate thumbnail file formats"""
@@ -60,13 +94,16 @@ class Dataset(models.Model):
         null=True,
         help_text="e.g., Brain, Breast, Chest, Abdomen, Knee, etc."
     )
-    file = models.FileField(upload_to='datasets/')
-    dimension = models.CharField(
-        max_length=10,
-        choices=DIMENSION_CHOICES,
+    
+    file = models.FileField(
+        upload_to=dataset_file_path,
+        storage=settings.DATASET_STORAGE,
+        max_length=500,
+        null=True,
         blank=True,
-        null=True
+        verbose_name="Dataset File"
     )
+
     format = models.CharField(
         max_length=10,
         choices=FORMAT_CHOICES,
@@ -79,7 +116,6 @@ class Dataset(models.Model):
     )
     upload_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
-    size = models.CharField(max_length=20, blank=True)
     rating = models.FloatField(
         validators=[MinValueValidator(0.0), MaxValueValidator(10.0)],
         default=0.0
@@ -100,10 +136,12 @@ class Dataset(models.Model):
 
     # Add this field for preview file
     preview_file = models.FileField(
-        upload_to='dataset_previews/',
-        blank=True,
+        upload_to=preview_file_path,
+        storage=settings.DATASET_PREVIEW_STORAGE,
+        max_length=500,
         null=True,
-        help_text="Upload a CSV/Excel file for preview (optional)"
+        blank=True,
+        verbose_name="Preview File"
     )
     
     # Add preview type field
@@ -122,7 +160,8 @@ class Dataset(models.Model):
     )
 
     readme_file = models.FileField(
-        upload_to='dataset_readmes/%Y/%m/%d/',
+        upload_to=readme_file_path,
+        storage=settings.README_STORAGE,
         null=True,
         blank=True,
         validators=[FileExtensionValidator(
@@ -130,12 +169,50 @@ class Dataset(models.Model):
         )],
         help_text="Upload README file (Markdown, PDF, or Text)"
     )
+
+
     readme_content = models.TextField(
         blank=True,
         help_text="Automatically extracted text from README"
     )
     readme_updated = models.DateTimeField(null=True, blank=True)
     readme_file_size = models.IntegerField(default=0)  
+    
+    # Add B2 metadata fields
+    b2_file_id = models.CharField(max_length=255, null=True, blank=True)
+    b2_file_info = models.JSONField(null=True, blank=True)
+    # File size and type - keep these
+    size = models.BigIntegerField(null=True, blank=True, verbose_name="File Size (bytes)")
+    file_type = models.CharField(max_length=100, null=True, blank=True)
+
+    def get_download_url(self, expiration=300):
+        """Generate signed download URL for approved users"""
+        if self.file and self.file.name:
+            try:
+                return self.file.storage.url(self.file.name, expire=expiration)
+            except Exception as e:
+                logger.error(f"Error generating download URL: {e}")
+                return None
+        return None
+    
+    def get_preview_url(self, expiration=3600):
+        """Generate signed URL for preview files"""
+        if self.preview_file and self.preview_file.name:
+            try:
+                return self.preview_file.storage.url(self.preview_file.name, expire=expiration)
+            except Exception:
+                return None
+        return None
+    
+    def get_readme_url(self, expiration=3600):
+        """Generate signed URL for README files"""
+        if self.readme_file and self.readme_file.name:
+            try:
+                return self.readme_file.storage.url(self.readme_file.name, expire=expiration)
+            except Exception:
+                return None
+        return None
+
 
     @property
     def readme(self):
@@ -205,84 +282,42 @@ class Dataset(models.Model):
         return UserCollection.objects.filter(user=user, datasets=self)
 
     def save(self, *args, **kwargs):
-        # Auto-calculate size before saving
-        if not self.size and self.file:
-            size_bytes = self.file.size
-            if size_bytes < 1024 * 1024:
-                self.size = f"{size_bytes / 1024:.1f} KB"
-            elif size_bytes < 1024 * 1024 * 1024:
-                self.size = f"{size_bytes / (1024 * 1024):.1f} MB"
-            else:
-                self.size = f"{size_bytes / (1024 * 1024 * 1024):.1f} GB"
+        # Auto-detect file type from extension
+        if self.file and not self.file_type:
+            ext = os.path.splitext(self.file.name)[1].lower()
+            type_map = {
+                '.csv': 'text/csv',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.xls': 'application/vnd.ms-excel',
+                '.zip': 'application/zip',
+                '.nii': 'application/octet-stream',
+                '.dcm': 'application/dicom',
+                '.pdf': 'application/pdf',
+            }
+            self.file_type = type_map.get(ext, 'application/octet-stream')
         
-        # Auto-detect format from file extension if not set
-        if self.file and not self.format:
-            ext = os.path.splitext(self.file.name)[1][1:].lower()
-            if ext in dict(self.FORMAT_CHOICES):
-                self.format = ext
-            elif ext == 'gz':  # Handle .nii.gz case
-                base_ext = os.path.splitext(os.path.splitext(self.file.name)[0])[1][1:].lower()
-                if base_ext == 'nii':
-                    self.format = 'nii'
-        
-        # Auto-detect preview type from file extension
-        if self.preview_file and not self.preview_type:
-            file_name = self.preview_file.name.lower()
-            if file_name.endswith('.csv'):
-                self.preview_type = 'csv'
-            elif file_name.endswith(('.xlsx', '.xls')):
-                self.preview_type = 'excel'
-            elif file_name.endswith('.json'):
-                self.preview_type = 'json'
-        # Handle README file processing
-        if self.readme_file and hasattr(self.readme_file, 'file'):
-            try:
-                self.readme_file_size = self.readme_file.size
-                
-                # Extract content for text-based files
-                file_extension = os.path.splitext(self.readme_file.name)[1].lower()
-                
-                if file_extension in ['.md', '.txt', '.rst', '.markdown']:
-                    try:
-                        # Read and decode the file
-                        self.readme_file.seek(0)
-                        content_bytes = self.readme_file.read()
-                        
-                        # Try different encodings
-                        for encoding in ['utf-8', 'latin-1', 'cp1252']:
-                            try:
-                                content = content_bytes.decode(encoding)
-                                self.readme_content = content[:50000]  # Limit size
-                                break
-                            except UnicodeDecodeError:
-                                continue
-                        
-                        # If all encodings fail, store as binary string
-                        if not self.readme_content:
-                            self.readme_content = "Binary content - cannot preview"
-                            
-                    except Exception as e:
-                        self.readme_content = f"Error reading file: {str(e)}"
-                
-                elif file_extension == '.pdf':
-                    self.readme_content = "PDF file - download to view"
-                
-                self.readme_updated = timezone.now()
-                
-            except Exception as e:
-                print(f"Error processing README: {str(e)}")
-                self.readme_content = f"Error: {str(e)}"
-
         super().save(*args, **kwargs)
-        
+
     def __str__(self):
         return self.title
 
 class Thumbnail(models.Model):
-    image = models.FileField(
-        upload_to='thumbnails/',
-        validators=[validate_thumbnail]
+    image = models.ImageField(
+        upload_to=thumbnail_file_path,
+        storage=settings.THUMBNAIL_STORAGE,
+        max_length=500,
+        verbose_name="Thumbnail Image"
     )
+
+    def get_thumbnail_url(self, expiration=86400):
+        """Generate signed URL for thumbnail"""
+        if self.image and self.image.name:
+            try:
+                return self.image.storage.url(self.image.name, expire=expiration)
+            except Exception:
+                return None
+        return None
+
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE, related_name='thumbnails')
     is_primary = models.BooleanField(default=False)
     
@@ -443,13 +478,32 @@ class DataRequest(models.Model):
     project_description = models.TextField(max_length=500)
     
     # File uploads
-    form_submission = models.FileField(upload_to='requests/forms/')
-    ethical_approval_proof = models.FileField(
-        upload_to='requests/ethical_approvals/',
-        blank=True,
+    form_submission = models.FileField(
+        upload_to=request_document_path,
+        storage=settings.REQUEST_DOCUMENT_STORAGE,
+        max_length=500,
         null=True,
-        help_text="Upload proof of ethical approval (PDF, JPG, PNG)"
+        blank=True,
+        verbose_name="Form Submission"
     )
+    ethical_approval_proof = models.FileField(
+        upload_to=request_document_path,
+        storage=settings.REQUEST_DOCUMENT_STORAGE,
+        max_length=500,
+        null=True,
+        blank=True,
+        verbose_name="Ethical Approval Proof"
+    )
+
+    def get_document_url(self, doc_type='form', expiration=3600):
+        """Generate signed URL for request documents"""
+        file_field = self.form_submission if doc_type == 'form' else self.ethical_approval_proof
+        if file_field and file_field.name:
+            try:
+                return file_field.storage.url(file_field.name, expire=expiration)
+            except Exception:
+                return None
+        return None
     
     # Review fields
     manager = models.ForeignKey(

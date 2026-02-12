@@ -93,7 +93,7 @@ class EmailService:
         """Send approval email with direct download link"""
         subject = f"🎉 Data Request Approved - #{request.id}"
         download_url = settings.SITE_URL + reverse(
-            'dataset_download', args=[request.dataset.id]
+            'dataset_download_b2', args=[request.dataset.id]
         )
         context = {
             'user': request.user,
@@ -184,6 +184,41 @@ class EmailService:
             subject, staff_member.email,
             'emails/requests/notification_to_staff.html', context
         )
+    
+@staticmethod
+def send_download_confirmation(data_request, dataset):
+    """Send confirmation email when user downloads a dataset"""
+    subject = f"📥 Download Confirmed: {dataset.title[:50]}"
+    
+    context = {
+        'user': data_request.user,
+        'request': data_request,
+        'dataset': dataset,
+        'download_count': data_request.download_count,
+        'max_downloads': data_request.max_downloads,
+        'remaining_downloads': data_request.max_downloads - data_request.download_count,
+        'download_date': timezone.now(),
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+        'support_email': settings.SUPPORT_EMAIL,
+        'support_url': f"{settings.SITE_URL}{reverse('contact')}",
+        'user_display_name': EmailService._get_user_display_name(data_request.user),
+    }
+    
+    return EmailService._send_email(
+        subject, 
+        data_request.user.email,
+        'emails/requests/download_confirmation.html', 
+        context
+    )
+
+
+
+
+
+
+
+
 
     # =========================
     # Misc Emails
@@ -203,6 +238,7 @@ class EmailService:
             subject, user.email,
             'emails/welcome.html', context
         )
+
 
     @staticmethod
     def send_test_email(recipient_email="test@example.com"):

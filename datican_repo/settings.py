@@ -12,8 +12,8 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Import pymysql for MySQL connection
-import pymysql
-pymysql.install_as_MySQLdb()
+# import pymysql
+# pymysql.install_as_MySQLdb()
 
 # Detect environment
 IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production'
@@ -30,8 +30,10 @@ DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Host configuration
 if IS_PRODUCTION:
-    ALLOWED_HOSTS = ['repo.datican.org', '93.127.206.235']
+    ALLOWED_HOSTS = ['repo.datican.org']
     CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
     CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
@@ -109,7 +111,7 @@ DATABASES = {
         'NAME': os.environ.get('DB_NAME', 'datican_db'),
         'USER': os.environ.get('DB_USER', 'datican'),
         'PASSWORD': os.environ.get('DB_PASSWORD', 'datican123'),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),  # Docker container
+        'HOST': os.environ.get('DB_HOST', 'mysql'),  
         'PORT': os.environ.get('DB_PORT', '3306'),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -285,3 +287,74 @@ else:
     CSRF_COOKIE_SECURE = False
     # Use Resend test domain in development
     DEFAULT_FROM_EMAIL = "onboarding@resend.dev"
+
+
+# ====================================================
+# BACKBLAZE B2 CLOUD STORAGE CONFIGURATION
+# ====================================================
+
+INSTALLED_APPS += ['storages']
+
+B2_APPLICATION_KEY_ID = os.environ.get('003bc74213ce5f30000000001', '')
+B2_APPLICATION_KEY = os.environ.get('K003gOvlJyEdZR6oBHkCXk1ltARFOO8', '')
+B2_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME', 'datican-repo')
+B2_REGION = os.environ.get('B2_REGION', 'eu-central-003')
+B2_ENDPOINT_URL = f'https://s3.{B2_REGION}.backblazeb2.com'
+
+AWS_ACCESS_KEY_ID = B2_APPLICATION_KEY_ID
+AWS_SECRET_ACCESS_KEY = B2_APPLICATION_KEY
+AWS_STORAGE_BUCKET_NAME = B2_BUCKET_NAME
+AWS_S3_REGION_NAME = B2_REGION
+AWS_S3_ENDPOINT_URL = B2_ENDPOINT_URL
+AWS_S3_SIGNATURE_VERSION = 's3v4'
+AWS_S3_ADDRESSING_STYLE = 'virtual'
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = True
+AWS_QUERYSTRING_EXPIRE = 300
+AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+B2_DATASETS_LOCATION = 'datasets'
+B2_PREVIEWS_LOCATION = 'previews'
+B2_THUMBNAILS_LOCATION = 'thumbnails'
+B2_README_LOCATION = 'readmes'
+B2_REQUEST_DOCS_LOCATION = 'request-documents'
+
+from storages.backends.s3boto3 import S3Boto3Storage
+
+class DatasetStorage(S3Boto3Storage):
+    location = B2_DATASETS_LOCATION
+    file_overwrite = False
+    querystring_auth = True
+    querystring_expire = 300
+    custom_domain = None
+
+class DatasetPreviewStorage(S3Boto3Storage):
+    location = B2_PREVIEWS_LOCATION
+    file_overwrite = True
+    querystring_auth = True
+    querystring_expire = 3600
+
+class ThumbnailStorage(S3Boto3Storage):
+    location = B2_THUMBNAILS_LOCATION
+    file_overwrite = True
+    querystring_auth = True
+    querystring_expire = 86400
+
+class ReadmeStorage(S3Boto3Storage):
+    location = B2_README_LOCATION
+    file_overwrite = False
+    querystring_auth = True
+    querystring_expire = 3600
+
+class RequestDocumentStorage(S3Boto3Storage):
+    location = B2_REQUEST_DOCS_LOCATION
+    file_overwrite = False
+    querystring_auth = True
+    querystring_expire = 3600
+
+DATASET_STORAGE = DatasetStorage()
+DATASET_PREVIEW_STORAGE = DatasetPreviewStorage()
+THUMBNAIL_STORAGE = ThumbnailStorage()
+README_STORAGE = ReadmeStorage()
+REQUEST_DOCUMENT_STORAGE = RequestDocumentStorage()
