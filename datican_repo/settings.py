@@ -19,6 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 IS_PRODUCTION = os.environ.get('DJANGO_ENV') == 'production'
 IS_DEVELOPMENT = not IS_PRODUCTION
 
+# Dataset signed URL secret
+DATASET_SECRET_KEY = "e811e2491c080ea559e567d7da0600e007c35c4513a6e56bfee564f3e2382023"  # Use secrets.token_hex(32)
+DATASET_TOKEN_EXPIRY = 300  # 5 minutes default
+
 # Resend API Key
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_gC4Zo81u_bC9o5HsdsycxjWrU7CF1jhKb")
 
@@ -313,6 +317,8 @@ AWS_DEFAULT_ACL = None
 AWS_QUERYSTRING_AUTH = True
 AWS_QUERYSTRING_EXPIRE = 300
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+AWS_S3_CUSTOM_DOMAIN = "cdn.repo.datican.org"
+
 
 B2_DATASETS_LOCATION = 'datasets'
 B2_PREVIEWS_LOCATION = 'previews'
