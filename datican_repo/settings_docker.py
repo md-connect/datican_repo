@@ -34,7 +34,6 @@ CSRF_COOKIE_SECURE = True
 # BACKBLAZE B2 CLOUD STORAGE CONFIGURATION
 # ====================================================
 
-INSTALLED_APPS += ['storages']
 
 B2_APPLICATION_KEY_ID = os.environ.get('003bc74213ce5f30000000001', '')
 B2_APPLICATION_KEY = os.environ.get('K003gOvlJyEdZR6oBHkCXk1ltARFOO8', '')
