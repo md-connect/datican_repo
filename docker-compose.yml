@@ -3,52 +3,45 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: datican_mysql
+    container_name: django_mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_NAME:-datican_db}
-      MYSQL_USER: ${DB_USER:-datican}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-datican123}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword123}
-      MYSQL_ROOT_HOST: '%'
-      DJANGO_SETTINGS_MODULE: datican_repo.settings_docker
-      PYTHONUNBUFFERED: 1
+      MYSQL_DATABASE: datican_db
+      MYSQL_USER: datican
+      MYSQL_PASSWORD: datican123
+      MYSQL_ROOT_PASSWORD: rootpassword123
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d
     networks:
-      - datican_network
-    command: 
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --sql_mode=STRICT_TRANS_TABLES
-      - --authentication_policy=caching_sha2_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "${DB_USER:-datican}", "-p${DB_PASSWORD:-datican123}"]
-      interval: 5s
-      timeout: 10s
-      retries: 10
-      start_period: 10s
+      - django_network
 
   django:
     build: .
-    container_name: datican_django
+    container_name: django_app
     restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn datican_repo.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
-      - ./media:/app/media
+      - media_volume:/app/media
     ports:
       - "8000:8000"
-    env_file:
-      - ./.env
+    environment:
+      DB_HOST: mysql
+      DB_NAME: datican_db
+      DB_USER: datican
+      DB_PASSWORD: datican123
+      DJANGO_ENV: production
+      DEBUG: 'False'
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     networks:
-      - datican_network
+      - django_network
 
 volumes:
   mysql_data:
@@ -56,5 +49,5 @@ volumes:
   media_volume:
 
 networks:
-  datican_network:
+  django_network:
     driver: bridge
