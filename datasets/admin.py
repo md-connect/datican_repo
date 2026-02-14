@@ -57,8 +57,8 @@ class DatasetAdminForm(forms.ModelForm):
 class DatasetAdmin(admin.ModelAdmin):
     form = DatasetAdminForm
     inlines = [ThumbnailInline]
-    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'dimension', 'has_preview', 'has_readme']
-    list_filter = ['modality', 'format', 'upload_date', 'dimension', 'preview_type']
+    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'has_preview', 'has_readme']
+    list_filter = ['modality', 'format', 'upload_date', 'preview_type']
     search_fields = ['title', 'description', 'body_part', 'dimension']
     readonly_fields = (
         'readme_updated', 
