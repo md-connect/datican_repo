@@ -46,3 +46,18 @@ class DatasetStorage(S3Boto3Storage):
     def get_signed_download_url(self, name, expire=300):
         """Alias for url() with clearer intent"""
         return self.url(name, expire)
+
+def get_dataset_storage():
+    return DatasetStorage()
+
+def get_preview_storage():
+    # Return whatever storage class you use for previews
+    return DatasetStorage(location="previews") 
+    
+def get_readme_storage():
+    # Return whatever storage class you use for readmes
+    return DatasetStorage(location="readmes")  
+
+def get_thumbnail_storage():
+    # Return whatever storage class you use for thumbnails
+    return DatasetStorage(location="thumbnails") 

@@ -10,7 +10,7 @@ from datasets.utilities import convert_to_png
 from django.core.validators import FileExtensionValidator
 import markdown
 from django.utils.safestring import mark_safe
-from .storage import get_dataset_storage, get_preview_storage, get_readme_storage
+from .storage import get_dataset_storage, get_preview_storage, get_readme_storage,get_thumbnail_storage
 import uuid
 import logging
 logger = logging.getLogger(__name__)
