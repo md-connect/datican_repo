@@ -35,8 +35,8 @@ CSRF_COOKIE_SECURE = True
 # ====================================================
 
 
-B2_APPLICATION_KEY_ID = os.environ.get('003bc74213ce5f30000000001', '')
-B2_APPLICATION_KEY = os.environ.get('K003gOvlJyEdZR6oBHkCXk1ltARFOO8', '')
+B2_APPLICATION_KEY_ID = os.environ.get('B2_APPLICATION_KEY_ID')
+B2_APPLICATION_KEY = os.environ.get('B2_APPLICATION_KEY')
 B2_BUCKET_NAME = os.environ.get('B2_BUCKET_NAME', 'datican-repo')
 B2_REGION = os.environ.get('B2_REGION', 'eu-central-003')
 B2_ENDPOINT_URL = f'https://s3.{B2_REGION}.backblazeb2.com'

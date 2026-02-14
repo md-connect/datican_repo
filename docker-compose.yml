@@ -37,7 +37,11 @@ services:
       DB_USER: datican
       DB_PASSWORD: datican123
       DJANGO_ENV: production
-      DEBUG: 'False'
+      B2_APPLICATION_KEY_ID: 003bc74213ce5f30000000001
+      B2_APPLICATION_KEY: K003gOvlJyEdZR6oBHkCXk1ltARFOO8
+      B2_BUCKET_NAME: datican-repo
+      B2_REGION: eu-central-003
+      DEBUG: 'True'
     depends_on:
       - mysql
     networks:
