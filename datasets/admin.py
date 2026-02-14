@@ -175,44 +175,44 @@ class DatasetAdmin(admin.ModelAdmin):
         return "No README"
     readme_download_link.short_description = 'README Link'
 
-   def save_model(self, request, obj, form, change):
-        # First, let the model save handle the file uploads
-        super().save_model(request, obj, form, change)
-        
-        # Then handle preview_type detection
-        if 'preview_file' in form.changed_data and obj.preview_file:
-            # ... set preview_type code ...
-            Dataset.objects.filter(pk=obj.pk).update(preview_type=obj.preview_type)
-        
-        # Then store B2 file info
-        if obj.file and obj.file.name:
-            try:
-                storage = obj.file.storage
-                if hasattr(storage, 'bucket'):
-                    obj.b2_file_id = f"{storage.bucket.name}/{obj.file.name}"
-                    Dataset.objects.filter(pk=obj.pk).update(
-                        b2_file_id=obj.b2_file_id,
-                        b2_file_info={'updated_at': timezone.now().isoformat()}
-                    )
-            except Exception:
-                pass
+    def save_model(self, request, obj, form, change):
+            # First, let the model save handle the file uploads
+            super().save_model(request, obj, form, change)
+            
+            # Then handle preview_type detection
+            if 'preview_file' in form.changed_data and obj.preview_file:
+                # ... set preview_type code ...
+                Dataset.objects.filter(pk=obj.pk).update(preview_type=obj.preview_type)
+            
+            # Then store B2 file info
+            if obj.file and obj.file.name:
+                try:
+                    storage = obj.file.storage
+                    if hasattr(storage, 'bucket'):
+                        obj.b2_file_id = f"{storage.bucket.name}/{obj.file.name}"
+                        Dataset.objects.filter(pk=obj.pk).update(
+                            b2_file_id=obj.b2_file_id,
+                            b2_file_info={'updated_at': timezone.now().isoformat()}
+                        )
+                except Exception:
+                    pass
 
 
-    def has_add_permission(self, request):
-        return can_manage_datasets(request.user)
-    
-    def has_change_permission(self, request, obj=None):
-        return can_manage_datasets(request.user)
-    
-    def has_delete_permission(self, request, obj=None):
-        return can_manage_datasets(request.user)
-    
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.role == 'data_manager' and not request.user.is_superuser:
-            # Data managers can only edit datasets they own
-            return qs.filter(owner=request.user.username)
-        return qs
+        def has_add_permission(self, request):
+            return can_manage_datasets(request.user)
+        
+        def has_change_permission(self, request, obj=None):
+            return can_manage_datasets(request.user)
+        
+        def has_delete_permission(self, request, obj=None):
+            return can_manage_datasets(request.user)
+        
+        def get_queryset(self, request):
+            qs = super().get_queryset(request)
+            if request.user.role == 'data_manager' and not request.user.is_superuser:
+                # Data managers can only edit datasets they own
+                return qs.filter(owner=request.user.username)
+            return qs
 
 # ADD THESE NEW ADMIN CLASSES FOR THE NEW MODELS
 @admin.register(DatasetRating)
