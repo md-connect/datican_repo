@@ -59,7 +59,7 @@ class DatasetAdmin(admin.ModelAdmin):
     inlines = [ThumbnailInline]
     list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'has_preview', 'has_readme']
     list_filter = ['modality', 'format', 'upload_date', 'preview_type']
-    search_fields = ['title', 'description', 'body_part', 'dimension']
+    search_fields = ['title', 'description', 'body_part']
     readonly_fields = (
         'readme_updated', 
         'readme_file_size', 
@@ -86,7 +86,7 @@ class DatasetAdmin(admin.ModelAdmin):
             'fields': ('modality', 'body_part', 'no_of_subjects')
         }),
         ('File Information', {
-            'fields': ('file', 'format', 'dimension')
+            'fields': ('file', 'format')
         }),
         ('Preview File', {
             'fields': ('preview_file', 'preview_type'),
