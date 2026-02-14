@@ -30,17 +30,19 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_gC4Zo81u_bC9o5HsdsycxjWrU7
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+
 
 # Host configuration
 if IS_PRODUCTION:
     ALLOWED_HOSTS = ['repo.datican.org']
     CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 else:
     ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
     CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+    DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
 # Application definition
 INSTALLED_APPS = [

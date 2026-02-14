@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from django.core.files import File
 from django.conf import settings
 from django.utils import timezone
+from django.db import models
 from datasets.models import Dataset, Thumbnail, DataRequest
 import os
 import logging
@@ -14,7 +15,7 @@ class Command(BaseCommand):
     
     def add_arguments(self, parser):
         parser.add_argument('--dry-run', action='store_true', help='Dry run (no actual upload)')
-        parser.add_argument('--model', choices=['datasets', 'thumbnails', 'requests'], default='all')
+        parser.add_argument('--model', choices=['datasets', 'thumbnails', 'requests', 'all'], default='all')    
         parser.add_argument('--verify', action='store_true', help='Verify uploads by checking existence in B2')
     
     def handle(self, *args, **options):
