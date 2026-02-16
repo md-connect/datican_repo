@@ -10,10 +10,11 @@ from datasets.utilities import convert_to_png
 from django.core.validators import FileExtensionValidator
 import markdown
 from django.utils.safestring import mark_safe
-from .storage import get_dataset_storage, get_preview_storage, get_readme_storage,get_thumbnail_storage
+from .storage import get_dataset_storage, get_preview_storage, get_readme_storage, get_thumbnail_storage, get_request_document_storage
 import uuid
 import logging
 logger = logging.getLogger(__name__)
+
 
 def dataset_file_path(instance, filename):
     """Generate unique file path for dataset files in B2"""
@@ -137,7 +138,7 @@ class Dataset(models.Model):
     # Add this field for preview file
     preview_file = models.FileField(
         upload_to=preview_file_path,
-        storage=settings.DATASET_PREVIEW_STORAGE,
+        storage=get_preview_storage(),
         max_length=500,
         null=True,
         blank=True,
@@ -161,7 +162,7 @@ class Dataset(models.Model):
 
     readme_file = models.FileField(
         upload_to=readme_file_path,
-        storage=settings.README_STORAGE,
+        storage=get_readme_storage(),
         null=True,
         blank=True,
         validators=[FileExtensionValidator(
@@ -304,7 +305,7 @@ class Dataset(models.Model):
 class Thumbnail(models.Model):
     image = models.ImageField(
         upload_to=thumbnail_file_path,
-        storage=settings.THUMBNAIL_STORAGE,
+        storage=get_thumbnail_storage(),
         max_length=500,
         verbose_name="Thumbnail Image"
     )
@@ -364,11 +365,6 @@ class DataRequest(models.Model):
     dataset = models.ForeignKey(Dataset, on_delete=models.CASCADE)
     request_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    
-    # Remove or update existing action fields:
-    # REMOVE THESE:
-    # manager_action = models.CharField(...)
-    # director_action = models.CharField(...)
     
     # Add new specific action fields:
     MANAGER_ACTION_CHOICES = [
@@ -480,7 +476,7 @@ class DataRequest(models.Model):
     # File uploads
     form_submission = models.FileField(
         upload_to=request_document_path,
-        storage=settings.REQUEST_DOCUMENT_STORAGE,
+        storage=get_request_document_storage(),
         max_length=500,
         null=True,
         blank=True,
@@ -488,7 +484,7 @@ class DataRequest(models.Model):
     )
     ethical_approval_proof = models.FileField(
         upload_to=request_document_path,
-        storage=settings.REQUEST_DOCUMENT_STORAGE,
+        storage=get_request_document_storage(),
         max_length=500,
         null=True,
         blank=True,

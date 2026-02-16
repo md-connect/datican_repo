@@ -328,6 +328,7 @@ B2_README_LOCATION = 'readmes'
 B2_REQUEST_DOCS_LOCATION = 'request-documents'
 
 from storages.backends.s3boto3 import S3Boto3Storage
+from django.core.files.storage import FileSystemStorage
 
 class DatasetStorage(S3Boto3Storage):
     location = B2_DATASETS_LOCATION
@@ -336,32 +337,32 @@ class DatasetStorage(S3Boto3Storage):
     querystring_expire = 300
     custom_domain = None
 
-class DatasetPreviewStorage(S3Boto3Storage):
-    location = B2_PREVIEWS_LOCATION
-    file_overwrite = True
-    querystring_auth = True
-    querystring_expire = 3600
 
-class ThumbnailStorage(S3Boto3Storage):
-    location = B2_THUMBNAILS_LOCATION
-    file_overwrite = True
-    querystring_auth = True
-    querystring_expire = 86400
+# Local storage paths
+LOCAL_MEDIA_ROOT = '/app/media'
+LOCAL_MEDIA_URL = '/media/'
 
-class ReadmeStorage(S3Boto3Storage):
-    location = B2_README_LOCATION
-    file_overwrite = False
-    querystring_auth = True
-    querystring_expire = 3600
+# Custom local storage classes
+class LocalThumbnailStorage(FileSystemStorage):
+    location = f'{LOCAL_MEDIA_ROOT}/thumbnails'
+    base_url = f'{LOCAL_MEDIA_URL}thumbnails/'
 
-class RequestDocumentStorage(S3Boto3Storage):
-    location = B2_REQUEST_DOCS_LOCATION
-    file_overwrite = False
-    querystring_auth = True
-    querystring_expire = 3600
+class LocalPreviewStorage(FileSystemStorage):
+    location = f'{LOCAL_MEDIA_ROOT}/dataset_previews'
+    base_url = f'{LOCAL_MEDIA_URL}dataset_previews/'
 
+class LocalReadmeStorage(FileSystemStorage):
+    location = f'{LOCAL_MEDIA_ROOT}/dataset_readmes'
+    base_url = f'{LOCAL_MEDIA_URL}dataset_readmes/'
+
+class LocalRequestDocumentStorage(FileSystemStorage):
+    location = f'{LOCAL_MEDIA_ROOT}/request-documents'
+    base_url = f'{LOCAL_MEDIA_URL}request-documents/'
+
+# Instantiate storage classes
 DATASET_STORAGE = DatasetStorage()
-DATASET_PREVIEW_STORAGE = DatasetPreviewStorage()
-THUMBNAIL_STORAGE = ThumbnailStorage()
-README_STORAGE = ReadmeStorage()
-REQUEST_DOCUMENT_STORAGE = RequestDocumentStorage()
+THUMBNAIL_STORAGE = LocalThumbnailStorage()
+PREVIEW_STORAGE = LocalPreviewStorage()
+README_STORAGE = LocalReadmeStorage()
+REQUEST_DOCUMENT_STORAGE = LocalRequestDocumentStorage()
+

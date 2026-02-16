@@ -1,6 +1,7 @@
 # datasets/storage.py
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.conf import settings
+from django.core.files.storage import FileSystemStorage
 import hmac
 import hashlib
 import time
@@ -47,17 +48,52 @@ class DatasetStorage(S3Boto3Storage):
         """Alias for url() with clearer intent"""
         return self.url(name, expire)
 
+# Local storage classes
+class LocalPreviewStorage(FileSystemStorage):
+    """Local storage for preview files"""
+    def __init__(self):
+        super().__init__(
+            location=settings.LOCAL_MEDIA_ROOT + '/previews',
+            base_url=settings.LOCAL_MEDIA_URL + 'previews/'
+        )
+
+class LocalReadmeStorage(FileSystemStorage):
+    """Local storage for README files"""
+    def __init__(self):
+        super().__init__(
+            location=settings.LOCAL_MEDIA_ROOT + '/readmes',
+            base_url=settings.LOCAL_MEDIA_URL + 'readmes/'
+        )
+
+class LocalThumbnailStorage(FileSystemStorage):
+    """Local storage for thumbnail images"""
+    def __init__(self):
+        super().__init__(
+            location=settings.LOCAL_MEDIA_ROOT + '/thumbnails',
+            base_url=settings.LOCAL_MEDIA_URL + 'thumbnails/'
+        )
+
+class LocalRequestDocumentStorage(FileSystemStorage):
+    """Local storage for data request documents (form submissions, ethical approval proofs)"""
+    def __init__(self):
+        super().__init__(
+            location=settings.LOCAL_MEDIA_ROOT + '/request-documents',
+            base_url=settings.LOCAL_MEDIA_URL + 'request-documents/'
+        )
+
+# Factory functions
 def get_dataset_storage():
     return DatasetStorage()
 
 def get_preview_storage():
-    # Return whatever storage class you use for previews
-    return DatasetStorage(location="previews") 
+    return LocalPreviewStorage()
     
 def get_readme_storage():
-    # Return whatever storage class you use for readmes
-    return DatasetStorage(location="readmes")  
+    return LocalReadmeStorage()
 
 def get_thumbnail_storage():
-    # Return whatever storage class you use for thumbnails
-    return DatasetStorage(location="thumbnails") 
+    return LocalThumbnailStorage()
+
+def get_request_document_storage():
+    """Factory function for request document storage"""
+    return LocalRequestDocumentStorage()
