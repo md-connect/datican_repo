@@ -139,7 +139,6 @@ class DatasetAdmin(admin.ModelAdmin):
     readonly_fields = (
         'readme_updated', 
         'readme_file_size', 
-        'size', 
         'b2_file_size',
         'b2_upload_date',
         'b2_etag',
@@ -192,7 +191,7 @@ class DatasetAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         ('Legacy B2 Fields', {
-            'fields': ('b2_file_id', 'b2_file_info', 'size'),
+            'fields': ('b2_file_id',),
             'classes': ('collapse',)
         }),
     )
