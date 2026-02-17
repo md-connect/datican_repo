@@ -1992,97 +1992,6 @@ def review_requests_list(request):
         'pending_requests': pending_requests
     })
 
-def all_requests_report(request):
-    """
-    Comprehensive report of all data requests for admins only
-    """
-    if not request.user.is_authenticated:
-        return redirect('login')
-    
-    # Check admin permissions
-    if request.user.role not in ['director', 'data_manager'] and not request.user.is_superuser:
-        messages.error(request, "Access denied. Admin privileges required.")
-        return redirect('dataset_list')
-    
-    # Get all data requests with related data
-    all_requests = DataRequest.objects.all().select_related(
-        'user', 'dataset', 'manager', 'director'
-    ).order_by('-request_date')
-    
-    # Filter based on user role
-    if request.user.role == 'director' or request.user.is_superuser:
-        # Director and superusers see everything
-        pass  # already have all_requests
-    elif request.user.role == 'data_manager':
-        # Managers see requests they've reviewed or are pending
-        all_requests = all_requests.filter(
-            Q(status__in=['manager_review', 'director_review', 'approved', 'rejected']) |
-            Q(manager=request.user)
-        )
-    else:
-        # Regular users should have been redirected already
-        return redirect('dataset_list')
-    
-    # Calculate statistics - use correct status values
-    total_requests = all_requests.count()
-    pending_requests = all_requests.filter(status='pending').count()
-    manager_review_requests = all_requests.filter(status='manager_review').count()
-    director_review_requests = all_requests.filter(status='director_review').count()
-    approved_requests = all_requests.filter(status='approved').count()
-    rejected_requests = all_requests.filter(status='rejected').count()
-    
-    # Approval rate
-    approval_rate = 0
-    if total_requests > 0:
-        approval_rate = (approved_requests / total_requests) * 100
-    
-    context = {
-        'all_requests': all_requests,
-        'total_requests': total_requests,
-        'pending_requests': pending_requests,
-        'manager_review_requests': manager_review_requests,
-        'director_review_requests': director_review_requests,
-        'approved_requests': approved_requests,
-        'rejected_requests': rejected_requests,
-        'approval_rate': approval_rate,
-        'user_role': request.user.role,
-        'is_superuser': request.user.is_superuser,
-    }
-    
-    return render(request, 'datasets/all_requests_report.html', context)
-    # Get all requests with detailed information
-    all_requests = DataRequest.objects.select_related(
-        'user', 'dataset', 'manager', 'director'
-    ).order_by('-request_date')
-    
-    # Filtering capability
-    status_filter = request.GET.get('status', '')
-    manager_filter = request.GET.get('manager', '')
-    director_filter = request.GET.get('director', '')
-    
-    if status_filter:
-        all_requests = all_requests.filter(status=status_filter)
-    if manager_filter:
-        all_requests = all_requests.filter(manager_id=manager_filter)
-    if director_filter:
-        all_requests = all_requests.filter(director_id=director_filter)
-    
-    # Get filter options for the template
-    managers = User.objects.filter(role='data_manager')
-    directors = User.objects.filter(role='director')
-    
-    context = {
-        'requests': all_requests,
-        'title': 'All Data Requests',
-        'subtitle': 'Complete overview of all data requests in the system',
-        'managers': managers,
-        'directors': directors,
-        'current_status': status_filter,
-        'current_manager': manager_filter,
-        'current_director': director_filter,
-    }
-    return render(request, 'dashboard/admin_requests.html', context)
-
 @login_required
 def redirect_after_login(request):
     """Redirect users based on their role after login"""
@@ -2107,7 +2016,12 @@ def dataset_download_b2(request, pk):
     """
     # Basic bot detection
     user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
-    bot_patterns = ['bot', 'crawler', 'spider', 'scrape', 'curl', 'wget', 'python']
+    bot_patterns = [
+        'bot', 'crawler', 'spider', 'scrape', 'curl', 'wget', 
+        'python', 'requests', 'httpie', 'go-http-client',
+        'java', 'okhttp', 'ruby', 'scrapy', 'selenium',
+        'headless', 'phantomjs', 'puppeteer', 'playwright'
+    ]
     
     if any(pattern in user_agent for pattern in bot_patterns):
         logger.warning(f"Blocked potential bot download attempt: {user_agent}")

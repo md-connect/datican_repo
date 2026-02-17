@@ -1,4 +1,3 @@
-# datasets/models.py
 from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -10,9 +9,13 @@ from datasets.utilities import convert_to_png
 from django.core.validators import FileExtensionValidator
 import markdown
 from django.utils.safestring import mark_safe
-from .storage import get_dataset_storage, get_preview_storage, get_readme_storage, get_thumbnail_storage, get_request_document_storage
+from .storage import get_preview_storage, get_readme_storage, get_thumbnail_storage, get_request_document_storage
 import uuid
 import logging
+import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,13 +38,13 @@ def readme_file_path(instance, filename):
     return f"{instance.id}/{filename}"
 
 def thumbnail_file_path(instance, filename):
-    """Generate unique path for thumbnail images in B2"""
+    """Generate unique path for thumbnail images in local storage"""
     ext = filename.split('.')[-1]
     filename = f"thumb_{uuid.uuid4().hex}.{ext}"
     return f"{instance.dataset_id}/{filename}"
 
 def request_document_path(instance, filename):
-    """Generate unique path for request documents in B2"""
+    """Generate unique path for request documents in local storage"""
     ext = filename.split('.')[-1]
     filename = f"request_{instance.id}_{uuid.uuid4().hex[:8]}.{ext}"
     return f"requests/{instance.id}/{filename}"
@@ -96,13 +99,13 @@ class Dataset(models.Model):
         help_text="e.g., Brain, Breast, Chest, Abdomen, Knee, etc."
     )
     
-    file = models.FileField(
-        upload_to=dataset_file_path,
-        storage=settings.DATASET_STORAGE,
+    # CHANGED: Replace FileField with CharField for B2 path
+    dataset_path = models.CharField(
         max_length=500,
-        null=True,
         blank=True,
-        verbose_name="Dataset File"
+        null=True,
+        verbose_name="Dataset Path in B2",
+        help_text="Path in B2 bucket (e.g., datasets/filename.zip)"
     )
 
     format = models.CharField(
@@ -135,7 +138,7 @@ class Dataset(models.Model):
         blank=True
     )
 
-    # Add this field for preview file
+    # Local storage fields (unchanged)
     preview_file = models.FileField(
         upload_to=preview_file_path,
         storage=get_preview_storage(),
@@ -145,7 +148,7 @@ class Dataset(models.Model):
         verbose_name="Preview File"
     )
     
-    # Add preview type field
+    # Preview type field
     PREVIEW_TYPE_CHOICES = [
         ('csv', 'CSV'),
         ('excel', 'Excel'),
@@ -171,7 +174,6 @@ class Dataset(models.Model):
         help_text="Upload README file (Markdown, PDF, or Text)"
     )
 
-
     readme_content = models.TextField(
         blank=True,
         help_text="Automatically extracted text from README"
@@ -179,22 +181,45 @@ class Dataset(models.Model):
     readme_updated = models.DateTimeField(null=True, blank=True)
     readme_file_size = models.IntegerField(default=0)  
     
-    # Add B2 metadata fields
+    # B2 metadata fields
     b2_file_id = models.CharField(max_length=255, null=True, blank=True)
     b2_file_info = models.JSONField(null=True, blank=True)
-    # File size and type - keep these
-    size = models.BigIntegerField(null=True, blank=True, verbose_name="File Size (bytes)")
+    b2_file_size = models.BigIntegerField(null=True, blank=True, verbose_name="B2 File Size (bytes)")
+    b2_upload_date = models.DateTimeField(null=True, blank=True)
+    b2_etag = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Keep file_type for backward compatibility
     file_type = models.CharField(max_length=100, null=True, blank=True)
 
-    def get_download_url(self, expiration=300):
-        """Generate signed download URL for approved users"""
-        if self.file and self.file.name:
-            try:
-                return self.file.storage.url(self.file.name, expire=expiration)
-            except Exception as e:
-                logger.error(f"Error generating download URL: {e}")
-                return None
-        return None
+    def get_download_url(self, expiration=3600):
+        """Generate pre-signed download URL for approved users"""
+        if not self.dataset_path:
+            return None
+        
+        # Configure B2 client
+        config = Config(signature_version='s3v4')
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.B2_ENDPOINT_URL,
+            aws_access_key_id=settings.B2_APPLICATION_KEY_ID,
+            aws_secret_access_key=settings.B2_APPLICATION_KEY,
+            region_name=settings.B2_REGION,
+            config=config
+        )
+        
+        try:
+            url = s3.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': settings.B2_BUCKET_NAME,
+                    'Key': self.dataset_path
+                },
+                ExpiresIn=expiration
+            )
+            return url
+        except Exception as e:
+            logger.error(f"Error generating download URL: {e}")
+            return None
     
     def get_preview_url(self, expiration=3600):
         """Generate signed URL for preview files"""
@@ -214,6 +239,69 @@ class Dataset(models.Model):
                 return None
         return None
 
+    def refresh_b2_metadata(self):
+        """Fetch current metadata from B2"""
+        if not self.dataset_path:
+            return False
+            
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.B2_ENDPOINT_URL,
+            aws_access_key_id=settings.B2_APPLICATION_KEY_ID,
+            aws_secret_access_key=settings.B2_APPLICATION_KEY,
+            region_name=settings.B2_REGION,
+        )
+        
+        try:
+            response = s3.head_object(
+                Bucket=settings.B2_BUCKET_NAME,
+                Key=self.dataset_path
+            )
+            
+            self.b2_file_size = response.get('ContentLength')
+            self.b2_etag = response.get('ETag', '').strip('"')
+            self.b2_upload_date = response.get('LastModified')
+            
+            # Auto-detect file type from extension
+            ext = os.path.splitext(self.dataset_path)[1].lower()
+            type_map = {
+                '.csv': 'text/csv',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.xls': 'application/vnd.ms-excel',
+                '.zip': 'application/zip',
+                '.nii': 'application/octet-stream',
+                '.dcm': 'application/dicom',
+                '.pdf': 'application/pdf',
+                '.tar': 'application/x-tar',
+                '.gz': 'application/gzip',
+                '.tar.gz': 'application/gzip',
+            }
+            self.file_type = type_map.get(ext, 'application/octet-stream')
+            
+            self.save(update_fields=['b2_file_size', 'b2_etag', 'b2_upload_date', 'file_type'])
+            return True
+            
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                logger.warning(f"File not found in B2: {self.dataset_path}")
+            else:
+                logger.error(f"Error fetching B2 metadata: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error fetching B2 metadata: {e}")
+            return False
+
+    def get_file_size_display(self):
+        """Return human-readable file size"""
+        size = self.b2_file_size or self.size
+        if not size:
+            return "Unknown"
+        
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} PB"
 
     @property
     def readme(self):
@@ -253,6 +341,7 @@ class Dataset(models.Model):
         else:
             # Plain text with line breaks
             return mark_safe(content.replace('\n', '<br>'))
+            
     def get_user_rating(self, user):
         """Get user's rating for this dataset"""
         try:
@@ -280,12 +369,13 @@ class Dataset(models.Model):
     
     def get_user_collections(self, user):
         """Get all collections containing this dataset for the user"""
+        from .models import UserCollection
         return UserCollection.objects.filter(user=user, datasets=self)
 
     def save(self, *args, **kwargs):
-        # Auto-detect file type from extension
-        if self.file and not self.file_type:
-            ext = os.path.splitext(self.file.name)[1].lower()
+        # Auto-detect file type from extension if not set
+        if self.dataset_path and not self.file_type:
+            ext = os.path.splitext(self.dataset_path)[1].lower()
             type_map = {
                 '.csv': 'text/csv',
                 '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -311,7 +401,7 @@ class Thumbnail(models.Model):
     )
 
     def get_thumbnail_url(self, expiration=86400):
-        """Generate signed URL for thumbnail"""
+        """Generate URL for thumbnail"""
         if self.image and self.image.name:
             try:
                 return self.image.storage.url(self.image.name, expire=expiration)
@@ -473,7 +563,7 @@ class DataRequest(models.Model):
     project_title = models.CharField(max_length=255)
     project_description = models.TextField(max_length=500)
     
-    # File uploads
+    # File uploads (local storage)
     form_submission = models.FileField(
         upload_to=request_document_path,
         storage=get_request_document_storage(),
@@ -654,9 +744,9 @@ class DataRequest(models.Model):
         now = timezone.now()
         time_remaining = self.sla_due_date - now
         
-        if time_remaining.days > 1:
+        if time_remaining.total_seconds() > 86400:  # > 1 day
             self.sla_status = 'on_track'
-        elif time_remaining.days >= 0:
+        elif time_remaining.total_seconds() > 0:
             self.sla_status = 'at_risk'
         else:
             self.sla_status = 'breached'

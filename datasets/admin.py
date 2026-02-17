@@ -1,4 +1,3 @@
-# datasets/admin.py
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
@@ -9,6 +8,9 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from .utilities import can_manage_datasets, is_data_manager, is_director, is_admin
 from datasets.utils.email_service import EmailService
+import boto3
+from botocore.exceptions import ClientError
+from django.conf import settings
 
 @admin.action(description='Send approval emails to selected requests')
 def send_approval_emails(modeladmin, request, queryset):
@@ -36,6 +38,31 @@ class ThumbnailInline(admin.TabularInline):
     preview.short_description = 'Preview'
     
 class DatasetAdminForm(forms.ModelForm):
+    # NEW: Add field for B2 path
+    b2_file_key = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'placeholder': 'datasets/your-filename.zip',
+            'style': 'width: 600px; font-family: monospace;'
+        }),
+        help_text=format_html(
+            '<div style="padding: 10px; background: #e8f4e8; border-left: 4px solid #2e6b2e; margin-top: 5px;">'
+            '<strong>📤 How to upload large files:</strong><br>'
+            '1. Upload via CLI: <code>b2 upload-file --threads 10 datican-repo yourfile.zip datasets/yourfile.zip</code><br>'
+            '2. Copy the path (datasets/yourfile.zip) to this field<br>'
+            '3. Save - Django will verify the file exists in B2'
+            '</div>'
+        )
+    )
+    
+    # NEW: Display file info
+    b2_file_info = forms.CharField(
+        required=False,
+        disabled=True,
+        widget=forms.TextInput(attrs={'style': 'width: 400px; background: #f5f5f5;'})
+    )
+    
     class Meta:
         model = Dataset
         fields = '__all__'
@@ -48,22 +75,73 @@ class DatasetAdminForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        instance = kwargs.get('instance')
+        
         # Make preview_type field readonly since it's auto-detected
         if 'preview_type' in self.fields:
             self.fields['preview_type'].widget.attrs['readonly'] = True
             self.fields['preview_type'].help_text = 'Auto-detected from preview file'
+        
+        # If editing existing dataset, show current B2 path and metadata
+        if instance and instance.dataset_path:
+            self.fields['b2_file_key'].initial = instance.dataset_path
+            self.fields['b2_file_key'].widget.attrs['readonly'] = True
+            self.fields['b2_file_key'].help_text = "Current B2 path (read-only)"
+            
+            # Show file size if available
+            if instance.b2_file_size:
+                self.fields['b2_file_info'].initial = (
+                    f"Size: {instance.get_file_size_display()} | "
+                    f"Uploaded: {instance.b2_upload_date or 'Unknown'}"
+                )
+            elif instance.size:  # Fallback to old size field
+                self.fields['b2_file_info'].initial = f"Size: {instance.get_file_size_display()}"
+    
+    def clean_b2_file_key(self):
+        """Validate that the path exists in B2"""
+        path = self.cleaned_data.get('b2_file_key')
+        if not path or self.instance and self.instance.dataset_path == path:
+            return path
+        
+        # Configure B2 client
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.B2_ENDPOINT_URL,
+            aws_access_key_id=settings.B2_APPLICATION_KEY_ID,
+            aws_secret_access_key=settings.B2_APPLICATION_KEY,
+            region_name=settings.B2_REGION,
+        )
+        
+        try:
+            # Check if file exists
+            s3.head_object(Bucket=settings.B2_BUCKET_NAME, Key=path)
+            return path
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                raise forms.ValidationError(
+                    f"❌ File not found in B2: {path}. "
+                    f"Please upload it first using the CLI command shown above."
+                )
+            else:
+                raise forms.ValidationError(f"Error accessing B2: {e}")
+        except Exception as e:
+            raise forms.ValidationError(f"Unexpected error: {e}")
 
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
     form = DatasetAdminForm
     inlines = [ThumbnailInline]
-    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 'thumbnail_preview', 'owner', 'has_preview', 'has_readme']
+    list_display = ['title', 'modality', 'format', 'no_of_subjects', 'upload_date', 'rating', 
+                   'thumbnail_preview', 'owner', 'has_preview', 'has_readme', 'b2_path_short']
     list_filter = ['modality', 'format', 'upload_date', 'preview_type']
-    search_fields = ['title', 'description', 'body_part']
+    search_fields = ['title', 'description', 'body_part', 'dataset_path']
     readonly_fields = (
         'readme_updated', 
         'readme_file_size', 
         'size', 
+        'b2_file_size',
+        'b2_upload_date',
+        'b2_etag',
         'download_count', 
         'upload_date', 
         'update_date', 
@@ -72,21 +150,30 @@ class DatasetAdmin(admin.ModelAdmin):
         'owner',
         'b2_file_id',
         'b2_file_info',
-        'file_download_link',
+        'b2_download_link',
         'preview_download_link',
         'readme_download_link',
+        'b2_path_display',
     )
     
-    # UPDATED: Add preview file section
     fieldsets = (
         ('Basic Information', {
             'fields': ('title', 'description', 'uploaded_by', 'owner')
         }),
         ('Medical Information', {
-            'fields': ('modality', 'body_part', 'no_of_subjects')
+            'fields': ('modality', 'body_part', 'no_of_subjects', 'format')
         }),
-        ('File Information', {
-            'fields': ('file', 'format')
+        ('B2 Cloud Storage (Large Files)', {
+            'fields': ('b2_file_key', 'b2_file_info', 'b2_file_size', 'b2_upload_date', 'b2_download_link'),
+            'classes': ('wide',),
+            'description': format_html(
+                '<div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; margin-bottom: 15px;">'
+                '<strong style="color: #0056b3;">📦 Upload Large Datasets Directly to B2</strong><br>'
+                '1. Upload your file using the B2 CLI (see instructions below)<br>'
+                '2. Enter the B2 path in the field above<br>'
+                '3. Save - Django will verify and store the reference'
+                '</div>'
+            )
         }),
         ('Preview File', {
             'fields': ('preview_file', 'preview_type'),
@@ -97,15 +184,15 @@ class DatasetAdmin(admin.ModelAdmin):
             'description': 'Upload README documentation (MD, TXT, PDF, RST, Markdown)'
         }),
         ('Statistics', {
-            'fields': ('rating', 'download_count', 'size'),
+            'fields': ('rating', 'download_count'),
         }),
         ('System Information', {
             'fields': ('upload_date', 'update_date'),
             'classes': ('collapse',)
         }),
-        ('B2 Cloud Storage', {
-            'fields': ('b2_file_id', 'b2_file_info', 'file_download_link'),
-            'classes': ('collapse',),
+        ('Legacy B2 Fields', {
+            'fields': ('b2_file_id', 'b2_file_info', 'size'),
+            'classes': ('collapse',)
         }),
     )
     
@@ -121,12 +208,33 @@ class DatasetAdmin(admin.ModelAdmin):
             try:
                 # Generate signed URL for thumbnail (24h expiry)
                 thumb_url = primary.image.storage.url(primary.image.name, expire=86400)
-                return mark_safe(f'<img src="{thumb_url}" style="max-height: 100px;" />')
+                return mark_safe(f'<img src="{thumb_url}" style="max-height: 50px;" />')
             except Exception:
-                return "Error loading thumbnail"
-        return "No thumbnail"
+                return "Error"
+        return "—"
     thumbnail_preview.allow_tags = True
-    thumbnail_preview.short_description = 'Primary Thumbnail'
+    thumbnail_preview.short_description = 'Thumbnail'
+    
+    def b2_path_short(self, obj):
+        if obj.dataset_path:
+            # Show just the filename part
+            filename = obj.dataset_path.split('/')[-1]
+            return format_html(
+                '<span title="{}">📁 {}</span>',
+                obj.dataset_path,
+                filename[:30] + '...' if len(filename) > 30 else filename
+            )
+        return "—"
+    b2_path_short.short_description = 'Dataset File'
+    
+    def b2_path_display(self, obj):
+        if obj.dataset_path:
+            return format_html(
+                '<code style="background: #f0f0f0; padding: 3px 6px; border-radius: 3px;">{}</code>',
+                obj.dataset_path
+            )
+        return "—"
+    b2_path_display.short_description = 'B2 Path'
     
     def has_preview(self, obj):
         if obj.preview_file:
@@ -137,28 +245,22 @@ class DatasetAdmin(admin.ModelAdmin):
     has_preview.short_description = 'Preview'
     has_preview.admin_order_field = 'preview_type'
     
-    def file_download_link(self, obj):
-        """Generate temporary admin download link"""
-        if obj.file and obj.file.name:
+    def b2_download_link(self, obj):
+        """Generate temporary download link for B2 file"""
+        if obj.dataset_path:
             try:
                 url = obj.get_download_url(expiration=3600)
-                return format_html('<a href="{}" target="_blank">📥 Download File (expires in 1 hour)</a>', url)
+                file_size = obj.get_file_size_display()
+                return format_html(
+                    '<a href="{}" target="_blank" style="background: #28a745; color: white; padding: 5px 10px; '
+                    'border-radius: 3px; text-decoration: none; display: inline-block;">📥 Download ({})</a>',
+                    url, file_size
+                )
             except Exception as e:
                 return format_html('<span style="color: red;">Error: {}</span>', str(e))
         return "No file"
-    file_download_link.short_description = 'Download Link'
+    b2_download_link.short_description = 'Download Link'
     
-    def b2_file_info_display(self, obj):
-        """Pretty display of B2 file information"""
-        if obj.b2_file_id:
-            return format_html(
-                '<span title="{}">📁 {}</span>',
-                obj.b2_file_id,
-                obj.b2_file_id.split('/')[-1] if '/' in obj.b2_file_id else obj.b2_file_id
-            )
-        return "—"
-    b2_file_info_display.short_description = 'B2 File'
-
     def preview_download_link(self, obj):
         if obj.preview_file:
             url = obj.get_preview_url(expiration=3600)
@@ -174,26 +276,21 @@ class DatasetAdmin(admin.ModelAdmin):
     readme_download_link.short_description = 'README Link'
 
     def save_model(self, request, obj, form, change):
-        # First, let the model save handle the file uploads
+        # Handle B2 file key from form
+        b2_key = form.cleaned_data.get('b2_file_key')
+        if b2_key and not obj.dataset_path:
+            obj.dataset_path = b2_key
+        
+        # First save to create the object
         super().save_model(request, obj, form, change)
         
         # Then handle preview_type detection
         if 'preview_file' in form.changed_data and obj.preview_file:
-            # ... set preview_type code ...
             Dataset.objects.filter(pk=obj.pk).update(preview_type=obj.preview_type)
         
-        # Then store B2 file info
-        if obj.file and obj.file.name:
-            try:
-                storage = obj.file.storage
-                if hasattr(storage, 'bucket'):
-                    obj.b2_file_id = f"{storage.bucket.name}/{obj.file.name}"
-                    Dataset.objects.filter(pk=obj.pk).update(
-                        b2_file_id=obj.b2_file_id,
-                        b2_file_info={'updated_at': timezone.now().isoformat()}
-                    )
-            except Exception:
-                pass
+        # Refresh B2 metadata if path exists
+        if obj.dataset_path and not obj.b2_file_size:
+            obj.refresh_b2_metadata()
 
     def has_add_permission(self, request):
         return can_manage_datasets(request.user)
@@ -206,7 +303,7 @@ class DatasetAdmin(admin.ModelAdmin):
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.user.role == 'data_manager' and not request.user.is_superuser:
+        if hasattr(request.user, 'role') and request.user.role == 'data_manager' and not request.user.is_superuser:
             # Data managers can only edit datasets they own
             return qs.filter(owner=request.user.username)
         return qs
@@ -280,9 +377,9 @@ class DataRequestAdmin(admin.ModelAdmin):
         'manager_notes_short',
         'director_notes_short',
         'request_date_short',
-        'review_action',  # Add review action column
-        'manager_review_date_short',  # Add manager review date
-        'approved_date_short',         # Add approval date
+        'review_action',
+        'manager_review_date_short',
+        'approved_date_short',
     )
     
     list_filter = ('status', 'request_date', 'manager', 'director')
@@ -395,12 +492,14 @@ class DataRequestAdmin(admin.ModelAdmin):
         """Add review buttons for both managers and directors"""
         if hasattr(self, 'request'):
             if (obj.status in ['pending', 'manager_review'] and 
+                hasattr(self.request.user, 'role') and
                 self.request.user.role == 'data_manager'):
                 return format_html(
                     '<a href="{}" class="button" style="background: #417690; color: white; padding: 5px 10px; border-radius: 3px; text-decoration: none;">Review</a>',
                     reverse('manager_review', args=[obj.pk])
                 )
             elif (obj.status == 'director_review' and 
+                  hasattr(self.request.user, 'role') and
                   self.request.user.role == 'director'):
                 return format_html(
                     '<a href="{}" class="button" style="background: #417690; color: white; padding: 5px 10px; border-radius: 3px; text-decoration: none;">Review</a>',
@@ -435,13 +534,13 @@ class DataRequestAdmin(admin.ModelAdmin):
         readonly = list(super().get_readonly_fields(request, obj))
         
         # Role-based readonly fields
-        if request.user.role == 'data_manager':
+        if hasattr(request.user, 'role') and request.user.role == 'data_manager':
             readonly.extend([
                 'user', 'dataset', 'project_title', 'institution', 'project_description',
                 'director_comment', 'director', 'download_count', 'last_download', 
                 'approved_date', 'status', 'form_submission', 'ethical_approval_proof'
             ])
-        elif request.user.role == 'director':
+        elif hasattr(request.user, 'role') and request.user.role == 'director':
             readonly.extend([
                 'user', 'dataset', 'project_title', 'institution', 'project_description',
                 'data_manager_comment', 'manager', 'download_count', 'last_download',
@@ -455,21 +554,22 @@ class DataRequestAdmin(admin.ModelAdmin):
         self.request = request  # Store request for use in review_action method
         
         # Role-based filtering
-        if request.user.role == 'data_manager' and not request.user.is_superuser:
-            return qs.filter(status__in=['pending', 'manager_review'])
-        elif request.user.role == 'director' and not request.user.is_superuser:
-            return qs.filter(status__in=['manager_review', 'director_review'])
+        if hasattr(request.user, 'role'):
+            if request.user.role == 'data_manager' and not request.user.is_superuser:
+                return qs.filter(status__in=['pending', 'manager_review'])
+            elif request.user.role == 'director' and not request.user.is_superuser:
+                return qs.filter(status__in=['manager_review', 'director_review'])
         return qs
 
     def has_change_permission(self, request, obj=None):
         # Data managers can only change requests in their review state
-        if obj and request.user.role == 'data_manager' and not request.user.is_superuser:
+        if obj and hasattr(request.user, 'role') and request.user.role == 'data_manager' and not request.user.is_superuser:
             return obj.status in ['pending', 'manager_review']
         return super().has_change_permission(request, obj)
 
     def response_change(self, request, obj):
         # Redirect to custom review page for data managers
-        if request.user.role == 'data_manager' and not request.user.is_superuser:
+        if hasattr(request.user, 'role') and request.user.role == 'data_manager' and not request.user.is_superuser:
             if '_review' in request.POST:
                 return HttpResponseRedirect(reverse('manager_review', args=[obj.pk]))
         return super().response_change(request, obj)
@@ -477,12 +577,13 @@ class DataRequestAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         if change:
             # Auto-assign manager/director and update dates
-            if request.user.role == 'data_manager' and not request.user.is_superuser:
-                obj.manager = request.user
-                obj.manager_review_date = timezone.now()
-            elif request.user.role == 'director' and not request.user.is_superuser:
-                obj.director = request.user
-                if obj.status == 'approved':
-                    obj.approved_date = timezone.now()
+            if hasattr(request.user, 'role'):
+                if request.user.role == 'data_manager' and not request.user.is_superuser:
+                    obj.manager = request.user
+                    obj.manager_review_date = timezone.now()
+                elif request.user.role == 'director' and not request.user.is_superuser:
+                    obj.director = request.user
+                    if obj.status == 'approved':
+                        obj.approved_date = timezone.now()
         
         super().save_model(request, obj, form, change)
