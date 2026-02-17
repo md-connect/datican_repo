@@ -46,14 +46,15 @@ class DatasetAdminForm(forms.ModelForm):
             'placeholder': 'datasets/your-filename.zip',
             'style': 'width: 600px; font-family: monospace;'
         }),
-        help_text=format_html(
-            '<div style="padding: 10px; background: #e8f4e8; border-left: 4px solid #2e6b2e; margin-top: 5px;">'
-            '<strong>📤 How to upload large files:</strong><br>'
-            '1. Upload via CLI: <code>b2 upload-file --threads 10 datican-repo yourfile.zip datasets/yourfile.zip</code><br>'
-            '2. Copy the path (datasets/yourfile.zip) to this field<br>'
-            '3. Save - Django will verify the file exists in B2'
-            '</div>'
-        )
+        help_text = format_html("""
+        <div style="padding: 10px; background: #e8f4e8; border-left: 4px solid #2e6b2e; margin-top: 5px;">
+            <strong>📤 How to upload large files:</strong><br>
+            1. Upload via CLI: <code>b2 upload-file --threads 10 datican-repo yourfile.zip datasets/yourfile.zip</code><br>
+            2. Copy the path (datasets/yourfile.zip) to this field<br>
+            3. Save - Django will verify the file exists in B2
+        </div>
+        """)
+
     )
     
     # NEW: Display file info
