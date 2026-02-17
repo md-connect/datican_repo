@@ -167,7 +167,7 @@ class DatasetAdmin(admin.ModelAdmin):
         ('B2 Cloud Storage (Large Files)', {
             'fields': ('b2_file_key', 'b2_file_info', 'b2_file_size', 'b2_upload_date', 'b2_download_link'),
             'classes': ('wide',),
-            'description': format_html(
+            'description': mark_safe(
                 '<div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; margin-bottom: 15px;">'
                 '<strong style="color: #0056b3;">📦 Upload Large Datasets Directly to B2</strong><br>'
                 '1. Upload your file using the B2 CLI (see instructions below)<br>'
@@ -220,7 +220,7 @@ class DatasetAdmin(admin.ModelAdmin):
         if obj.dataset_path:
             # Show just the filename part
             filename = obj.dataset_path.split('/')[-1]
-            return format_html(
+            return mark_safe(
                 '<span title="{}">📁 {}</span>',
                 obj.dataset_path,
                 filename[:30] + '...' if len(filename) > 30 else filename
@@ -230,7 +230,7 @@ class DatasetAdmin(admin.ModelAdmin):
     
     def b2_path_display(self, obj):
         if obj.dataset_path:
-            return format_html(
+            return mark_safe(
                 '<code style="background: #f0f0f0; padding: 3px 6px; border-radius: 3px;">{}</code>',
                 obj.dataset_path
             )
