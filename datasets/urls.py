@@ -2,6 +2,8 @@
 from django.urls import path
 from . import views
 
+app_name = "datasets"
+
 urlpatterns = [
     # Browsing
     path('', views.dataset_list, name='dataset_list'),

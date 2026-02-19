@@ -38,7 +38,7 @@ urlpatterns = [
     path('admin/requests/<int:pk>/approve/', views.approve_request, name='approve_request'),
     path('reports/all-requests/', views.all_requests_report, name='all_requests_report'),
 
-    path('datasets/', include('datasets.urls')),
+    path('datasets/', include(('datasets.urls', 'datasets'), namespace='datasets')),
     path('accounts/', include('allauth.urls')),
 
     # Password reset URLs
