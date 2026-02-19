@@ -125,7 +125,7 @@
            <!-- My Requests (Visible to authenticated users) -->
             {% if user.is_authenticated %}
             <a 
-                href="{% url 'my_requests' %}" 
+                href="{% url 'datasets:my_requests' %}" 
                 class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 hover:text-primary group"
                 :title="collapsed ? 'My Requests' : ''"
             >
@@ -396,7 +396,7 @@
                 
                 <!-- All Requests Report -->
                 <a 
-                    href="{% url 'all_requests_report' %}" 
+                    href="{% url 'datasets:all_requests_report' %}" 
                     class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 hover:text-primary group"
                     :title="collapsed ? 'All Requests Report' : ''"
                 >
