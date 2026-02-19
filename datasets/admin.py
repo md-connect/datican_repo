@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.utils.safestring import mark_safe
 from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
 from django import forms
 from django.utils import timezone
@@ -33,7 +32,7 @@ class ThumbnailInline(admin.TabularInline):
     
     def preview(self, instance):
         if instance.image:
-            return mark_safe(f'<img src="{instance.image.url}" style="max-height: 100px;" />')
+            return format_html(f'<img src="{instance.image.url}" style="max-height: 100px;" />')
         return "No image"
     preview.short_description = 'Preview'
     
@@ -46,7 +45,7 @@ class DatasetAdminForm(forms.ModelForm):
             'placeholder': 'datasets/your-filename.zip',
             'style': 'width: 600px; font-family: monospace;'
         }),
-        help_text = mark_safe("""
+        help_text = format_html("""
             <div style="padding: 10px; background: #e8f4e8; border-left: 4px solid #2e6b2e;">
                 <strong>📤 How to upload large files:</strong><br>
                 1. Upload via CLI: <code>b2 upload-file --threads 10 datican-repo yourfile.zip datasets/yourfile.zip</code><br>
@@ -166,7 +165,7 @@ class DatasetAdmin(admin.ModelAdmin):
         ('B2 Cloud Storage (Large Files)', {
             'fields': ('b2_file_key', 'b2_file_info', 'b2_file_size', 'b2_upload_date', 'b2_download_link'),
             'classes': ('wide',),
-            'description': mark_safe(
+            'description': format_html(
                 '<div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; margin-bottom: 15px;">'
                 '<strong style="color: #0056b3;">📦 Upload Large Datasets Directly to B2</strong><br>'
                 '1. Upload your file using the B2 CLI (see instructions below)<br>'
@@ -208,7 +207,7 @@ class DatasetAdmin(admin.ModelAdmin):
             try:
                 # Generate signed URL for thumbnail (24h expiry)
                 thumb_url = primary.image.storage.url(primary.image.name, expire=86400)
-                return mark_safe(f'<img src="{thumb_url}" style="max-height: 50px;" />')
+                return format_html(f'<img src="{thumb_url}" style="max-height: 50px;" />')
             except Exception:
                 return "Error"
         return "—"
@@ -219,7 +218,7 @@ class DatasetAdmin(admin.ModelAdmin):
         if obj.dataset_path:
             # Show just the filename part
             filename = obj.dataset_path.split('/')[-1]
-            return mark_safe(
+            return format_html(
                 '<span title="{}">📁 {}</span>',
                 obj.dataset_path,
                 filename[:30] + '...' if len(filename) > 30 else filename
@@ -229,7 +228,7 @@ class DatasetAdmin(admin.ModelAdmin):
     
     def b2_path_display(self, obj):
         if obj.dataset_path:
-            return mark_safe(
+            return format_html(
                 '<code style="background: #f0f0f0; padding: 3px 6px; border-radius: 3px;">{}</code>',
                 obj.dataset_path
             )
@@ -238,10 +237,10 @@ class DatasetAdmin(admin.ModelAdmin):
     
     def has_preview(self, obj):
         if obj.preview_file:
-            return mark_safe(
+            return format_html(
                 f'<span style="color: green;">✓</span> {obj.get_preview_type_display()}'
             )
-        return mark_safe('<span style="color: red;">✗</span>')
+        return format_html('<span style="color: red;">✗</span>')
     has_preview.short_description = 'Preview'
     has_preview.admin_order_field = 'preview_type'
     
