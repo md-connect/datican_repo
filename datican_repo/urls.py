@@ -39,7 +39,7 @@ urlpatterns = [
     path('reports/all-requests/', views.all_requests_report, name='all_requests_report'),
 
     #path('datasets/', include(('datasets.urls', 'datasets'), namespace='datasets')),
-    path('datasets/', include(('datasets.urls')),
+    path('datasets/', include('datasets.urls')),
     path('accounts/', include('allauth.urls')),
 
     # Password reset URLs
