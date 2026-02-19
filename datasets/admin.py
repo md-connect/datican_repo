@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
 from django import forms
+from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.utils.html import format_html
 from django.urls import reverse
@@ -32,7 +33,11 @@ class ThumbnailInline(admin.TabularInline):
     
     def preview(self, instance):
         if instance.image:
-            return format_html(f'<img src="{instance.image.url}" style="max-height: 100px;" />')
+            return format_html(
+                '<img src="{}" style="max-height: 100px;" />',
+                instance.image.url
+            )
+
         return "No image"
     preview.short_description = 'Preview'
     
@@ -45,7 +50,7 @@ class DatasetAdminForm(forms.ModelForm):
             'placeholder': 'datasets/your-filename.zip',
             'style': 'width: 600px; font-family: monospace;'
         }),
-        help_text = format_html("""
+        help_text = mark_safe("""
             <div style="padding: 10px; background: #e8f4e8; border-left: 4px solid #2e6b2e;">
                 <strong>📤 How to upload large files:</strong><br>
                 1. Upload via CLI: <code>b2 upload-file --threads 10 datican-repo yourfile.zip datasets/yourfile.zip</code><br>
@@ -165,7 +170,7 @@ class DatasetAdmin(admin.ModelAdmin):
         ('B2 Cloud Storage (Large Files)', {
             'fields': ('b2_file_key', 'b2_file_info', 'b2_file_size', 'b2_upload_date', 'b2_download_link'),
             'classes': ('wide',),
-            'description': format_html(
+            'description': mark_safe(
                 '<div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; margin-bottom: 15px;">'
                 '<strong style="color: #0056b3;">📦 Upload Large Datasets Directly to B2</strong><br>'
                 '1. Upload your file using the B2 CLI (see instructions below)<br>'
@@ -207,11 +212,14 @@ class DatasetAdmin(admin.ModelAdmin):
             try:
                 # Generate signed URL for thumbnail (24h expiry)
                 thumb_url = primary.image.storage.url(primary.image.name, expire=86400)
-                return format_html(f'<img src="{thumb_url}" style="max-height: 50px;" />')
+                return format_html(
+                    '<img src="{}" style="max-height: 50px;" />',
+                    thumb_url
+                )
+
             except Exception:
                 return "Error"
         return "—"
-    thumbnail_preview.allow_tags = True
     thumbnail_preview.short_description = 'Thumbnail'
     
     def b2_path_short(self, obj):
@@ -238,9 +246,11 @@ class DatasetAdmin(admin.ModelAdmin):
     def has_preview(self, obj):
         if obj.preview_file:
             return format_html(
-                f'<span style="color: green;">✓</span> {obj.get_preview_type_display()}'
+                '<span style="color: green;">✓</span> {}',
+                obj.get_preview_type_display()
             )
-        return format_html('<span style="color: red;">✗</span>')
+
+        return mark_safe('<span style="color: red;">✗</span>')
     has_preview.short_description = 'Preview'
     has_preview.admin_order_field = 'preview_type'
     
