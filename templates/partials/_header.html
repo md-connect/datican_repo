@@ -10,7 +10,7 @@
 
       <!-- Desktop Navigation -->
       <div class="hidden md:flex flex-1 justify-center space-x-8">
-        <a href="{% url 'dataset_list' %}" class="text-dark hover:text-accent transition-colors font-medium">Datasets</a>
+        <a href="{% url 'datasets:dataset_list' %}" class="text-dark hover:text-accent transition-colors font-medium">Datasets</a>
         <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Models</a>
         
         <!-- Fixed Dropdown -->
@@ -97,7 +97,7 @@
     <!-- Mobile Menu -->
     <div class="md:hidden" x-show="isOpen" @click.away="isOpen = false" x-cloak>
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
-        <a href="{% url 'dataset_list' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Datasets</a>
+        <a href="{% url 'datasets:dataset_list' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Datasets</a>
         <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Models</a>
         <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">About Us</a>
         <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Courses</a>
