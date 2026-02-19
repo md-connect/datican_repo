@@ -289,7 +289,7 @@
             <div>
               <h4 class="text-sm font-medium text-gray-700 mb-1">Dataset</h4>
               <p class="font-medium">{{ data_request.dataset.title }}</p>
-              <a href="{% url 'dataset_detail' data_request.dataset.id %}" class="text-sm text-accent hover:underline mt-1 inline-block">
+              <a href="{% url 'datasets:dataset_detail' data_request.dataset.id %}" class="text-sm text-accent hover:underline mt-1 inline-block">
                 View Dataset Details →
               </a>
             </div>
@@ -612,17 +612,17 @@
 
 <!-- Navigation Links (Updated) -->
 <div class="mt-8 flex flex-col sm:flex-row gap-4">
-  <a href="{% url 'dataset_detail' data_request.dataset.id %}" 
+  <a href="{% url 'datasets:dataset_detail' data_request.dataset.id %}" 
      class="flex-1 text-center border border-primary text-primary px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors">
     ← Back to Dataset
   </a>
   {% if can_request_again %}
-  <a href="{% url 'dataset_request' data_request.dataset.id %}" 
+  <a href="{% url 'datasets:dataset_request' data_request.dataset.id %}" 
      class="flex-1 text-center bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors">
     Request Access Again
   </a>
   {% else %}
-  <a href="{% url 'dataset_list' %}" 
+  <a href="{% url 'datasets:dataset_list' %}" 
      class="flex-1 text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
     Browse More Datasets
   </a>
