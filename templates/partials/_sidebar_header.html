@@ -105,7 +105,7 @@
 
             <!-- Datasets Link (Visible to all) -->
             <a 
-                href="{% url 'datasets:dataset_list' %}"
+                href="{% url 'dataset_list' %}"
                 class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 hover:text-primary group"
                 :title="collapsed ? 'Datasets' : ''"
             >
@@ -125,7 +125,7 @@
            <!-- My Requests (Visible to authenticated users) -->
             {% if user.is_authenticated %}
             <a 
-                href="{% url 'datasets:my_requests' %}" 
+                href="{% url 'my_requests' %}" 
                 class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 hover:text-primary group"
                 :title="collapsed ? 'My Requests' : ''"
             >
