@@ -152,7 +152,7 @@
         </p>
       </div>
       <a
-        href="{% url 'datasets:dataset_list' %}"
+        href="{% url 'dataset_list' %}"
         class="text-accent hover:text-red-700 font-medium flex items-center"
       >
         View all →
@@ -162,7 +162,7 @@
    <!-- 4-Column Grid -->
 <div class="grid md:grid-cols-4 gap-6">
   {% for dataset in featured_datasets %}
-  <a href="{% url 'datasets:dataset_detail' dataset.id %}" class="block">
+  <a href="{% url 'dataset_detail' dataset.id %}" class="block">
     <div class="p-4 border rounded-lg hover:shadow-lg transition h-full flex flex-col">
       <!-- Top Row: Title + Image -->
       <div class="flex items-start justify-between mb-3">
