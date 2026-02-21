@@ -231,15 +231,15 @@ class Dataset(models.Model):
             return None
     
     def get_preview_url(self, expiration=3600):
-    if self.preview_file:
-        return self.preview_file.url
-    return None
+        if self.preview_file:
+            return self.preview_file.url
+        return None
 
     
     def get_readme_url(self, expiration=3600):
-    if self.readme_file:
-        return self.readme_file.url
-    return None
+        if self.readme_file:
+            return self.readme_file.url
+        return None
 
 
     def refresh_b2_metadata(self):
