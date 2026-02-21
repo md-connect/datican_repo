@@ -102,6 +102,7 @@ class DatasetAdmin(admin.ModelAdmin):
     readonly_fields = (
         'readme_updated',
         'readme_file_size',
+        'uploaded_by',
         'b2_file_size',
         'b2_upload_date',
         'b2_etag',
@@ -241,6 +242,10 @@ class DatasetAdmin(admin.ModelAdmin):
         return qs
 
     def save_model(self, request, obj, form, change):
+        # Automatically set uploaded_by on creation
+        if not change or not obj.uploaded_by:
+            obj.uploaded_by = request.user
+            
         b2_key = form.cleaned_data.get('b2_file_key')
         if b2_key and not obj.dataset_path:
             obj.dataset_path = b2_key

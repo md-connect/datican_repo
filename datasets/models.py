@@ -149,12 +149,11 @@ class Dataset(models.Model):
 
     # Local storage fields (unchanged)
     preview_file = models.FileField(
-        upload_to=preview_file_path,
-        storage=get_preview_storage(),
-        max_length=500,
-        null=True,
+        upload_to=lambda instance, filename: f"{instance.id}/{filename}",
+        storage=PREVIEW_STORAGE,
         blank=True,
-        verbose_name="Preview File"
+        null=True,
+        help_text="Preview file"
     )
     
     # Preview type field
@@ -173,15 +172,17 @@ class Dataset(models.Model):
     )
 
     readme_file = models.FileField(
-        upload_to=readme_file_path,
-        storage=get_readme_storage(),
-        null=True,
+        upload_to=lambda instance, filename: f"{instance.id}/{filename}",
+        storage=README_STORAGE,
         blank=True,
+        null=True,
         validators=[FileExtensionValidator(
             allowed_extensions=['md', 'txt', 'pdf', 'rst', 'markdown']
         )],
         help_text="Upload README file (Markdown, PDF, or Text)"
     )
+
+    
 
     readme_content = models.TextField(
         blank=True,
