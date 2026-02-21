@@ -55,26 +55,19 @@ AWS_QUERYSTRING_EXPIRE = 300
 AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
 AWS_S3_CUSTOM_DOMAIN = "cdn.repo.datican.org"
 
-# Tell Django to use B2 storage
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-
-# Django 4.2+ storage configuration
+# Use local storage as default
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
 
+
 # Your custom storage classes (keep these as they are)
 B2_DATASETS_LOCATION = 'datasets'
-B2_PREVIEWS_LOCATION = 'previews'
-B2_THUMBNAILS_LOCATION = 'thumbnails'
-B2_README_LOCATION = 'readmes'
-B2_REQUEST_DOCS_LOCATION = 'request-documents'
 
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import FileSystemStorage

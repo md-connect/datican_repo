@@ -322,10 +322,6 @@ AWS_S3_CUSTOM_DOMAIN = "cdn.repo.datican.org"
 
 
 B2_DATASETS_LOCATION = 'datasets'
-B2_PREVIEWS_LOCATION = 'previews'
-B2_THUMBNAILS_LOCATION = 'thumbnails'
-B2_README_LOCATION = 'readmes'
-B2_REQUEST_DOCS_LOCATION = 'request-documents'
 
 from storages.backends.s3boto3 import S3Boto3Storage
 from django.core.files.storage import FileSystemStorage

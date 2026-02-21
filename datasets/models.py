@@ -26,16 +26,25 @@ def dataset_file_path(instance, filename):
     return f"{instance.id}/{filename}"
 
 def preview_file_path(instance, filename):
-    """Generate file path for preview files"""
     ext = filename.split('.')[-1]
-    filename = f"preview_{uuid.uuid4().hex}.{ext}"
-    return f"{instance.id}/{filename}"
+    return os.path.join(
+        "previews",
+        f"preview_{uuid.uuid4().hex}.{ext}"
+    )
 
 def readme_file_path(instance, filename):
-    """Generate file path for README files"""
     ext = filename.split('.')[-1]
-    filename = f"readme_{uuid.uuid4().hex}.{ext}"
-    return f"{instance.id}/{filename}"
+    return os.path.join(
+        "readmes",
+        f"readme_{uuid.uuid4().hex}.{ext}"
+    )
+
+def request_document_path(instance, filename):
+    ext = filename.split('.')[-1]
+    return os.path.join(
+        "request-documents",
+        f"request_{uuid.uuid4().hex}.{ext}"
+    )
 
 def thumbnail_file_path(instance, filename):
     """Generate unique path for thumbnail images in local storage"""
@@ -222,22 +231,16 @@ class Dataset(models.Model):
             return None
     
     def get_preview_url(self, expiration=3600):
-        """Generate signed URL for preview files"""
-        if self.preview_file and self.preview_file.name:
-            try:
-                return self.preview_file.storage.url(self.preview_file.name, expire=expiration)
-            except Exception:
-                return None
-        return None
+    if self.preview_file:
+        return self.preview_file.url
+    return None
+
     
     def get_readme_url(self, expiration=3600):
-        """Generate signed URL for README files"""
-        if self.readme_file and self.readme_file.name:
-            try:
-                return self.readme_file.storage.url(self.readme_file.name, expire=expiration)
-            except Exception:
-                return None
-        return None
+    if self.readme_file:
+        return self.readme_file.url
+    return None
+
 
     def refresh_b2_metadata(self):
         """Fetch current metadata from B2"""
@@ -586,7 +589,7 @@ class DataRequest(models.Model):
         file_field = self.form_submission if doc_type == 'form' else self.ethical_approval_proof
         if file_field and file_field.name:
             try:
-                return file_field.storage.url(file_field.name, expire=expiration)
+                return file_field.url
             except Exception:
                 return None
         return None
