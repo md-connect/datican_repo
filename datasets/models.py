@@ -150,7 +150,7 @@ class Dataset(models.Model):
     # Local storage fields (unchanged)
     preview_file = models.FileField(
         upload_to=lambda instance, filename: f"{instance.id}/{filename}",
-        storage=PREVIEW_STORAGE,
+        storage=get_preview_storage(),
         blank=True,
         null=True,
         help_text="Preview file"
@@ -173,7 +173,7 @@ class Dataset(models.Model):
 
     readme_file = models.FileField(
         upload_to=lambda instance, filename: f"{instance.id}/{filename}",
-        storage=README_STORAGE,
+        storage=get_readme_storage(),
         blank=True,
         null=True,
         validators=[FileExtensionValidator(
