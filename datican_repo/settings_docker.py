@@ -21,7 +21,7 @@ ALLOWED_HOSTS = os.environ.get(
 ).split(',')
 
 CSRF_TRUSTED_ORIGINS = os.environ.get(
-    'CSRF_TRUSTED_ORIGINS', 'https://repo.datican.org,http://repo.datican.org,http://http://209.38.247.225:8000,http://localhost:8000,http://127.0.0.1:8000'
+    'CSRF_TRUSTED_ORIGINS', 'https://repo.datican.org,http://repo.datican.org,http://209.38.247.225:8000,http://localhost:8000,http://127.0.0.1:8000'
 ).split(',')
 
 # Enable SSL settings now that you have HTTPS
