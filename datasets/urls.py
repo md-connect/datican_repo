@@ -41,7 +41,7 @@ urlpatterns = [
     
     # API endpoint for AJAX downloads (Legacy)
     path('api/dataset/<int:pk>/download-url/', 
-         views.get_dataset_download_url_api, 
+         views.get_part_download_url_api, 
          name='dataset_download_api'),
     
     # Preview and README URLs
