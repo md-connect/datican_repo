@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 def preview_upload_path(instance, filename):
     """Generate upload path for preview files"""
-    return f"previews/{instance.id}/{filename}"
+    return f"{instance.id}/{filename}"
 
 def readme_upload_path(instance, filename):
     """Generate upload path for README files"""
