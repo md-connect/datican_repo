@@ -33,12 +33,13 @@ urlpatterns = [
     # Admin email functions
     path('admin/resend-notification/<int:pk>/', views.resend_notification, name='resend_notification'),
     path('preview-email/<int:pk>/', views.preview_acknowledgment_email, name='preview_acknowledgment_email'),
-    # B2 Download URLs
+    
+    # B2 Download URLs (Legacy)
     path('dataset/<int:pk>/download-b2/', 
          views.dataset_download_b2, 
          name='dataset_download_b2'),
     
-    # API endpoint for AJAX downloads
+    # API endpoint for AJAX downloads (Legacy)
     path('api/dataset/<int:pk>/download-url/', 
          views.get_dataset_download_url_api, 
          name='dataset_download_api'),
@@ -53,6 +54,34 @@ urlpatterns = [
          name='dataset_readme'),
     
     path('request/<int:pk>/document/<str:doc_type>/', 
-     views.request_document_download, 
-     name='request_document_download'),
+         views.request_document_download, 
+         name='request_document_download'),
+    
+    # ===== NEW MULTI-PART DATASET DOWNLOAD URLS =====
+    
+    # API endpoints (for AJAX)
+    path('api/datasets/<int:dataset_id>/files/', 
+         views.get_dataset_files_api, 
+         name='api_dataset_files'),
+    
+    path('api/datasets/<int:dataset_id>/parts-list/', 
+         views.get_dataset_parts_list, 
+         name='api_dataset_parts_list'),
+    
+    path('api/datasets/<int:dataset_id>/part/<int:part_number>/', 
+         views.get_part_download_url_api, 
+         name='api_part_url'),
+    
+    path('api/record-download/<int:request_id>/', 
+         views.record_download_api, 
+         name='api_record_download'),
+    
+    # Download redirect URLs (for direct links)
+    path('datasets/<int:dataset_id>/download/part/<int:part_number>/', 
+         views.download_dataset_part, 
+         name='download_dataset_part'),
+    
+    path('datasets/<int:dataset_id>/download/script/', 
+         views.download_dataset_script, 
+         name='download_dataset_script'),
 ]
