@@ -54,6 +54,16 @@ def validate_thumbnail(value):
             "JPG, JPEG, PNG, DICOM, NIfTI"
         )
 
+# Keep the old function name as an alias for backward compatibility
+def request_document_path(instance, filename):
+    """Legacy function - routes to appropriate new function based on context"""
+    # You can check the field name if needed, but for simplicity:
+    if hasattr(instance, 'form_submission') and instance._meta.get_field('form_submission').upload_to == request_document_path:
+        return form_submission_path(instance, filename)
+    else:
+        return ethical_approval_path(instance, filename)
+
+
 def form_submission_path(instance, filename):
     """Path for form submission documents"""
     ext = os.path.splitext(filename)[1].lower()
