@@ -16,6 +16,7 @@ import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
+
 logger = logging.getLogger(__name__)
 
 def preview_upload_path(instance, filename):
@@ -24,9 +25,9 @@ def preview_upload_path(instance, filename):
 
 def readme_upload_path(instance, filename):
     """Generate upload path for README files"""
-    return f"readmes/{instance.id}/{filename}"
-preview_file_path = preview_upload_path   # Keep old name for migrations
-readme_file_path = readme_upload_path     # Keep old name for migrations
+    return f"{instance.id}/{filename}"
+preview_file_path = preview_upload_path
+readme_file_path = readme_upload_path
 
 def dataset_file_path(instance, filename):
     """Generate unique file path for dataset files in B2"""
@@ -41,12 +42,6 @@ def thumbnail_file_path(instance, filename):
     filename = f"thumb_{uuid.uuid4().hex}.{ext}"
     return f"{instance.dataset_id}/{filename}"
 
-def request_document_path(instance, filename):
-    """Generate unique path for request documents in local storage"""
-    ext = filename.split('.')[-1]
-    filename = f"request_{instance.id}_{uuid.uuid4().hex[:8]}.{ext}"
-    return f"requests/{instance.id}/{filename}"
-
 def validate_thumbnail(value):
     """Validate thumbnail file formats"""
     valid_extensions = ['.jpg', '.jpeg', '.png', '.dcm', '.dicom', '.nii', '.nii.gz']
@@ -59,6 +54,17 @@ def validate_thumbnail(value):
             "JPG, JPEG, PNG, DICOM, NIfTI"
         )
 
+def form_submission_path(instance, filename):
+    """Path for form submission documents"""
+    ext = os.path.splitext(filename)[1].lower()
+    unique_id = uuid.uuid4().hex[:8]
+    return f"requests/{instance.id}/form_{instance.id}_{unique_id}{ext}"
+
+def ethical_approval_path(instance, filename):
+    """Path for ethical approval documents"""
+    ext = os.path.splitext(filename)[1].lower()
+    unique_id = uuid.uuid4().hex[:8]
+    return f"requests/{instance.id}/ethical_{instance.id}_{unique_id}{ext}"
 
 class DatasetFile(models.Model):
     """
@@ -741,7 +747,7 @@ class DataRequest(models.Model):
     
     # File uploads (local storage)
     form_submission = models.FileField(
-        upload_to=request_document_path,
+        upload_to=form_submission_path,
         storage=get_request_document_storage(),
         max_length=500,
         null=True,
@@ -749,7 +755,7 @@ class DataRequest(models.Model):
         verbose_name="Form Submission"
     )
     ethical_approval_proof = models.FileField(
-        upload_to=request_document_path,
+        upload_to=ethical_approval_path,
         storage=get_request_document_storage(),
         max_length=500,
         null=True,
