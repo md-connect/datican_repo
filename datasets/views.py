@@ -2408,27 +2408,30 @@ def record_download_api(request, request_id):
 @login_required
 def request_document_download(request, pk, doc_type):
     data_request = get_object_or_404(DataRequest, pk=pk)
-    
-    # Check permission
+
     if data_request.user != request.user and not request.user.is_staff:
         return HttpResponseForbidden()
-    
-    # Get the file
+
     file_field = data_request.form_submission if doc_type == 'form' else data_request.ethical_approval_proof
-    
+
     if not file_field:
-        return HttpResponseNotFound()
-    
-    # Get the file path relative to the protected location
-    # file_field.name is something like "requests/3/form_3_8bc1ccd6.pdf"
-    file_path = file_field.name
-    
-    # Return response with X-Accel-Redirect header
+        return HttpResponseNotFound("Document not found.")
+
+    # file_field.name is like "request-documents/3/form_3_8bc1ccd6.pdf"
+    # We need to extract the path after "request-documents/"
+    # Method 1: Use the full name with the protected prefix
+    internal_path = f"/protected-request-documents/{file_field.name.replace('request-documents/', '')}"
+
+    # Method 2: More explicit - construct from parts
+    # filename = os.path.basename(file_field.name)
+    # internal_path = f"/protected-request-docs/{data_request.id}/{filename}"
+
     response = HttpResponse()
-    response['X-Accel-Redirect'] = f'/protected/request-documents/{file_path}'
+    response['X-Accel-Redirect'] = internal_path
     response['Content-Type'] = 'application/octet-stream'
     response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_field.name)}"'
     return response
+
 
 @login_required
 def get_readme_url(request, pk):

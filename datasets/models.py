@@ -65,17 +65,18 @@ def request_document_path(instance, filename):
 
 
 def form_submission_path(instance, filename):
-    """Path for form submission documents"""
-    ext = os.path.splitext(filename)[1].lower()
+    ext = filename.split('.')[-1]
     unique_id = uuid.uuid4().hex[:8]
-    return f"requests/{instance.id}/form_{instance.id}_{unique_id}{ext}"
+    # Structure: request-documents/[request_id]/form_[request_id]_[unique_id].[ext]
+    return f"request-documents/{instance.id}/form_{instance.id}_{unique_id}.{ext}"
 
 def ethical_approval_path(instance, filename):
-    """Path for ethical approval documents"""
-    ext = os.path.splitext(filename)[1].lower()
+    ext = filename.split('.')[-1]
     unique_id = uuid.uuid4().hex[:8]
-    return f"requests/{instance.id}/ethical_{instance.id}_{unique_id}{ext}"
+    # Structure: request-documents/[request_id]/ethical_[request_id]_[unique_id].[ext]
+    return f"request-documents/{instance.id}/ethical_{instance.id}_{unique_id}.{ext}"
 
+    
 class DatasetFile(models.Model):
     """
     Individual file belonging to a dataset (ForeignKey relationship)
