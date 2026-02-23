@@ -241,9 +241,9 @@ ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none' 
 
 # Session settings
-SESSION_COOKIE_AGE = 1209600  
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_AGE = 28800  # 8 hours 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Session ends when browser closes
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh session expiry on activity
 
 # URL settings
 LOGIN_URL = '/login/'
