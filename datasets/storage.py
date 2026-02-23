@@ -78,7 +78,7 @@ class LocalRequestDocumentStorage(FileSystemStorage):
     def __init__(self):
         super().__init__(
             location=settings.LOCAL_MEDIA_ROOT + '/request-documents',
-            base_url=settings.LOCAL_MEDIA_URL + 'request-documents/'
+            base_url=settings.LOCAL_MEDIA_URL
         )
 
 # Factory functions
