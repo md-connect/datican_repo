@@ -246,7 +246,7 @@ class DatasetAdmin(admin.ModelAdmin):
             total_size = obj.get_file_size_display()
             return format_html(
                 '<a href="{}">{} file{}</a><br><small>{}</small>',
-                reverse('admin:app_datasetfile_changelist') + f'?dataset__id__exact={obj.id}',
+                reverse('admin:datasets_datasetfile_changelist') + f'?dataset__id__exact={obj.id}',
                 count,
                 's' if count != 1 else '',
                 total_size
@@ -385,7 +385,7 @@ class DatasetFileAdmin(admin.ModelAdmin):
     )
     
     def dataset_link(self, obj):
-        url = reverse('admin:app_dataset_change', args=[obj.dataset.id])
+        url = reverse('admin:datasets_dataset_change', args=[obj.dataset.id])
         return format_html('<a href="{}">{}</a>', url, obj.dataset.title)
     dataset_link.short_description = 'Dataset'
     dataset_link.admin_order_field = 'dataset__title'
