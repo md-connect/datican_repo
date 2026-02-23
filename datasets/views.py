@@ -2,7 +2,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator
 from django.contrib.auth.decorators import login_required, permission_required, user_passes_test
-from django.http import FileResponse, HttpResponseForbidden, JsonResponse, HttpResponse, HttpResponseRedirect
+from django.http import FileResponse, HttpResponseForbidden, JsonResponse, HttpResponse, HttpResponseRedirect, HttpResponseNotFound
 from django.conf import settings
 from django.contrib import messages
 from django.core.mail import send_mail
@@ -2405,28 +2405,30 @@ def record_download_api(request, request_id):
 
 
 # ==================== REQUEST DOCUMENT VIEWS ====================
-
 @login_required
 def request_document_download(request, pk, doc_type):
-    """Generate signed URL for request documents"""
     data_request = get_object_or_404(DataRequest, pk=pk)
     
     # Check permission
     if data_request.user != request.user and not request.user.is_staff:
         return HttpResponseForbidden()
     
+    # Get the file
     file_field = data_request.form_submission if doc_type == 'form' else data_request.ethical_approval_proof
     
     if not file_field:
-        return JsonResponse({'error': 'Document not found'}, status=404)
+        return HttpResponseNotFound()
     
-    try:
-        url = file_field.storage.url(file_field.name, expire=3600)  # 1 hour
-        return HttpResponseRedirect(url)
-    except Exception as e:
-        logger.error(f"Document download failed: {e}")
-        return JsonResponse({'error': 'Download failed'}, status=500)
-
+    # Get the file path relative to the protected location
+    # file_field.name is something like "requests/3/form_3_8bc1ccd6.pdf"
+    file_path = file_field.name
+    
+    # Return response with X-Accel-Redirect header
+    response = HttpResponse()
+    response['X-Accel-Redirect'] = f'/protected/request-documents/{file_path}'
+    response['Content-Type'] = 'application/octet-stream'
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_field.name)}"'
+    return response
 
 @login_required
 def get_readme_url(request, pk):
