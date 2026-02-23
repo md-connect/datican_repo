@@ -39,13 +39,6 @@ def readme_file_path(instance, filename):
         f"readme_{uuid.uuid4().hex}.{ext}"
     )
 
-def request_document_path(instance, filename):
-    ext = filename.split('.')[-1]
-    return os.path.join(
-        "request-documents",
-        f"request_{uuid.uuid4().hex}.{ext}"
-    )
-
 def thumbnail_file_path(instance, filename):
     """Generate unique path for thumbnail images in local storage"""
     ext = filename.split('.')[-1]
@@ -69,7 +62,135 @@ def validate_thumbnail(value):
             "Unsupported file format. Supported formats: " +
             "JPG, JPEG, PNG, DICOM, NIfTI"
         )
+
+
+class DatasetFile(models.Model):
+    """
+    Individual file belonging to a dataset (ForeignKey relationship)
+    One dataset can have many files, but each file belongs to exactly one dataset
+    """
+    # Relationship - THIS IS THE KEY CHANGE
+    dataset = models.ForeignKey(
+        'Dataset',
+        on_delete=models.CASCADE,
+        related_name='files',
+        help_text="The dataset this file belongs to"
+    )
+    
+    # File information
+    filename = models.CharField(max_length=500)
+    file_path = models.CharField(
+        max_length=500,
+        unique=True,  # Prevent duplicate B2 paths
+        help_text="Full path in B2 bucket (e.g., datasets/breast-cancer/part1.zip)"
+    )
+    file_size = models.BigIntegerField(default=0)
+    
+    # Part information (for multi-part datasets)
+    part_number = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        help_text="Part number (1, 2, 3, etc.)"
+    )
+    total_parts = models.PositiveIntegerField(
+        null=True, 
+        blank=True,
+        help_text="Total number of parts in this dataset"
+    )
+    
+    # B2 metadata
+    b2_etag = models.CharField(max_length=100, blank=True)
+    b2_upload_date = models.DateTimeField(null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['part_number', 'filename']
+        unique_together = ['dataset', 'part_number']  # Prevent duplicate part numbers
+        indexes = [
+            models.Index(fields=['dataset', 'part_number']),
+            models.Index(fields=['file_path']),
+        ]
+    
+    def __str__(self):
+        if self.part_number and self.total_parts:
+            return f"{self.filename} (Part {self.part_number}/{self.total_parts})"
+        return self.filename
+    
+    def get_download_url(self, expiration=3600):
+        """Generate pre-signed download URL"""
+        if not self.file_path:
+            return None
         
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.B2_ENDPOINT_URL,
+            aws_access_key_id=settings.B2_APPLICATION_KEY_ID,
+            aws_secret_access_key=settings.B2_APPLICATION_KEY,
+            region_name=settings.B2_REGION,
+            config=Config(signature_version='s3v4')
+        )
+        
+        try:
+            return s3.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': settings.B2_BUCKET_NAME,
+                    'Key': self.file_path
+                },
+                ExpiresIn=expiration
+            )
+        except Exception as e:
+            logger.error(f"Error generating URL for {self.filename}: {e}")
+            return None
+    
+    def get_file_size_display(self):
+        """Human readable size"""
+        size = self.file_size
+        if not size:
+            return "Unknown"
+        
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return f"{size:.1f} {unit}"
+            size /= 1024.0
+        return f"{size:.1f} TB"
+    
+    def refresh_metadata(self):
+        """Fetch current metadata from B2"""
+        if not self.file_path:
+            return False
+        
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.B2_ENDPOINT_URL,
+            aws_access_key_id=settings.B2_APPLICATION_KEY_ID,
+            aws_secret_access_key=settings.B2_APPLICATION_KEY,
+            region_name=settings.B2_REGION,
+        )
+        
+        try:
+            response = s3.head_object(
+                Bucket=settings.B2_BUCKET_NAME,
+                Key=self.file_path
+            )
+            
+            self.file_size = response.get('ContentLength', self.file_size)
+            self.b2_etag = response.get('ETag', '').strip('"')
+            self.b2_upload_date = response.get('LastModified', self.b2_upload_date)
+            self.save(update_fields=['file_size', 'b2_etag', 'b2_upload_date'])
+            return True
+            
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                logger.warning(f"File not found in B2: {self.file_path}")
+            else:
+                logger.error(f"Error fetching B2 metadata: {e}")
+            return False
+
+
 class Dataset(models.Model):
     
     MODALITY_CHOICES = [
@@ -108,13 +229,13 @@ class Dataset(models.Model):
         help_text="e.g., Brain, Breast, Chest, Abdomen, Knee, etc."
     )
     
-    # CHANGED: Replace FileField with CharField for B2 path
+    # Keep for backward compatibility, but will be deprecated
     dataset_path = models.CharField(
         max_length=500,
         blank=True,
         null=True,
-        verbose_name="Dataset Path in B2",
-        help_text="Path in B2 bucket (e.g., datasets/filename.zip)"
+        verbose_name="Dataset Path in B2 (Legacy)",
+        help_text="Legacy single file path - use DatasetFile model for multi-part"
     )
 
     format = models.CharField(
@@ -182,8 +303,6 @@ class Dataset(models.Model):
         help_text="Upload README file (Markdown, PDF, or Text)"
     )
 
-    
-
     readme_content = models.TextField(
         blank=True,
         help_text="Automatically extracted text from README"
@@ -191,7 +310,7 @@ class Dataset(models.Model):
     readme_updated = models.DateTimeField(null=True, blank=True)
     readme_file_size = models.IntegerField(default=0)  
     
-    # B2 metadata fields
+    # B2 metadata fields (for legacy single file)
     b2_file_id = models.CharField(max_length=255, null=True, blank=True)
     b2_file_info = models.JSONField(null=True, blank=True)
     b2_file_size = models.BigIntegerField(null=True, blank=True, verbose_name="B2 File Size (bytes)")
@@ -201,8 +320,78 @@ class Dataset(models.Model):
     # Keep file_type for backward compatibility
     file_type = models.CharField(max_length=100, null=True, blank=True)
 
+    # Helper methods for file management
+    def get_all_files(self):
+        """Get all files ordered by part number"""
+        return self.files.all().order_by('part_number')
+    
+    def get_file_by_part(self, part_number):
+        """Get a specific part file"""
+        try:
+            return self.files.get(part_number=part_number)
+        except DatasetFile.DoesNotExist:
+            return None
+    
+    def get_total_size(self):
+        """Calculate total size of all files"""
+        total = sum(f.file_size for f in self.files.all())
+        # Include legacy file size if exists and no files
+        if not total and self.b2_file_size:
+            return self.b2_file_size
+        return total
+    
+    def get_file_count(self):
+        """Get number of files"""
+        count = self.files.count()
+        if count == 0 and self.dataset_path:
+            return 1  # Legacy single file
+        return count
+    
+    def get_file_size_display(self):
+        """Human readable total size"""
+        total = self.get_total_size()
+        if not total:
+            return "Unknown"
+        
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if total < 1024.0:
+                return f"{total:.1f} {unit}"
+            total /= 1024.0
+        return f"{total:.1f} TB"
+    
+    def is_multi_part(self):
+        """Check if dataset has multiple parts"""
+        return self.files.count() > 1
+    
+    def get_download_urls(self, user):
+        """Get download URLs for all files if user is approved"""
+        if not self.is_approved_for_user(user):
+            return None
+        
+        urls = []
+        for file in self.get_all_files():
+            urls.append({
+                'part_number': file.part_number,
+                'filename': file.filename,
+                'url': file.get_download_url(),
+                'size': file.get_file_size_display(),
+                'size_bytes': file.file_size
+            })
+        return urls
+    
+    def is_approved_for_user(self, user):
+        """Check if user has active approval"""
+        if not user.is_authenticated:
+            return False
+        
+        return DataRequest.objects.filter(
+            dataset=self,
+            user=user,
+            status='approved'
+        ).exists()
+
     def get_download_url(self, expiration=3600):
-        """Generate pre-signed download URL for approved users"""
+        """Legacy method - generate pre-signed download URL for single file"""
         if not self.dataset_path:
             return None
         
@@ -236,15 +425,13 @@ class Dataset(models.Model):
             return self.preview_file.url
         return None
 
-    
     def get_readme_url(self, expiration=3600):
         if self.readme_file:
             return self.readme_file.url
         return None
 
-
     def refresh_b2_metadata(self):
-        """Fetch current metadata from B2"""
+        """Fetch current metadata from B2 for legacy single file"""
         if not self.dataset_path:
             return False
             
@@ -294,18 +481,6 @@ class Dataset(models.Model):
         except Exception as e:
             logger.error(f"Unexpected error fetching B2 metadata: {e}")
             return False
-
-    def get_file_size_display(self):
-        """Return human-readable file size"""
-        size = self.b2_file_size or self.size
-        if not size:
-            return "Unknown"
-        
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
-            if size < 1024.0:
-                return f"{size:.1f} {unit}"
-            size /= 1024.0
-        return f"{size:.1f} PB"
 
     @property
     def readme(self):
@@ -373,7 +548,6 @@ class Dataset(models.Model):
     
     def get_user_collections(self, user):
         """Get all collections containing this dataset for the user"""
-        from .models import UserCollection
         return UserCollection.objects.filter(user=user, datasets=self)
 
     def save(self, *args, **kwargs):
@@ -395,6 +569,7 @@ class Dataset(models.Model):
 
     def __str__(self):
         return self.title
+
 
 class Thumbnail(models.Model):
     image = models.ImageField(
@@ -444,6 +619,7 @@ class Thumbnail(models.Model):
             Thumbnail.objects.filter(dataset=self.dataset, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
         
         super().save(*args, **kwargs)
+
 
 class DataRequest(models.Model):
     STATUS_CHOICES = [
@@ -794,6 +970,7 @@ class DataRequest(models.Model):
         
         super().save(*args, **kwargs)
 
+
 class DatasetRating(models.Model):
     """Model for users to rate datasets"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -813,6 +990,7 @@ class DatasetRating(models.Model):
     def __str__(self):
         return f"{self.user.username} rated {self.dataset.title}: {self.rating}"
 
+
 class UserCollection(models.Model):
     """Model for users to save datasets to collections"""
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='collections')
@@ -829,6 +1007,7 @@ class UserCollection(models.Model):
     
     def __str__(self):
         return f"{self.user.username}'s collection: {self.name}"
+
 
 class DatasetReport(models.Model):
     """Model for reporting issues with datasets"""

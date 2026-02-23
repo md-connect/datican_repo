@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport
+from .models import Dataset, DataRequest, Thumbnail, DatasetRating, UserCollection, DatasetReport, DatasetFile
 from django import forms
 from django.utils.safestring import mark_safe
 from django.utils import timezone
@@ -46,10 +46,31 @@ class ThumbnailInline(admin.TabularInline):
 
 
 # --------------------------
+# DatasetFile Inline
+# --------------------------
+class DatasetFileInline(admin.TabularInline):
+    model = DatasetFile
+    extra = 1
+    fields = ['filename', 'file_path', 'part_number', 'total_parts', 'file_size_display', 'download_link_preview']
+    readonly_fields = ['file_size_display', 'download_link_preview']
+    
+    def file_size_display(self, obj):
+        return obj.get_file_size_display() if obj.pk else "—"
+    file_size_display.short_description = 'Size'
+    
+    def download_link_preview(self, obj):
+        if obj.pk and obj.file_path:
+            url = obj.get_download_url(expiration=3600)
+            return format_html('<a href="{}" target="_blank">🔗 Link</a>', url)
+        return "—"
+    download_link_preview.short_description = 'Download'
+
+
+# --------------------------
 # Dataset Admin Form
 # --------------------------
 class DatasetAdminForm(forms.ModelForm):
-    # Only keep B2 path input (optional)
+    # Keep existing b2_file_key field for backward compatibility
     b2_file_key = forms.CharField(
         max_length=500,
         required=False,
@@ -57,12 +78,23 @@ class DatasetAdminForm(forms.ModelForm):
             'placeholder': 'datasets/your-filename.zip',
             'style': 'width: 600px; font-family: monospace;'
         }),
+        help_text="Single file path (for simple datasets)"
+    )
+    
+    # NEW: Multi-file bulk addition
+    b2_file_paths = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'rows': 5,
+            'placeholder': '''datasets/breast-cancer/part1.zip
+datasets/breast-cancer/part2.zip
+datasets/breast-cancer/part3.zip''',
+            'style': 'font-family: monospace;'
+        }),
         help_text=mark_safe("""
             <div style="padding: 10px; background: #e8f4e8; border-left: 4px solid #2e6b2e;">
-                <strong>📤 How to upload large files:</strong><br>
-                1. Upload via CLI: <code>b2 upload-file --threads 10 datican-repo yourfile.zip datasets/yourfile.zip</code><br>
-                2. Copy the path to the field above<br>
-                3. Save - Django will verify the file exists
+                <strong>📦 Add multiple files (one per line):</strong><br>
+                Part numbers will be auto-assigned in order.
             </div>
         """)
     )
@@ -83,6 +115,50 @@ class DatasetAdminForm(forms.ModelForm):
         # Optional: Add B2 existence check here if desired
         return path
 
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        
+        if commit:
+            instance.save()
+            
+            # Handle single file (backward compatibility)
+            b2_key = self.cleaned_data.get('b2_file_key')
+            if b2_key and not instance.files.exists():
+                filename = b2_key.split('/')[-1]
+                DatasetFile.objects.create(
+                    dataset=instance,
+                    filename=filename,
+                    file_path=b2_key,
+                    part_number=1,
+                    total_parts=1
+                )
+            
+            # Handle multiple files
+            b2_paths = self.cleaned_data.get('b2_file_paths')
+            if b2_paths:
+                paths = [p.strip() for p in b2_paths.split('\n') if p.strip()]
+                paths.sort()  # Ensure correct order
+                
+                total_parts = len(paths)
+                for idx, path in enumerate(paths, 1):
+                    filename = path.split('/')[-1]
+                    
+                    # Create or update file
+                    file_obj, created = DatasetFile.objects.update_or_create(
+                        dataset=instance,
+                        part_number=idx,
+                        defaults={
+                            'filename': filename,
+                            'file_path': path,
+                            'total_parts': total_parts
+                        }
+                    )
+                    
+                    # Refresh metadata from B2
+                    file_obj.refresh_metadata()
+        
+        return instance
+
 
 # --------------------------
 # Dataset Admin
@@ -90,11 +166,11 @@ class DatasetAdminForm(forms.ModelForm):
 @admin.register(Dataset)
 class DatasetAdmin(admin.ModelAdmin):
     form = DatasetAdminForm
-    inlines = [ThumbnailInline]
+    inlines = [ThumbnailInline, DatasetFileInline]
 
     list_display = [
-        'title', 'modality', 'format', 'no_of_subjects', 'upload_date',
-        'rating', 'thumbnail_preview', 'owner', 'has_preview', 'has_readme', 'b2_path_short'
+        'title', 'modality', 'file_stats', 'no_of_subjects', 'upload_date',
+        'rating', 'thumbnail_preview', 'has_preview', 'has_readme'
     ]
     list_filter = ['modality', 'format', 'upload_date', 'preview_type']
     search_fields = ['title', 'description', 'body_part', 'dataset_path']
@@ -118,20 +194,27 @@ class DatasetAdmin(admin.ModelAdmin):
         'preview_download_link',
         'readme_download_link',
         'b2_path_display',
+        'total_size_display',
+        'file_count_display',
     )
 
     fieldsets = (
         ('Basic Information', {'fields': ('title', 'description', 'uploaded_by', 'owner')}),
         ('Medical Information', {'fields': ('modality', 'body_part', 'no_of_subjects', 'format')}),
-        ('B2 Cloud Storage (Large Files)', {
-            'fields': ('b2_file_key', 'b2_file_info', 'b2_file_size', 'b2_upload_date', 'b2_download_link'),
+        ('Dataset Files', {
+            'fields': ('b2_file_key', 'b2_file_paths', 'total_size_display', 'file_count_display'),
             'classes': ('wide',),
             'description': mark_safe(
                 '<div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff;">'
-                '<strong>📦 Upload Large Datasets Directly to B2</strong><br>'
-                'Upload using B2 CLI, copy path above, save, and Django will display metadata.'
+                '<strong>📦 Add files from B2</strong><br>'
+                'Option 1: Single file - use the "B2 File Key" field<br>'
+                'Option 2: Multiple files - paste paths in the textarea (one per line)'
                 '</div>'
             )
+        }),
+        ('B2 Cloud Storage (Legacy)', {
+            'fields': ('dataset_path', 'b2_file_info', 'b2_file_size', 'b2_upload_date', 'b2_download_link'),
+            'classes': ('collapse',),
         }),
         ('Preview File', {
             'fields': ('preview_file', 'preview_type'),
@@ -157,6 +240,28 @@ class DatasetAdmin(admin.ModelAdmin):
         return "—"
     thumbnail_preview.short_description = 'Thumbnail'
 
+    def file_stats(self, obj):
+        count = obj.get_file_count()
+        if count:
+            total_size = obj.get_file_size_display()
+            return format_html(
+                '<a href="{}">{} file{}</a><br><small>{}</small>',
+                reverse('admin:app_datasetfile_changelist') + f'?dataset__id__exact={obj.id}',
+                count,
+                's' if count != 1 else '',
+                total_size
+            )
+        return "No files"
+    file_stats.short_description = 'Files'
+    
+    def total_size_display(self, obj):
+        return obj.get_file_size_display()
+    total_size_display.short_description = 'Total Size'
+    
+    def file_count_display(self, obj):
+        return obj.get_file_count()
+    file_count_display.short_description = 'File Count'
+
     def has_readme(self, obj):
         return bool(obj.readme_file) or bool(obj.readme_content)
     has_readme.boolean = True
@@ -168,17 +273,6 @@ class DatasetAdmin(admin.ModelAdmin):
         return mark_safe('<span style="color: red;">✗</span>')
     has_preview.short_description = 'Preview'
     has_preview.admin_order_field = 'preview_type'
-
-    def b2_path_short(self, obj):
-        if obj.dataset_path:
-            filename = obj.dataset_path.split('/')[-1]
-            return format_html(
-                '<span title="{}">📁 {}</span>',
-                obj.dataset_path,
-                filename[:30] + '...' if len(filename) > 30 else filename
-            )
-        return "—"
-    b2_path_short.short_description = 'Dataset File'
 
     def b2_path_display(self, obj):
         if obj.dataset_path:
@@ -253,7 +347,82 @@ class DatasetAdmin(admin.ModelAdmin):
         if obj.dataset_path and not obj.b2_file_size:
             obj.refresh_b2_metadata()
 
-# ADD THESE NEW ADMIN CLASSES FOR THE NEW MODELS
+
+# --------------------------
+# DatasetFile Admin
+# --------------------------
+@admin.register(DatasetFile)
+class DatasetFileAdmin(admin.ModelAdmin):
+    list_display = ['filename', 'dataset_link', 'part_info', 'file_size_display', 
+                   'b2_upload_date', 'created_at']
+    list_filter = ['dataset', 'created_at']
+    search_fields = ['filename', 'file_path', 'dataset__title']
+    readonly_fields = ['b2_etag', 'b2_upload_date', 'created_at', 'updated_at', 
+                      'download_link', 'file_size_display']
+    
+    fieldsets = (
+        ('Dataset Relationship', {
+            'fields': ('dataset',)
+        }),
+        ('File Information', {
+            'fields': ('filename', 'file_path', 'file_size', 'file_size_display')
+        }),
+        ('Part Information', {
+            'fields': ('part_number', 'total_parts'),
+            'classes': ('collapse',)
+        }),
+        ('B2 Metadata', {
+            'fields': ('b2_etag', 'b2_upload_date'),
+            'classes': ('collapse',)
+        }),
+        ('Download', {
+            'fields': ('download_link',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def dataset_link(self, obj):
+        url = reverse('admin:app_dataset_change', args=[obj.dataset.id])
+        return format_html('<a href="{}">{}</a>', url, obj.dataset.title)
+    dataset_link.short_description = 'Dataset'
+    dataset_link.admin_order_field = 'dataset__title'
+    
+    def part_info(self, obj):
+        if obj.part_number and obj.total_parts:
+            return f"Part {obj.part_number}/{obj.total_parts}"
+        return "—"
+    part_info.short_description = 'Part'
+    
+    def file_size_display(self, obj):
+        return obj.get_file_size_display()
+    file_size_display.short_description = 'Size'
+    
+    def download_link(self, obj):
+        url = obj.get_download_url()
+        if url:
+            return format_html(
+                '<a href="{}" target="_blank" style="background: #28a745; color: white; '
+                'padding: 5px 10px; border-radius: 3px; text-decoration: none;">📥 Download</a>',
+                url
+            )
+        return "No link available"
+    download_link.short_description = 'Download'
+    
+    actions = ['refresh_b2_metadata']
+    
+    def refresh_b2_metadata(self, request, queryset):
+        for file_obj in queryset:
+            file_obj.refresh_metadata()
+        self.message_user(request, f"Refreshed metadata for {queryset.count()} files")
+    refresh_b2_metadata.short_description = "Refresh B2 metadata"
+
+
+# --------------------------
+# DatasetRating Admin
+# --------------------------
 @admin.register(DatasetRating)
 class DatasetRatingAdmin(admin.ModelAdmin):
     list_display = ['user', 'dataset', 'rating', 'created_at', 'short_comment']
@@ -267,6 +436,10 @@ class DatasetRatingAdmin(admin.ModelAdmin):
         return "—"
     short_comment.short_description = 'Comment'
 
+
+# --------------------------
+# UserCollection Admin
+# --------------------------
 @admin.register(UserCollection)
 class UserCollectionAdmin(admin.ModelAdmin):
     list_display = ['name', 'user', 'dataset_count', 'is_public', 'created_at']
@@ -279,6 +452,10 @@ class UserCollectionAdmin(admin.ModelAdmin):
         return obj.datasets.count()
     dataset_count.short_description = '# Datasets'
 
+
+# --------------------------
+# DatasetReport Admin
+# --------------------------
 @admin.register(DatasetReport)
 class DatasetReportAdmin(admin.ModelAdmin):
     list_display = ['dataset', 'user', 'report_type', 'status', 'created_at']
@@ -308,6 +485,10 @@ class DatasetReportAdmin(admin.ModelAdmin):
             obj.resolved_at = timezone.now()
         super().save_model(request, obj, form, change)
 
+
+# --------------------------
+# DataRequest Admin
+# --------------------------
 @admin.register(DataRequest)
 class DataRequestAdmin(admin.ModelAdmin):
     list_display = (

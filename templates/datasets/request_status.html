@@ -92,6 +92,27 @@
   .icon-pending {
     color: #d1d5db;
   }
+
+  /* Part list styling */
+  .part-item {
+    transition: all 0.2s ease;
+  }
+  
+  .part-item:hover {
+    background-color: #f9fafb;
+  }
+  
+  .part-number-badge {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    color: #374151;
+    font-weight: 600;
+    border-radius: 9999px;
+  }
 </style>
 {% endblock %}
 
@@ -314,7 +335,7 @@
           {% if data_request.form_submission %}
           <div>
             <h4 class="text-sm font-medium text-gray-700 mb-1">Submitted Dataset Request Form</h4>
-            <a href="{% url 'request_document_download' data_request.id 'form' %}" 
+            <a href="{{ data_request.form_submission.url }}" 
               class="text-accent hover:underline flex items-center gap-2 bg-gray-50 p-3 rounded-lg inline-block transition-colors hover:bg-gray-100">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -323,7 +344,7 @@
                 <line x1="16" y1="17" x2="8" y2="17" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <polyline points="10 9 9 9 8 9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>Download Submitted Form (PDF) - Link expires in 1 hour</span>
+              <span>Download Submitted Form</span>
             </a>
           </div>
           {% endif %}
@@ -331,7 +352,7 @@
           {% if data_request.ethical_approval_proof %}
           <div>
             <h4 class="text-sm font-medium text-gray-700 mb-1">Submitted Ethical Approval Document</h4>
-            <a href="{% url 'request_document_download' data_request.id 'ethics' %}" 
+            <a href="{{ data_request.ethical_approval_proof.url }}" 
               target="_blank"
               class="text-green-600 hover:underline flex items-center gap-2 bg-green-50 hover:bg-green-100 p-3 rounded-lg inline-block transition-colors">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -340,7 +361,7 @@
                 <line x1="9" y1="15" x2="15" y2="15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <line x1="12" y1="12" x2="12" y2="18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>Download Ethical Approval Document (Expires in 1 hour)</span>
+              <span>Download Ethical Approval Document</span>
             </a>
             <div class="mt-2 text-xs text-gray-600">
               <p class="truncate max-w-xs">
@@ -398,196 +419,216 @@
       </div>
 
       <!-- Download Section (Only for approved requests) -->
-{% if data_request.status == 'approved' %}
-<div class="bg-white rounded-lg shadow-sm p-8 text-center">
-  <div class="mb-6">
-    <svg class="w-12 h-12 text-accent mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
-      <polyline points="7 10 12 15 17 10" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="12" y1="15" x2="12" y2="3" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-    <h3 class="text-xl font-semibold text-primary mb-2">Dataset Ready for Download</h3>
-    
-    {% if data_request.can_download %}
-    <div class="mb-4">
-      <div class="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-3">
-        <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" fill="none"/>
-          <path d="M7 13l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        {{ remaining_downloads }} download(s) remaining
-      </div>
-      <p class="text-gray-600 mt-3 mb-4">
-        Your request has been approved. You can now download the dataset.
-      </p>
-      <div class="mb-4">
-        <div class="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
-          <svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 8v4l3 3" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="12" cy="12" r="10" fill="none"/>
+      {% if data_request.status == 'approved' %}
+      <div class="bg-white rounded-lg shadow-sm p-8 text-center">
+        <div class="mb-6">
+          <svg class="w-12 h-12 text-accent mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="7 10 12 15 17 10" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="12" y1="15" x2="12" y2="3" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Downloads used: {{ download_count }} of {{ max_downloads }}
-        </div>
-      </div>
-    </div>
-
-    <!-- 🔥 UPDATED: B2 Signed URL Download with File Info -->
-    <div class="space-y-4">
-      {% if data_request.dataset.dataset_path %}
-        <!-- File Info Badge -->
-        <div class="flex items-center justify-center gap-2 text-sm text-gray-600 mb-2">
-          <span class="bg-gray-100 px-3 py-1 rounded-full">
-            📁 {{ data_request.dataset.dataset_path|cut:"datasets/" }}
-          </span>
-          {% if data_request.dataset.b2_file_size %}
-          <span class="bg-gray-100 px-3 py-1 rounded-full">
-            💾 {{ data_request.dataset.get_file_size_display }}
-          </span>
-          {% endif %}
-        </div>
-
-        <!-- Primary Download Button - Direct B2 Signed URL -->
-        <a href="#"
-          onclick="window.downloadDataset(event, {{ data_request.dataset.id }}, {{ data_request.id }})"
-          class="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-lg w-full md:w-auto min-w-[300px] shadow-sm hover:shadow-md">
-          <i data-lucide="download" class="w-6 h-6"></i>
-          <span>Download Dataset</span>
-          {% if data_request.dataset.b2_file_size and data_request.dataset.b2_file_size > 500000000 %}
-          <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full ml-2">Large File</span>
-          {% else %}
-          <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full ml-2">Secure</span>
-          {% endif %}
-        </a>
-        
-        <!-- Expiration Notice -->
-        <div class="flex items-center justify-center gap-2 text-xs text-gray-500">
-          <i data-lucide="clock" class="w-3 h-3"></i>
-          <span>Download link expires in 1 hour</span>
-          <span class="mx-2">•</span>
-          <i data-lucide="shield" class="w-3 h-3"></i>
-          <span>Secure B2 Cloud Storage</span>
-          <span class="mx-2">•</span>
-          <i data-lucide="zap" class="w-3 h-3"></i>
-          <span>Direct download</span>
-        </div>
-        
-        <!-- AJAX Download Option (Alternative with progress) -->
-        <div class="relative">
-          <button onclick="downloadWithProgress({{ data_request.dataset.id }}, {{ data_request.id }})" 
-                  class="text-sm text-gray-600 hover:text-primary flex items-center justify-center gap-2 mx-auto mt-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-            <i data-lucide="cloud" class="w-4 h-4"></i>
-            <span>Download with progress tracking</span>
-          </button>
+          <h3 class="text-xl font-semibold text-primary mb-2">Dataset Ready for Download</h3>
           
-          <!-- Progress bar container (hidden by default) -->
-          <div id="download-progress-{{ data_request.dataset.id }}" class="hidden mt-4">
-            <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
-              <span>Downloading...</span>
-              <span id="progress-percent-{{ data_request.dataset.id }}">0%</span>
+          {% if data_request.can_download %}
+          <div class="mb-4">
+            <div class="inline-flex items-center bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-medium mb-3">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" fill="none"/>
+                <path d="M7 13l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              {{ data_request.max_downloads|add:data_request.download_count|add:"-"|add:data_request.download_count }} download(s) remaining
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5">
-              <div id="progress-bar-{{ data_request.dataset.id }}" 
-                   class="bg-green-600 h-2.5 rounded-full transition-all duration-300" 
-                   style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between text-xs text-gray-500 mt-1">
-              <span id="downloaded-{{ data_request.dataset.id }}">0 MB</span>
-              <span id="total-size-{{ data_request.dataset.id }}">
-                {% if data_request.dataset.b2_file_size %}
-                  {{ data_request.dataset.get_file_size_display }}
-                {% endif %}
-              </span>
+            <p class="text-gray-600 mt-3 mb-4">
+              Your request has been approved. You can now download the dataset files.
+            </p>
+            <div class="mb-4">
+              <div class="inline-flex items-center bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                <svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 8v4l3 3" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="10" fill="none"/>
+                </svg>
+                Downloads used: {{ data_request.download_count }} of {{ data_request.max_downloads }}
+              </div>
             </div>
           </div>
-        </div>
-      {% else %}
-        <!-- No file available -->
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p class="text-yellow-800">
-            ⚠️ This dataset file is not available. Please contact support.
-          </p>
-        </div>
-      {% endif %}
-    </div>
 
-    {% else %}
-    <!-- Download Limit Reached -->
-    <div class="mb-4">
-      <div class="inline-flex items-center bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-medium mb-3">
-        <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10" fill="none"/>
-          <path d="M12 8v4m0 4h.01" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Download Limit Reached
-      </div>
-      <p class="text-gray-600 mt-3 mb-4">
-        You have reached your download limit for this dataset.
-      </p>
-      <div class="mb-4">
-        <div class="inline-flex items-center bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs">
-          <svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Downloads used: {{ download_count }} of {{ max_downloads }}
-        </div>
-      </div>
-    </div>
-    
-    <!-- Request Access Again -->
-    {% if can_request_again %}
-    <div class="mb-6">
-      <p class="text-gray-600 mb-4">
-        You can submit a new request to get more downloads.
-      </p>
-      <a href="{% url 'dataset_request' data_request.dataset.id %}" 
-         class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2 mx-auto">
-        <i data-lucide="file-text" class="w-5 h-5"></i>
-        Request Access Again
-      </a>
-    </div>
-    {% else %}
-    <button disabled class="bg-gray-200 text-gray-500 px-8 py-4 rounded-lg cursor-not-allowed flex items-center justify-center gap-3 mx-auto text-lg">
-      <i data-lucide="download" class="w-6 h-6"></i>
-      Download Limit Reached
-    </button>
-    {% endif %}
-    {% endif %}
-    
-    <!-- Download History -->
-    {% if download_history %}
-    <div class="mt-8 pt-6 border-t border-gray-200">
-      <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
-        <i data-lucide="history" class="w-4 h-4 mr-2"></i>
-        Download History
-      </h4>
-      <div class="space-y-2">
-        {% for download in download_history %}
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600">Download #{{ download.count }}</span>
-          {% if download.date %}
-          <span class="text-gray-500">{{ download.date|date:"M d, Y H:i" }}</span>
+          <!-- Dataset Files Section -->
+          <div class="space-y-4">
+            {% with files=data_request.dataset.get_all_files %}
+              {% if files %}
+                <!-- File Info Badge -->
+                <div class="flex items-center justify-center gap-2 text-sm text-gray-600 mb-4">
+                  <span class="bg-gray-100 px-3 py-1 rounded-full">
+                    📁 {{ files.count }} file{{ files.count|pluralize }}
+                  </span>
+                  <span class="bg-gray-100 px-3 py-1 rounded-full">
+                    💾 {{ data_request.dataset.get_file_size_display }} total
+                  </span>
+                </div>
+
+                {% if files.count > 1 %}
+                  <!-- Multi-part dataset -->
+                  <div class="border rounded-lg divide-y mb-4">
+                    {% for file in files %}
+                    <div class="part-item flex items-center justify-between p-4">
+                      <div class="flex items-center gap-4">
+                        <div class="part-number-badge">
+                          {{ file.part_number }}
+                        </div>
+                        <div class="text-left">
+                          <div class="font-medium">{{ file.filename }}</div>
+                          <div class="text-sm text-gray-500">{{ file.get_file_size_display }}</div>
+                        </div>
+                      </div>
+                      <button onclick="downloadPart({{ data_request.dataset.id }}, {{ file.part_number }}, {{ data_request.id }})"
+                              class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                        Download Part {{ file.part_number }}
+                      </button>
+                    </div>
+                    {% endfor %}
+                  </div>
+
+                  <!-- Download all script -->
+                  <div class="mt-4">
+                    <button onclick="generateDownloadScript({{ data_request.dataset.id }})"
+                            class="text-accent hover:underline text-sm flex items-center gap-2 mx-auto">
+                      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 16l4-4-4-4M20 8l-4 4 4 4" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M14 12H4M20 12h-4" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                      Generate download script for all parts
+                    </button>
+                  </div>
+                {% else %}
+                  <!-- Single file dataset -->
+                  {% with file=files.first %}
+                  <div class="text-center">
+                    <button onclick="downloadPart({{ data_request.dataset.id }}, 1, {{ data_request.id }})"
+                            class="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-lg">
+                      <svg class="w-6 h-6 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M4 16v4a2 2 0 002 2h12a2 2 0 002-2v-4M12 12v8m-4-4l4 4 4-4" stroke-width="2"/>
+                      </svg>
+                      Download Dataset
+                    </button>
+                    <p class="text-sm text-gray-500 mt-2">{{ file.filename }} • {{ file.get_file_size_display }}</p>
+                  </div>
+                  {% endwith %}
+                {% endif %}
+
+              {% elif data_request.dataset.dataset_path %}
+                <!-- Legacy single file support -->
+                <div class="text-center">
+                  <button onclick="downloadLegacyFile({{ data_request.dataset.id }}, {{ data_request.id }})"
+                          class="bg-green-600 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors font-medium text-lg">
+                    <svg class="w-6 h-6 inline mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path d="M4 16v4a2 2 0 002 2h12a2 2 0 002-2v-4M12 12v8m-4-4l4 4 4-4" stroke-width="2"/>
+                    </svg>
+                    Download Dataset
+                  </button>
+                  <p class="text-sm text-gray-500 mt-2">{{ data_request.dataset.dataset_path|cut:"datasets/" }} • {{ data_request.dataset.get_file_size_display }}</p>
+                </div>
+              {% else %}
+                <p class="text-gray-500">No files available for this dataset.</p>
+              {% endif %}
+            {% endwith %}
+            
+            <!-- Expiration Notice -->
+            <div class="flex items-center justify-center gap-2 text-xs text-gray-500 mt-4">
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke-width="2"/>
+              </svg>
+              <span>Download link expires in 1 hour</span>
+              <span class="mx-2">•</span>
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-width="2"/>
+              </svg>
+              <span>Secure B2 Cloud Storage</span>
+            </div>
+          </div>
+
           {% else %}
-          <span class="text-gray-400">Date not recorded</span>
+          <!-- Download Limit Reached -->
+          <div class="mb-4">
+            <div class="inline-flex items-center bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-medium mb-3">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" fill="none"/>
+                <path d="M12 8v4m0 4h.01" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Download Limit Reached
+            </div>
+            <p class="text-gray-600 mt-3 mb-4">
+              You have reached your download limit for this dataset.
+            </p>
+            <div class="mb-4">
+              <div class="inline-flex items-center bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs">
+                <svg class="w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Downloads used: {{ data_request.download_count }} of {{ data_request.max_downloads }}
+              </div>
+            </div>
+          </div>
+          
+          <!-- Request Access Again -->
+          {% if can_request_again %}
+          <div class="mb-6">
+            <p class="text-gray-600 mb-4">
+              You can submit a new request to get more downloads.
+            </p>
+            <a href="{% url 'dataset_request' data_request.dataset.id %}" 
+               class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2 mx-auto">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-width="2"/>
+                <path d="M12 18v-4m0-4h.01" stroke-width="2"/>
+              </svg>
+              Request Access Again
+            </a>
+          </div>
           {% endif %}
+          {% endif %}
+          
+          <!-- Download History -->
+          {% if download_history %}
+          <div class="mt-8 pt-6 border-t border-gray-200">
+            <h4 class="text-sm font-medium text-gray-700 mb-3 flex items-center">
+              <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke-width="2"/>
+              </svg>
+              Download History
+            </h4>
+            <div class="space-y-2">
+              {% for download in download_history %}
+              <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-600">Download #{{ download.count }}</span>
+                {% if download.date %}
+                <span class="text-gray-500">{{ download.date|date:"M d, Y H:i" }}</span>
+                {% else %}
+                <span class="text-gray-400">Date not recorded</span>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          
+          <!-- Support Contact -->
+          <div class="mt-6 pt-6 border-t border-gray-200">
+            <p class="text-sm text-gray-500 flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path d="M12 16v-4M12 8h.01" stroke-width="2"/>
+              </svg>
+              Need more downloads? 
+              <a href="mailto:{{ settings.SUPPORT_EMAIL }}" class="text-accent hover:underline font-medium ml-1">
+                Contact support
+              </a>
+            </p>
+          </div>
         </div>
-        {% endfor %}
       </div>
-    </div>
-    {% endif %}
-    
-    <!-- Support Contact -->
-    <div class="mt-6 pt-6 border-t border-gray-200">
-      <p class="text-sm text-gray-500 flex items-center justify-center gap-2">
-        <i data-lucide="help-circle" class="w-4 h-4"></i>
-        Need more downloads? 
-        <a href="mailto:{{ settings.SUPPORT_EMAIL }}" class="text-accent hover:underline font-medium ml-1">
-          Contact support
-        </a>
-      </p>
-    </div>
-  </div>
-</div>
-{% endif %}
+      {% endif %}
 
       <!-- For rejected requests, show option to submit new request -->
       {% if data_request.status == 'rejected' and can_request_again %}
@@ -603,36 +644,38 @@
           </p>
           <a href="{% url 'dataset_request' data_request.dataset.id %}" 
             class="bg-accent text-white px-8 py-4 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-3 mx-auto text-lg">
-            <i data-lucide="file-text" class="w-6 h-6"></i>
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" stroke-width="2"/>
+              <path d="M12 18v-4m0-4h.01" stroke-width="2"/>
+            </svg>
             Submit New Request
           </a>
         </div>
       </div>
       {% endif %}
 
-<!-- Navigation Links (Updated) -->
-<div class="mt-8 flex flex-col sm:flex-row gap-4">
-  <a href="{% url 'dataset_detail' data_request.dataset.id %}" 
-     class="flex-1 text-center border border-primary text-primary px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors">
-    ← Back to Dataset
-  </a>
-  {% if can_request_again %}
-  <a href="{% url 'dataset_request' data_request.dataset.id %}" 
-     class="flex-1 text-center bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors">
-    Request Access Again
-  </a>
-  {% else %}
-  <a href="{% url 'dataset_list' %}" 
-     class="flex-1 text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
-    Browse More Datasets
-  </a>
-  {% endif %}
-</div>
+      <!-- Navigation Links -->
+      <div class="mt-8 flex flex-col sm:flex-row gap-4">
+        <a href="{% url 'dataset_detail' data_request.dataset.id %}" 
+           class="flex-1 text-center border border-primary text-primary px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors">
+          ← Back to Dataset
+        </a>
+        {% if can_request_again %}
+        <a href="{% url 'dataset_request' data_request.dataset.id %}" 
+           class="flex-1 text-center bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent/90 transition-colors">
+          Request Access Again
+        </a>
+        {% else %}
+        <a href="{% url 'dataset_list' %}" 
+           class="flex-1 text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-200 transition-colors">
+          Browse More Datasets
+        </a>
+        {% endif %}
+      </div>
     </div>
   </div>
 </div>
 {% endblock %}
-
 
 {% block extra_scripts %}
 <script>
@@ -656,14 +699,13 @@ function getCookie(name) {
 function trackDownload(requestId) {
     const csrftoken = getCookie('csrftoken');
     
-    // Use fetch with keepalive to ensure request completes
     fetch(`/api/record-download/${requestId}/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrftoken,
             'Content-Type': 'application/json'
         },
-        keepalive: true, // Critical for page navigation
+        keepalive: true,
         credentials: 'same-origin'
     })
     .then(response => {
@@ -674,167 +716,66 @@ function trackDownload(requestId) {
     .catch(error => console.error('Error recording download:', error));
 }
 
-// ==================== PROGRESS UPDATE ====================
-function updateProgress(datasetId, percent) {
-    const progressBar = document.getElementById(`progress-bar-${datasetId}`);
-    const progressPercent = document.getElementById(`progress-percent-${datasetId}`);
-    const downloadedSpan = document.getElementById(`downloaded-${datasetId}`);
+// ==================== DOWNLOAD FUNCTIONS ====================
+function downloadPart(datasetId, partNumber, requestId) {
+    const button = event.currentTarget;
+    const originalText = button.innerHTML;
     
-    if (progressBar) {
-        progressBar.style.width = percent + '%';
-    }
-    if (progressPercent) {
-        progressPercent.textContent = Math.round(percent) + '%';
-    }
-    if (downloadedSpan && percent < 100) {
-        downloadedSpan.textContent = Math.round(percent) + '%';
-    } else if (downloadedSpan && percent >= 100) {
-        downloadedSpan.textContent = 'Complete';
-    }
-}
-
-// ==================== SIMULATE PROGRESS (For visual feedback) ====================
-function simulateProgress(datasetId) {
-    let progress = 0;
-    const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress >= 100) {
-            progress = 100;
-            clearInterval(interval);
-        }
-        updateProgress(datasetId, progress);
-    }, 300);
-    return interval; // Return interval so it can be cleared if needed
-}
-
-// ==================== PRIMARY DOWNLOAD FUNCTION ====================
-window.downloadDataset = function(event, datasetId, requestId = null) {
-    // Prevent default if called from button
-    if (event) {
-        event.preventDefault();
-    }
+    // Show loading state
+    button.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 inline" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg> Generating link...';
+    button.disabled = true;
     
-    const button = event?.currentTarget;
-    const originalHtml = button ? button.innerHTML : '';
-    const progressContainer = document.getElementById(`download-progress-${datasetId}`);
-    let progressInterval = null;
-    
-    // Show loading state if button exists
-    if (button) {
-        button.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating secure link...';
-        button.disabled = true;
-        lucide.createIcons();
-    }
-    
-    // Show progress container if it exists
-    if (progressContainer) {
-        progressContainer.classList.remove('hidden');
-        updateProgress(datasetId, 10); // Start at 10% to show activity
-        // Start simulated progress
-        progressInterval = simulateProgress(datasetId);
-    }
-    
-    const csrftoken = getCookie('csrftoken');
-    
-    fetch(`/datasets/api/dataset/${datasetId}/download-url/`, {
+    fetch(`/api/datasets/${datasetId}/part/${partNumber}/`, {
         method: 'GET',
         headers: {
-            'X-CSRFToken': csrftoken,
-            'Content-Type': 'application/json'
+            'X-CSRFToken': getCookie('csrftoken'),
         }
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-        if (data.success && data.url) {
-            // Clear progress interval
-            if (progressInterval) {
-                clearInterval(progressInterval);
-            }
+        if (data.download_url) {
+            window.location.href = data.download_url;
+            trackDownload(requestId);
             
-            // Update progress to 50% - link generated
-            updateProgress(datasetId, 50);
-            
-            // Trigger download
-            window.location.href = data.url;
-            
-            // Track the download if requestId provided
-            if (requestId) {
-                trackDownload(requestId);
-            }
-            
-            // Update progress to 100% - download started
-            updateProgress(datasetId, 100);
-            
-            // Show success message on button
-            if (button) {
-                button.innerHTML = '<i data-lucide="check" class="w-4 h-4"></i> Download started!';
-                button.classList.remove('hover:bg-gray-50');
-                button.classList.add('text-green-600', 'border-green-600');
-            }
-            
-            // Hide progress after 2 seconds
-            setTimeout(() => {
-                if (progressContainer) {
-                    progressContainer.classList.add('hidden');
-                }
-                // Reload to update download count if this is a tracked request
-                if (requestId) {
-                    location.reload();
-                }
-            }, 2000);
+            // Reload after 2 seconds to update download count
+            setTimeout(() => location.reload(), 2000);
         } else {
-            throw new Error(data.error || 'Failed to generate download link');
+            alert('Error: ' + (data.error || 'Could not generate download URL'));
+            button.innerHTML = originalText;
+            button.disabled = false;
         }
     })
     .catch(error => {
         console.error('Download error:', error);
-        alert('Download failed: ' + error.message);
-        
-        // Clear progress interval
-        if (progressInterval) {
-            clearInterval(progressInterval);
-        }
-        
-        // Reset button
-        if (button) {
-            button.innerHTML = originalHtml;
-            button.disabled = false;
-        }
-        
-        // Hide progress
-        if (progressContainer) {
-            progressContainer.classList.add('hidden');
-        }
-    })
-    .finally(() => {
-        lucide.createIcons();
+        alert('Download failed. Please try again.');
+        button.innerHTML = originalText;
+        button.disabled = false;
     });
-};
+}
 
-// ==================== LEGACY SUPPORT (if needed) ====================
-// Keep this for backward compatibility with your existing buttons
-window.downloadWithProgress = function(datasetId, requestId) {
-    window.downloadDataset(null, datasetId, requestId);
-};
+function downloadLegacyFile(datasetId, requestId) {
+    downloadPart(datasetId, 1, requestId);
+}
+
+function generateDownloadScript(datasetId) {
+    fetch(`/api/datasets/${datasetId}/script/`)
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `download_dataset_${datasetId}.sh`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
+}
 
 // ==================== INITIALIZATION ====================
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Lucide icons
+    // Initialize Lucide icons if available
     if (typeof lucide !== 'undefined' && lucide.createIcons) {
         lucide.createIcons();
     }
-    
-    // Attach click handlers to any download buttons with data attributes
-    document.querySelectorAll('[data-download-dataset]').forEach(button => {
-        const datasetId = button.dataset.downloadDataset;
-        const requestId = button.dataset.downloadRequest;
-        button.addEventListener('click', (e) => window.downloadDataset(e, datasetId, requestId));
-    });
 });
 </script>
 {% endblock %}
