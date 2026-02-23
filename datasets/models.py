@@ -18,6 +18,13 @@ from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
+def preview_upload_path(instance, filename):
+    """Generate upload path for preview files"""
+    return f"previews/{instance.id}/{filename}"
+
+def readme_upload_path(instance, filename):
+    """Generate upload path for README files"""
+    return f"readmes/{instance.id}/{filename}"
 
 def dataset_file_path(instance, filename):
     """Generate unique file path for dataset files in B2"""
@@ -25,19 +32,6 @@ def dataset_file_path(instance, filename):
     filename = f"{uuid.uuid4().hex}.{ext}"
     return f"{instance.id}/{filename}"
 
-def preview_file_path(instance, filename):
-    ext = filename.split('.')[-1]
-    return os.path.join(
-        "previews",
-        f"preview_{uuid.uuid4().hex}.{ext}"
-    )
-
-def readme_file_path(instance, filename):
-    ext = filename.split('.')[-1]
-    return os.path.join(
-        "readmes",
-        f"readme_{uuid.uuid4().hex}.{ext}"
-    )
 
 def thumbnail_file_path(instance, filename):
     """Generate unique path for thumbnail images in local storage"""
@@ -270,7 +264,7 @@ class Dataset(models.Model):
 
     # Local storage fields (unchanged)
     preview_file = models.FileField(
-        upload_to=lambda instance, filename: f"{instance.id}/{filename}",
+        upload_to=preview_upload_path,
         storage=get_preview_storage(),
         blank=True,
         null=True,
@@ -293,7 +287,7 @@ class Dataset(models.Model):
     )
 
     readme_file = models.FileField(
-        upload_to=lambda instance, filename: f"{instance.id}/{filename}",
+        upload_to=readme_upload_path,
         storage=get_readme_storage(),
         blank=True,
         null=True,
