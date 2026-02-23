@@ -15,14 +15,14 @@ if [ ! -f "$LOCAL_FILE" ]; then
 fi
 
 FILENAME=$(basename "$LOCAL_FILE")
-B2_PATH="datasets/$FILENAME"
+B2_PATH="datasets/breast-cancer/$FILENAME"
 BUCKET="datican-repo"
 
 echo "📦 Preparing upload: $LOCAL_FILE"
 echo "Target: $B2_PATH"
 
 # Check if file already exists in B2
-EXISTS=$(b2 ls "b2://$BUCKET/datasets/" | grep -w "$FILENAME")
+EXISTS=$(b2 ls "b2://$BUCKET/datasets/breast-cancer" | grep -w "$FILENAME")
 
 if [ -n "$EXISTS" ] && [ "$FORCE" != "--force" ]; then
     echo "⚠️ File already exists in B2."
