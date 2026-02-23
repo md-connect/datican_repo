@@ -25,6 +25,8 @@ def preview_upload_path(instance, filename):
 def readme_upload_path(instance, filename):
     """Generate upload path for README files"""
     return f"readmes/{instance.id}/{filename}"
+preview_file_path = preview_upload_path   # Keep old name for migrations
+readme_file_path = readme_upload_path     # Keep old name for migrations
 
 def dataset_file_path(instance, filename):
     """Generate unique file path for dataset files in B2"""
