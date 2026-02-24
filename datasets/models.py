@@ -65,18 +65,38 @@ def request_document_path(instance, filename):
 
 
 def form_submission_path(instance, filename):
-    ext = filename.split('.')[-1]
+    """Path for form submission documents"""
+    ext = os.path.splitext(filename)[1].lower()
     unique_id = uuid.uuid4().hex[:8]
-    # Structure: request-documents/[request_id]/form_[request_id]_[unique_id].[ext]
-    return f"request-documents/{instance.id}/form_{instance.id}_{unique_id}.{ext}"
+    
+    # If instance has an ID, use it; otherwise use a temporary ID
+    if instance.id:
+        folder = str(instance.id)
+        file_id = instance.id
+    else:
+        # Generate a temporary ID using a random string
+        temp_id = uuid.uuid4().hex[:8]
+        folder = f"temp_{temp_id}"
+        file_id = temp_id
+    
+    return f"request-documents/{folder}/form_{file_id}_{unique_id}{ext}"
 
 def ethical_approval_path(instance, filename):
-    ext = filename.split('.')[-1]
+    """Path for ethical approval documents"""
+    ext = os.path.splitext(filename)[1].lower()
     unique_id = uuid.uuid4().hex[:8]
-    # Structure: request-documents/[request_id]/ethical_[request_id]_[unique_id].[ext]
-    return f"request-documents/{instance.id}/ethical_{instance.id}_{unique_id}.{ext}"
-
     
+    if instance.id:
+        folder = str(instance.id)
+        file_id = instance.id
+    else:
+        temp_id = uuid.uuid4().hex[:8]
+        folder = f"temp_{temp_id}"
+        file_id = temp_id
+    
+    return f"request-documents/{folder}/ethical_{file_id}_{unique_id}{ext}"
+
+
 class DatasetFile(models.Model):
     """
     Individual file belonging to a dataset (ForeignKey relationship)
@@ -982,6 +1002,54 @@ class DataRequest(models.Model):
             self.decision_date = timezone.now()
         
         super().save(*args, **kwargs)
+
+
+# Add this at the bottom of your models.py, after the DataRequest class
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+import os
+import shutil
+
+@receiver(post_save, sender=DataRequest)
+def move_request_documents(sender, instance, created, **kwargs):
+    """Move request documents from temp folder to permanent location"""
+    if created:
+        updated_fields = []
+        
+        # Check form_submission
+        if instance.form_submission and 'temp_' in instance.form_submission.name:
+            old_path = instance.form_submission.path
+            if os.path.exists(old_path):
+                filename = os.path.basename(old_path)
+                ext = os.path.splitext(filename)[1]
+                new_filename = f"form_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
+                new_dir = f"/app/media/request-documents/{instance.id}"
+                new_path = f"{new_dir}/{new_filename}"
+                
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.move(old_path, new_path)
+                
+                instance.form_submission.name = f"request-documents/{instance.id}/{new_filename}"
+                updated_fields.append('form_submission')
+        
+        # Check ethical_approval_proof
+        if instance.ethical_approval_proof and 'temp_' in instance.ethical_approval_proof.name:
+            old_path = instance.ethical_approval_proof.path
+            if os.path.exists(old_path):
+                filename = os.path.basename(old_path)
+                ext = os.path.splitext(filename)[1]
+                new_filename = f"ethical_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
+                new_dir = f"/app/media/request-documents/{instance.id}"
+                new_path = f"{new_dir}/{new_filename}"
+                
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.move(old_path, new_path)
+                
+                instance.ethical_approval_proof.name = f"request-documents/{instance.id}/{new_filename}"
+                updated_fields.append('ethical_approval_proof')
+        
+        if updated_fields:
+            instance.save(update_fields=updated_fields)
 
 
 class DatasetRating(models.Model):
