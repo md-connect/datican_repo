@@ -451,7 +451,14 @@ def dataset_detail(request, pk):
         'collection_form': CollectionForm(),
         'report_form': ReportForm(),
     }
-    
+    # Add this debug section
+    print(f"\n=== DEBUG PREVIEW for {dataset.title} ===")
+    print(f"has_preview: {has_preview}")
+    print(f"preview_error: {preview_error}")
+    print(f"preview_columns: {preview_columns}")
+    print(f"preview_rows count: {len(preview_rows) if preview_rows else 0}")
+    if preview_rows and len(preview_rows) > 0:
+        print(f"First row sample: {preview_rows[0]}")
     return render(request, 'datasets/detail.html', context)
 
 
