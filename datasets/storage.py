@@ -70,7 +70,7 @@ class LocalThumbnailStorage(FileSystemStorage):
     def __init__(self):
         super().__init__(
             location=settings.LOCAL_MEDIA_ROOT + '/thumbnails',
-            base_url=settings.LOCAL_MEDIA_URL
+            base_url=settings.LOCAL_MEDIA_URL + 'thumbnails/'
         )
 
 class LocalRequestDocumentStorage(FileSystemStorage):
