@@ -19,15 +19,53 @@ from botocore.exceptions import ClientError
 
 logger = logging.getLogger(__name__)
 
+import uuid
+import os
+
 def preview_upload_path(instance, filename):
     """Generate upload path for preview files"""
-    return f"{instance.id}/{filename}"
+    ext = os.path.splitext(filename)[1].lower()
+    unique_id = uuid.uuid4().hex[:8]
+    
+    # If instance has an ID, use it; otherwise use a temporary ID
+    if instance.id:
+        folder = str(instance.id)
+        file_id = instance.id
+    else:
+        # Generate a temporary ID using a random string
+        temp_id = uuid.uuid4().hex[:8]
+        folder = f"temp_{temp_id}"
+        file_id = temp_id
+    
+    # Keep the original filename but add prefix for clarity
+    base_name = os.path.splitext(filename)[0][:30]  # Truncate long names
+    safe_filename = f"{base_name}_{unique_id}{ext}"
+    
+    return f"previews/{folder}/{safe_filename}"
 
 def readme_upload_path(instance, filename):
     """Generate upload path for README files"""
-    return f"{instance.id}/{filename}"
+    ext = os.path.splitext(filename)[1].lower()
+    unique_id = uuid.uuid4().hex[:8]
+    
+    if instance.id:
+        folder = str(instance.id)
+        file_id = instance.id
+    else:
+        temp_id = uuid.uuid4().hex[:8]
+        folder = f"temp_{temp_id}"
+        file_id = temp_id
+    
+    # Keep the original filename but add prefix for clarity
+    base_name = os.path.splitext(filename)[0][:30]  # Truncate long names
+    safe_filename = f"{base_name}_{unique_id}{ext}"
+    
+    return f"readmes/{folder}/{safe_filename}"
+
+# Keep aliases for backward compatibility
 preview_file_path = preview_upload_path
 readme_file_path = readme_upload_path
+
 
 def dataset_file_path(instance, filename):
     """Generate unique file path for dataset files in B2"""
@@ -1051,6 +1089,62 @@ def move_request_documents(sender, instance, created, **kwargs):
         if updated_fields:
             instance.save(update_fields=updated_fields)
 
+
+@receiver(post_save, sender=Dataset)
+def move_dataset_files(sender, instance, created, **kwargs):
+    """Move preview and README files from temp folders to permanent location"""
+    if created:
+        updated_fields = []
+        
+        # Fix preview file
+        if instance.preview_file and 'temp_' in instance.preview_file.name:
+            old_path = instance.preview_file.path
+            if os.path.exists(old_path):
+                filename = os.path.basename(old_path)
+                ext = os.path.splitext(filename)[1]
+                
+                # Generate new filename with dataset ID
+                base_name = os.path.splitext(filename)[0].split('_')[0]  # Get original base name
+                new_filename = f"{base_name}_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
+                new_dir = f"/app/media/previews/{instance.id}"
+                new_path = f"{new_dir}/{new_filename}"
+                
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.move(old_path, new_path)
+                
+                instance.preview_file.name = f"previews/{instance.id}/{new_filename}"
+                updated_fields.append('preview_file')
+                
+                # Auto-detect preview type
+                if ext.lower() in ['.csv']:
+                    instance.preview_type = 'csv'
+                elif ext.lower() in ['.xlsx', '.xls']:
+                    instance.preview_type = 'excel'
+                elif ext.lower() in ['.json']:
+                    instance.preview_type = 'json'
+                updated_fields.append('preview_type')
+        
+        # Fix README file
+        if instance.readme_file and 'temp_' in instance.readme_file.name:
+            old_path = instance.readme_file.path
+            if os.path.exists(old_path):
+                filename = os.path.basename(old_path)
+                ext = os.path.splitext(filename)[1]
+                
+                # Generate new filename with dataset ID
+                base_name = os.path.splitext(filename)[0].split('_')[0]  # Get original base name
+                new_filename = f"{base_name}_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
+                new_dir = f"/app/media/readmes/{instance.id}"
+                new_path = f"{new_dir}/{new_filename}"
+                
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.move(old_path, new_path)
+                
+                instance.readme_file.name = f"readmes/{instance.id}/{new_filename}"
+                updated_fields.append('readme_file')
+        
+        if updated_fields:
+            instance.save(update_fields=updated_fields)
 
 class DatasetRating(models.Model):
     """Model for users to rate datasets"""
