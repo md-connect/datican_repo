@@ -54,7 +54,7 @@ class LocalPreviewStorage(FileSystemStorage):
     def __init__(self):
         super().__init__(
             location=settings.LOCAL_MEDIA_ROOT + '/previews',
-            base_url=settings.LOCAL_MEDIA_URL + 'previews/'
+            base_url=settings.LOCAL_MEDIA_URL
         )
 
 class LocalReadmeStorage(FileSystemStorage):
@@ -62,7 +62,7 @@ class LocalReadmeStorage(FileSystemStorage):
     def __init__(self):
         super().__init__(
             location=settings.LOCAL_MEDIA_ROOT + '/readmes',
-            base_url=settings.LOCAL_MEDIA_URL + 'readmes/'
+            base_url=settings.LOCAL_MEDIA_URL
         )
 
 class LocalThumbnailStorage(FileSystemStorage):
@@ -70,7 +70,7 @@ class LocalThumbnailStorage(FileSystemStorage):
     def __init__(self):
         super().__init__(
             location=settings.LOCAL_MEDIA_ROOT + '/thumbnails',
-            base_url=settings.LOCAL_MEDIA_URL + 'thumbnails/'
+            base_url=settings.LOCAL_MEDIA_URL
         )
 
 class LocalRequestDocumentStorage(FileSystemStorage):
