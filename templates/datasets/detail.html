@@ -562,45 +562,58 @@
             <div class="text-xs md:text-sm text-gray-600">Last Updated</div>
             <div class="font-medium text-sm md:text-base">{{ dataset.update_date|date:"M d, Y" }}</div>
           </div>
-          <!-- File Details -->
-      <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
-        <h3 class="text-base md:text-lg font-semibold text-primary mb-3 md:mb-4 flex items-center">
-          <i data-lucide="folder" class="w-4 h-4 md:w-5 md:h-5 mr-2"></i>
-          File Details
-        </h3>
-        <div class="space-y-2 md:space-y-3">
-          <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center min-w-0">
-              <i data-lucide="file" class="w-4 h-4 md:w-5 md:h-5 text-gray-400 mr-2 md:mr-3 flex-shrink-0"></i>
-              <div class="min-w-0">
-                <div class="font-medium text-sm md:text-base truncate">{{ dataset.title }}</div>
-                <div class="text-xs md:text-sm text-gray-600 truncate">
-                  {% if dataset.format %}{{ dataset.format }} • {% endif %}{{ total_size_display|default:"Size N/A" }}
+          
+          <!-- File Details - Add download button for preview file -->
+          <div class="bg-white rounded-lg shadow-sm p-4 md:p-6">
+            <h3 class="text-base md:text-lg font-semibold text-primary mb-3 md:mb-4 flex items-center">
+              <i data-lucide="folder" class="w-4 h-4 md:w-5 md:h-5 mr-2"></i>
+              File Details
+            </h3>
+            <div class="space-y-2 md:space-y-3">
+              <!-- Main file info -->
+              <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center min-w-0 flex-1">
+                  <i data-lucide="file" class="w-4 h-4 md:w-5 md:h-5 text-gray-400 mr-2 md:mr-3 flex-shrink-0"></i>
+                  <div class="min-w-0">
+                    <div class="font-medium text-sm md:text-base truncate">{{ dataset.title }}</div>
+                    <div class="text-xs md:text-sm text-gray-600 truncate">
+                      {% if dataset.format %}{{ dataset.format }} • {% endif %}{{ total_size_display|default:"Size N/A" }}
+                    </div>
+                  </div>
                 </div>
+                
+                <!-- Download Preview Button - Add this -->
+                {% if dataset.preview_file %}
+                <a href="{{ dataset.preview_file.url }}" 
+                  download
+                  class="ml-2 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                  title="Download preview file">
+                  <i data-lucide="download" class="w-5 h-5"></i>
+                </a>
+                {% endif %}
               </div>
+
+              <!-- File list for multi-part datasets -->
+              {% if files %}
+              <div class="mt-3 border-t pt-3">
+                <h4 class="text-xs font-medium text-gray-500 mb-2">Dataset Files:</h4>
+                <ul class="space-y-1">
+                  {% for file in files %}
+                  <li class="text-xs flex items-center justify-between">
+                    <span class="truncate max-w-[150px]">{{ file.filename }}</span>
+                    <span class="text-gray-500">{{ file.size_display }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% elif legacy_single_file %}
+              <div class="mt-3 border-t pt-3">
+                <h4 class="text-xs font-medium text-gray-500 mb-2">Dataset File:</h4>
+                <p class="text-xs truncate">{{ legacy_filename }}</p>
+              </div>
+              {% endif %}
             </div>
-
-            <!-- Preview file link -->
-            <!-- {% if dataset.preview_file %}
-            <a href="{% url 'dataset_preview' dataset.id %}" 
-              target="_blank"
-              class="btn btn-sm btn-outline-info">
-                <i class="fas fa-file-alt"></i> View Preview
-            </a>
-            {% endif %} -->
-
-            <!-- README link -->
-            <!-- {% if dataset.readme_file %}
-            <a href="{% url 'dataset_readme' dataset.id %}" 
-              target="_blank"
-              class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-book"></i> View README
-            </a>
-            {% endif %} -->
-
           </div>
-        </div>
-      </div>
         </div>
       </div>
 
