@@ -1182,7 +1182,7 @@ def move_request_documents(sender, instance, created, **kwargs):
                 os.makedirs(new_dir, exist_ok=True)
                 shutil.move(old_path, new_path)
                 
-                instance.ethical_approval_proof.name = f"request-documents/{instance.id}/{new_filename}"
+                instance.ethical_approval_proof.name = f"{instance.id}/{new_filename}"
                 updated_fields.append('ethical_approval_proof')
         
         if updated_fields:

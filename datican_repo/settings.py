@@ -24,7 +24,7 @@ DATASET_SECRET_KEY = "e811e2491c080ea559e567d7da0600e007c35c4513a6e56bfee564f3e2
 DATASET_TOKEN_EXPIRY = 300  # 5 minutes default
 
 # Resend API Key
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_gC4Zo81u_bC9o5HsdsycxjWrU7CF1jhKb")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_UPu4S4KD_PcaH2tDQYadfpmJN1JwxpEYw")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
