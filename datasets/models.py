@@ -1048,48 +1048,6 @@ from django.dispatch import receiver
 import os
 import shutil
 
-@receiver(post_save, sender=DataRequest)
-def move_request_documents(sender, instance, created, **kwargs):
-    """Move request documents from temp folder to permanent location"""
-    if created:
-        updated_fields = []
-        
-        # Check form_submission
-        if instance.form_submission and 'temp_' in instance.form_submission.name:
-            old_path = instance.form_submission.path
-            if os.path.exists(old_path):
-                filename = os.path.basename(old_path)
-                ext = os.path.splitext(filename)[1]
-                new_filename = f"form_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
-                new_dir = f"/app/media/request-documents/{instance.id}"
-                new_path = f"{new_dir}/{new_filename}"
-                
-                os.makedirs(new_dir, exist_ok=True)
-                shutil.move(old_path, new_path)
-                
-                instance.form_submission.name = f"request-documents/{instance.id}/{new_filename}"
-                updated_fields.append('form_submission')
-        
-        # Check ethical_approval_proof
-        if instance.ethical_approval_proof and 'temp_' in instance.ethical_approval_proof.name:
-            old_path = instance.ethical_approval_proof.path
-            if os.path.exists(old_path):
-                filename = os.path.basename(old_path)
-                ext = os.path.splitext(filename)[1]
-                new_filename = f"ethical_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
-                new_dir = f"/app/media/request-documents/{instance.id}"
-                new_path = f"{new_dir}/{new_filename}"
-                
-                os.makedirs(new_dir, exist_ok=True)
-                shutil.move(old_path, new_path)
-                
-                instance.ethical_approval_proof.name = f"request-documents/{instance.id}/{new_filename}"
-                updated_fields.append('ethical_approval_proof')
-        
-        if updated_fields:
-            instance.save(update_fields=updated_fields)
-
-
 @receiver(post_save, sender=Dataset)
 def move_dataset_files(sender, instance, created, **kwargs):
     """Move preview and README files from temp folders to permanent location"""
@@ -1101,11 +1059,17 @@ def move_dataset_files(sender, instance, created, **kwargs):
             old_path = instance.preview_file.path
             if os.path.exists(old_path):
                 filename = os.path.basename(old_path)
-                ext = os.path.splitext(filename)[1]
+                name, ext = os.path.splitext(filename)
+                
+                # IMPORTANT: Extract base name WITHOUT the UUID suffix
+                # Remove the last 9 chars which are the UUID (_ + 8 hex chars)
+                if '_' in name and len(name.split('_')[-1]) == 8:
+                    base_name = '_'.join(name.split('_')[:-1])  # Remove UUID
+                else:
+                    base_name = name
                 
                 # Generate new filename with dataset ID
-                base_name = os.path.splitext(filename)[0].split('_')[0]  # Get original base name
-                new_filename = f"{base_name}_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
+                new_filename = f"{base_name}_{instance.id}{ext}"
                 new_dir = f"/app/media/previews/{instance.id}"
                 new_path = f"{new_dir}/{new_filename}"
                 
@@ -1129,11 +1093,15 @@ def move_dataset_files(sender, instance, created, **kwargs):
             old_path = instance.readme_file.path
             if os.path.exists(old_path):
                 filename = os.path.basename(old_path)
-                ext = os.path.splitext(filename)[1]
+                name, ext = os.path.splitext(filename)
                 
-                # Generate new filename with dataset ID
-                base_name = os.path.splitext(filename)[0].split('_')[0]  # Get original base name
-                new_filename = f"{base_name}_{instance.id}_{uuid.uuid4().hex[:8]}{ext}"
+                # Extract base name without UUID
+                if '_' in name and len(name.split('_')[-1]) == 8:
+                    base_name = '_'.join(name.split('_')[:-1])
+                else:
+                    base_name = name
+                
+                new_filename = f"{base_name}_{instance.id}{ext}"
                 new_dir = f"/app/media/readmes/{instance.id}"
                 new_path = f"{new_dir}/{new_filename}"
                 
@@ -1142,6 +1110,80 @@ def move_dataset_files(sender, instance, created, **kwargs):
                 
                 instance.readme_file.name = f"readmes/{instance.id}/{new_filename}"
                 updated_fields.append('readme_file')
+        
+        if updated_fields:
+            instance.save(update_fields=updated_fields)
+
+
+@receiver(post_save, sender=DataRequest)
+def move_request_documents(sender, instance, created, **kwargs):
+    """Move request documents from temp folder to permanent location"""
+    if created:
+        updated_fields = []
+        
+        # Fix form_submission
+        if instance.form_submission and 'temp_' in instance.form_submission.name:
+            old_path = instance.form_submission.path
+            if os.path.exists(old_path):
+                filename = os.path.basename(old_path)
+                name, ext = os.path.splitext(filename)
+                
+                # Extract base name (remove temp prefix and UUID)
+                # Expected format: form_temp_a1b2c3_d4e5f6g7.pdf
+                # We want: form_123_d4e5f6g7.pdf
+                if '_temp_' in name:
+                    # Split at _temp_ and keep the part before and after
+                    parts = name.split('_temp_')
+                    if len(parts) == 2:
+                        prefix = parts[0]  # "form"
+                        rest = parts[1]    # "a1b2c3_d4e5f6g7"
+                        # Keep the last UUID part
+                        uuid_part = rest.split('_')[-1] if '_' in rest else rest
+                        base_name = f"{prefix}_{instance.id}_{uuid_part}"
+                    else:
+                        base_name = name
+                else:
+                    base_name = name
+                
+                new_filename = f"{base_name}{ext}"
+                new_dir = f"/app/media/request-documents/{instance.id}"
+                new_path = f"{new_dir}/{new_filename}"
+                
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.move(old_path, new_path)
+                
+                instance.form_submission.name = f"request-documents/{instance.id}/{new_filename}"
+                updated_fields.append('form_submission')
+        
+        # Fix ethical_approval_proof
+        if instance.ethical_approval_proof and 'temp_' in instance.ethical_approval_proof.name:
+            old_path = instance.ethical_approval_proof.path
+            if os.path.exists(old_path):
+                filename = os.path.basename(old_path)
+                name, ext = os.path.splitext(filename)
+                
+                # Extract base name (remove temp prefix and UUID)
+                if '_temp_' in name:
+                    parts = name.split('_temp_')
+                    if len(parts) == 2:
+                        prefix = parts[0]  # "ethical"
+                        rest = parts[1]    # "a1b2c3_d4e5f6g7"
+                        uuid_part = rest.split('_')[-1] if '_' in rest else rest
+                        base_name = f"{prefix}_{instance.id}_{uuid_part}"
+                    else:
+                        base_name = name
+                else:
+                    base_name = name
+                
+                new_filename = f"{base_name}{ext}"
+                new_dir = f"/app/media/request-documents/{instance.id}"
+                new_path = f"{new_dir}/{new_filename}"
+                
+                os.makedirs(new_dir, exist_ok=True)
+                shutil.move(old_path, new_path)
+                
+                instance.ethical_approval_proof.name = f"request-documents/{instance.id}/{new_filename}"
+                updated_fields.append('ethical_approval_proof')
         
         if updated_fields:
             instance.save(update_fields=updated_fields)

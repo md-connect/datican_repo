@@ -587,16 +587,13 @@
               <i data-lucide="file-text" class="w-4 h-4 md:w-5 md:h-5 text-accent mr-2 md:mr-3 flex-shrink-0"></i>
               <div class="min-w-0 flex-1">
                 <div class="font-medium text-sm md:text-base text-accent">Metadata File</div>
-                <div class="text-xs md:text-sm text-gray-600">
-                  {{ dataset.preview_file.name|cut:"previews/"|cut:"dataset_previews/"|truncatechars:40 }}
-                </div>
               </div>
               <a href="{{ dataset.preview_file.url }}" 
                 download
                 class="ml-2 px-3 py-1.5 bg-accent text-white text-sm rounded-lg hover:bg-accent/90 transition-colors flex items-center gap-1 whitespace-nowrap"
                 title="Download preview file">
                 <i data-lucide="download" class="w-4 h-4"></i>
-                <span class="hidden sm:inline">Download</span>
+                <span class="hidden sm:inline">Download Metadata</span>
               </a>
             </div>
             {% endif %}
@@ -770,7 +767,7 @@
           {% endif %}
         </div>
 
-        <!-- Data Preview Section - PRELOADED CONTENT -->
+        <!-- Data Preview Section -->
         <div id="dataPreview" class="p-3 md:p-4 hidden">
           {% if has_preview and not preview_error %}
           <!-- Table Container with Scroll -->
