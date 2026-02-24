@@ -41,7 +41,7 @@ def preview_upload_path(instance, filename):
     base_name = os.path.splitext(filename)[0][:30]  # Truncate long names
     safe_filename = f"{base_name}_{unique_id}{ext}"
     
-    return f"previews/{folder}/{safe_filename}"
+    return f"{folder}/{safe_filename}"
 
 def readme_upload_path(instance, filename):
     """Generate upload path for README files"""
@@ -60,7 +60,7 @@ def readme_upload_path(instance, filename):
     base_name = os.path.splitext(filename)[0][:30]  # Truncate long names
     safe_filename = f"{base_name}_{unique_id}{ext}"
     
-    return f"readmes/{folder}/{safe_filename}"
+    return f"{folder}/{safe_filename}"
 
 # Keep aliases for backward compatibility
 preview_file_path = preview_upload_path
@@ -1076,7 +1076,7 @@ def move_dataset_files(sender, instance, created, **kwargs):
                 os.makedirs(new_dir, exist_ok=True)
                 shutil.move(old_path, new_path)
                 
-                instance.preview_file.name = f"previews/{instance.id}/{new_filename}"
+                instance.preview_file.name = f"{instance.id}/{new_filename}"
                 updated_fields.append('preview_file')
                 
                 # Auto-detect preview type
@@ -1108,7 +1108,7 @@ def move_dataset_files(sender, instance, created, **kwargs):
                 os.makedirs(new_dir, exist_ok=True)
                 shutil.move(old_path, new_path)
                 
-                instance.readme_file.name = f"readmes/{instance.id}/{new_filename}"
+                instance.readme_file.name = f"{instance.id}/{new_filename}"
                 updated_fields.append('readme_file')
         
         if updated_fields:
@@ -1152,7 +1152,7 @@ def move_request_documents(sender, instance, created, **kwargs):
                 os.makedirs(new_dir, exist_ok=True)
                 shutil.move(old_path, new_path)
                 
-                instance.form_submission.name = f"request-documents/{instance.id}/{new_filename}"
+                instance.form_submission.name = f"{instance.id}/{new_filename}"
                 updated_fields.append('form_submission')
         
         # Fix ethical_approval_proof
