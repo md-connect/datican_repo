@@ -6,7 +6,9 @@ Please confirm your email by clicking the link below:
 
 {{ activate_url }}
 
-If you did not sign up, please ignore this email.
+This verification link will expire in {{ expiration_days }} day(s).
+
+If you did not sign up for this account, please ignore this email.
 
 Thanks,
-{{ site_name }}
+The {{ site_name }} Team
