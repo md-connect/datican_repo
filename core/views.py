@@ -13,19 +13,16 @@ from django.http import HttpResponseRedirect
 from django.db.models import Prefetch
 from .models import UserProfile
 from django.contrib.auth import update_session_auth_hash
-# views.py
 from django.conf import settings
 from django.shortcuts import redirect
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 import requests
 from urllib.parse import urlencode
-# core/views.py - UPDATE YOUR login_view
 from allauth.account.views import LoginView
 from django.urls import reverse
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
-# core/views.py - UPDATE YOUR signup_view
 from allauth.account.views import SignupView
 
 class CustomSignupView(SignupView):

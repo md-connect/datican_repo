@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Verify Your Email - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white py-8 px-4 shadow-xl rounded-lg sm:px-10">
+            <!-- Mail Icon -->
+            <div class="flex justify-center mb-6">
+                <div class="bg-accent/10 rounded-full p-3">
+                    <svg class="w-12 h-12 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <h2 class="text-center text-3xl font-bold text-primary mb-4">
+                Verify Your Email Address
+            </h2>
+
+            <div class="bg-blue-50 border-l-4 border-accent p-4 mb-6">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-primary">
+                            We've sent a verification email to <strong>{{ request.session.email|default:"your email address" }}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 text-gray-600">
+                <p class="text-sm">
+                    To complete your registration, please click the verification link in the email we just sent you.
+                </p>
+
+                <div class="bg-gray-50 rounded-lg p-4 text-sm">
+                    <p class="font-medium text-primary mb-2">⏰ Link Expiration:</p>
+                    <p>The verification link will expire in <span class="font-bold text-accent">1 hour</span>.</p>
+                </div>
+
+                <div class="bg-yellow-50 rounded-lg p-4 text-sm">
+                    <p class="font-medium text-primary mb-2">📫 Didn't receive the email?</p>
+                    <ul class="list-disc list-inside space-y-1 text-gray-600">
+                        <li>Check your spam/junk folder</li>
+                        <li>Make sure you entered the correct email address</li>
+                        <li>Wait a few minutes – emails can sometimes be delayed</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <form method="post" action="{% url 'account_email' %}">
+                    {% csrf_token %}
+                    <button type="submit" 
+                            class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent">
+                        Resend Verification Email
+                    </button>
+                </form>
+            </div>
+
+            <div class="mt-6 text-center">
+                <a href="{% url 'home' %}" class="text-sm text-primary hover:text-accent">
+                    ← Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

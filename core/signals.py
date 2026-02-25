@@ -5,6 +5,10 @@ from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
 from allauth.account.signals import email_confirmed
 from core.utils import send_welcome_email
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+
+
 
 User = get_user_model()
 
@@ -16,6 +20,27 @@ def handle_email_confirmation(sender, request, email_address, **kwargs):
     user = email_address.user
     send_welcome_email(user, social_signup=False)
 
+@receiver(email_confirmed)
+def send_welcome_email(sender, request, email_address, **kwargs):
+    user = email_address.user
+    subject = f"Welcome to {settings.SITE_NAME}! 🎉"
+    
+    context = {
+        'user': user,
+        'site_name': settings.SITE_NAME,
+        'site_url': settings.SITE_URL,
+        'support_email': settings.SUPPORT_EMAIL,
+    }
+    
+    html_message = render_to_string('account/email/welcome_email.html', context)
+    send_mail(
+        subject=subject,
+        message='',  # Plain text version optional
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        html_message=html_message,
+    )
+    
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
