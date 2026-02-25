@@ -180,7 +180,7 @@ ANYMAIL = {
 }
 
 # Default email settings
-DEFAULT_FROM_EMAIL = "no-reply@datican.org"  # Default Resend test domain
+DEFAULT_FROM_EMAIL = "no-reply@repo.datican.org"  # Default Resend test domain
 SERVER_EMAIL = DEFAULT_FROM_EMAIL  # For error messages
 EMAIL_SUBJECT_PREFIX = "[DATICAN] "
 
@@ -236,9 +236,13 @@ SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', 'support@datican.org')
 AUTH_USER_MODEL = 'accounts.CustomUser'
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_LOGIN_METHODS = {'email'}  
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
-ACCOUNT_EMAIL_VERIFICATION = 'none' 
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory' 
 
 # Session settings
 SESSION_COOKIE_AGE = 28800  # 8 hours 

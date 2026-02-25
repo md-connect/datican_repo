@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Welcome to DATICAN Repository</title>
+
+<style>
+table { border-collapse: collapse; }
+img { border: 0; }
+a { text-decoration: none; }
+
+@media only screen and (max-width:600px) {
+    .container { width:100% !important; }
+    .padding { padding:24px !important; }
+}
+</style>
+</head>
+
+<body style="margin:0; padding:0; background:#F8FAFC; font-family:Arial, Helvetica, sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC">
+<tr>
+<td align="center">
+
+<!-- Container -->
+<table width="620" class="container" cellpadding="0" cellspacing="0"
+       style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
+
+    <!-- Header -->
+    <tr>
+        <td bgcolor="#0F172A" style="padding:40px 32px; text-align:center;">
+            <div style="font-size:26px; font-weight:bold; color:#FFFFFF;">
+                Welcome to DATICAN Repository! 🎉
+            </div>
+            <div style="font-size:16px; color:#CBD5F5; margin-top:8px;">
+                Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+            </div>
+        </td>
+    </tr>
+
+    <!-- Body -->
+    <tr>
+        <td class="padding" style="padding:40px 32px; color:#020617;">
+
+            <!-- Success Badge -->
+            <table cellpadding="0" cellspacing="0" align="center"
+                   style="background:#ECFDF3; border:1px solid #A7F3D0;
+                          border-radius:999px; margin-bottom:28px;">
+                <tr>
+                    <td style="padding:10px 18px; font-size:14px; font-weight:bold; color:#065F46;">
+                        ✅ Email Verified Successfully
+                    </td>
+                </tr>
+            </table>
+
+            <p style="font-size:16px; color:#475569; line-height:1.7; margin:0 0 20px;">
+                {% if social_signup %}
+                    Thank you for signing up with Google! Your account has been created and your email has been verified.
+                {% else %}
+                    Thank you for verifying your email address! Your account is now fully activated.
+                {% endif %}
+                You now have access to all features of the DATICAN Repository.
+            </p>
+
+            <!-- Account Overview -->
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="background:#F8FAFC; border:1px solid #E2E8F0;
+                          border-left:4px solid #0F172A;
+                          border-radius:12px; margin:32px 0;">
+                <tr>
+                    <td style="padding:24px 32px;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td colspan="2" style="font-size:18px; font-weight:bold; padding-bottom:16px;">
+                                    Your Account Overview
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B; width:120px;">Email</td>
+                                <td style="font-size:16px;">{{ user.email }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B;">Name</td>
+                                <td style="font-size:16px;">{{ user.first_name }} {{ user.last_name }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B;">Member Since</td>
+                                <td style="font-size:16px;">{{ user.date_joined|date:"F d, Y" }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B;">Account Status</td>
+                                <td style="font-size:16px;">
+                                    <span style="color:#10b981;">✓ Active & Verified</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- What You Can Do -->
+            <h3 style="font-size:18px; margin:32px 0 16px; color:#0F172A;">
+                🚀 What You Can Do Now
+            </h3>
+
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="padding:8px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td width="40" valign="top" style="font-size:20px;">📊</td>
+                                <td style="font-size:15px; color:#475569;">
+                                    <strong>Browse Datasets</strong> - Explore our collection of medical imaging datasets
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td width="40" valign="top" style="font-size:20px;">🔍</td>
+                                <td style="font-size:15px; color:#475569;">
+                                    <strong>Request Access</strong> - Apply for datasets that match your research
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td width="40" valign="top" style="font-size:20px;">⭐</td>
+                                <td style="font-size:15px; color:#475569;">
+                                    <strong>Rate & Review</strong> - Share your feedback on datasets
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:8px 0;">
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td width="40" valign="top" style="font-size:20px;">📁</td>
+                                <td style="font-size:15px; color:#475569;">
+                                    <strong>Create Collections</strong> - Save datasets for later reference
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- CTA Buttons -->
+            <div style="text-align:center; margin:40px 0 20px;">
+                <a href="{{ site_url }}/datasets/"
+                   style="display:inline-block; background:#E11D48; color:#FFFFFF;
+                          padding:14px 32px; border-radius:10px;
+                          font-size:16px; font-weight:bold; margin:0 8px;">
+                    Browse Datasets
+                </a>
+                
+                <a href="{{ site_url }}{% url 'profile' %}"
+                   style="display:inline-block; background:#FFFFFF; color:#E11D48;
+                          padding:14px 32px; border-radius:10px; border:2px solid #E11D48;
+                          font-size:16px; font-weight:bold; margin:0 8px;">
+                    View Profile
+                </a>
+            </div>
+
+            <!-- Quick Links -->
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="background:#F8FAFC; border-radius:12px; margin:32px 0 0; padding:20px;">
+                <tr>
+                    <td style="text-align:center;">
+                        <p style="font-size:14px; color:#475569; margin:0 0 10px;">
+                            <strong>Quick Links:</strong>
+                        </p>
+                        <div>
+                            <a href="{{ site_url }}/datasets/my-requests/" style="color:#E11D48; margin:0 10px;">My Requests</a>
+                            <a href="{{ site_url }}/datasets/" style="color:#E11D48; margin:0 10px;">All Datasets</a>
+                            <a href="{{ site_url }}/faq/" style="color:#E11D48; margin:0 10px;">FAQ</a>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Need Help -->
+            <p style="font-size:14px; color:#64748B; text-align:center; margin:32px 0 0;">
+                Questions? Contact our support team at 
+                <a href="mailto:{{ support_email }}" style="color:#E11D48;">{{ support_email }}</a>
+            </p>
+
+        </td>
+    </tr>
+
+    <!-- Footer -->
+    <tr>
+        <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
+            <div style="font-weight:bold; color:#FFFFFF;">
+                {{ site_name }}
+            </div>
+
+            <p style="font-size:14px; margin:10px 0;">
+                <a href="{{ site_url }}" style="color:#CBD5F5;">Visit Portal</a> ·
+                <a href="mailto:{{ support_email }}" style="color:#CBD5F5;">Contact Support</a>
+            </p>
+
+            <p style="font-size:12px;">
+                © {% now "Y" %} {{ site_name }} · All rights reserved.
+            </p>
+        </td>
+    </tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>

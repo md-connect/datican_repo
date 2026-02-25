@@ -5,6 +5,7 @@ WORKDIR /app
 # Install system dependencies for mysqlclient
 RUN apt-get update && apt-get install -y \
     default-libmysqlclient-dev \
+    default-mysql-client \
     build-essential \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*

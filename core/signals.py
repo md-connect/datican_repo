@@ -3,9 +3,18 @@ from django.dispatch import receiver
 from .models import UserProfile
 from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
-
+from allauth.account.signals import email_confirmed
+from core.utils import send_welcome_email
 
 User = get_user_model()
+
+@receiver(email_confirmed)
+def handle_email_confirmation(sender, request, email_address, **kwargs):
+    """
+    Send welcome email when a user confirms their email address
+    """
+    user = email_address.user
+    send_welcome_email(user, social_signup=False)
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

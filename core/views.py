@@ -31,24 +31,30 @@ from allauth.account.views import SignupView
 class CustomSignupView(SignupView):
     """Custom signup view that uses Allauth but our custom template"""
     template_name = 'core/signup.html'
-    form_class = CustomAllauthSignupForm  # Use custom form
+    form_class = CustomAllauthSignupForm
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Add your custom context variables
         context['default_redirect'] = reverse('redirect_after_login')
         return context
     
+    def form_valid(self, form):
+        # This saves the user and sends verification email
+        response = super().form_valid(form)
+        
+        # Add a message to tell user to check email
+        messages.success(
+            self.request, 
+            'You have successfully registered on DATICAN Repository! '
+            'Please check your email to verify your account. '
+            'The verification link will expire in 1 hour.'
+        )
+        
+        return response
+    
     def get_success_url(self):
-        # Get the 'next' parameter from POST or GET
-        next_url = self.request.POST.get('next') or self.request.GET.get('next') or ''
-        
-        # Validate the next URL
-        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts=None):
-            return next_url
-        
-        # Otherwise, use our custom redirect_after_login
-        return reverse('redirect_after_login')
+        # After signup, redirect to a "please verify" page
+        return reverse('account_email_verification_sent')
 
 class CustomLoginView(LoginView):
     """Custom login view that uses Allauth but our custom template"""
@@ -171,6 +177,9 @@ def home(request):
         'dataset_count': dataset_count,
     })
 
+def verification_sent(request):
+    """Page shown after registration, asking user to verify email"""
+    return render(request, 'core/verification_sent.html')
 
 @login_required
 def profile_view(request):
@@ -227,6 +236,16 @@ def social_login_callback(request):
         request.session['social_login_next'] = next_url
     
     ret = complete_social_login(request)
+    
+    # Check if this was a new social signup
+    if request.session.pop('social_signup_complete', False):
+        messages.success(
+            request, 
+            'Welcome to DATICAN Repository! Please check your email to verify your account. '
+            'The verification link will expire in 1 hour.'
+        )
+        return redirect('account_email_verification_sent')
+    
     if isinstance(ret, HttpResponseRedirect):
         # Check if we have a stored next URL
         next_url = request.session.pop('social_login_next', None)
@@ -236,7 +255,7 @@ def social_login_callback(request):
     
     messages.error(request, "Error during social login")
     return redirect('login')
-
+    
 @login_required
 def change_password(request):
     """Simple password change view"""

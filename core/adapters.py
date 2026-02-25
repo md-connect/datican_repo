@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from accounts.models import CustomUser
 from allauth.account.adapter import DefaultAccountAdapter
+from core.utils import send_welcome_email  # Import your welcome email function
 import logging
 
 logger = logging.getLogger(__name__)
@@ -104,4 +105,31 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             user.profile_picture = profile_picture
 
         user.save()
+        
+        # Check if this is a new user (just created via social login)
+        if sociallogin.is_existing is False:
+            # This is a first-time Google login (registration)
+            logger.info(f"New social signup: {user.email}")
+            
+            # Google already verified the email, so mark as verified immediately
+            email_address = user.emailaddress_set.first()
+            if email_address:
+                email_address.verified = True
+                email_address.save()
+                logger.info(f"Email {user.email} marked as verified for social signup")
+            
+            # Send welcome email directly (no verification needed)
+            try:
+                send_welcome_email(user, social_signup=True)
+                logger.info(f"Welcome email sent to {user.email}")
+            except Exception as e:
+                logger.error(f"Failed to send welcome email to {user.email}: {e}")
+            
+            # Optional: Store a flag in session for a success message
+            request.session['social_signup_complete'] = True
+        
         return user
+
+    def get_connect_redirect_url(self, request, socialaccount):
+        """Return URL to redirect to after connecting a social account"""
+        return '/'
