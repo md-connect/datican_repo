@@ -77,7 +77,6 @@ def dataset_list(request):
     # Get filter parameters from request
     modality = request.GET.getlist('modality')
     format = request.GET.getlist('format')
-    dimension = request.GET.getlist('dimension')
     body_part = request.GET.get('body_part', '').strip()
     min_subjects = request.GET.get('min_subjects')
     max_subjects = request.GET.get('max_subjects')
@@ -114,10 +113,6 @@ def dataset_list(request):
         for fmt in format:
             format_query |= Q(format__iexact=fmt)
         datasets = datasets.filter(format_query)
-    
-    # Apply dimension filter
-    if dimension:
-        datasets = datasets.filter(dimension__in=dimension)
     
     # Apply body part filter
     if body_part:

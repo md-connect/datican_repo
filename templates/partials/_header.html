@@ -31,13 +31,33 @@
             style="display: none;"
           >
             <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Our Mission</a>
-            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Team</a>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Our Team</a>
             <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Partners</a>
           </div>
         </div>
 
-        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Courses</a>
-        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Discussions</a>
+        <div class="relative group" x-data="{ aboutOpen: false }">
+          <button
+            @mouseenter="aboutOpen = true"
+            @mouseleave="aboutOpen = false"
+            class="text-dark hover:text-accent transition-colors font-medium"
+          >
+            Donation ▾
+          </button>
+          <div
+            x-show="aboutOpen"
+            @mouseenter="aboutOpen = true"
+            @mouseleave="aboutOpen = false"
+            class="absolute top-full left-0 w-48 bg-white shadow-lg rounded-lg py-2 mt-1 z-50"
+            x-cloak
+            style="display: none;"
+          >
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Donate Datasets</a>
+            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Donate Cash</a>
+          </div>
+        </div>
+
+        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Contact Info</a>
       </div>
 
       <!-- User Actions -->
