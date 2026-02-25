@@ -49,12 +49,11 @@ def handle_email_confirmation(sender, request, email_address, **kwargs):
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        UserProfile.objects.create(user=instance)
-        logger.info(f"User profile created for {instance.email}")
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+        profile, created = UserProfile.objects.get_or_create(user=instance)
+        if created:
+            logger.info(f"UserProfile created for {instance.email}")
+        else:
+            logger.info(f"UserProfile already exists for {instance.email}")
 
 @receiver(user_signed_up)
 def populate_profile(sociallogin, user, **kwargs):
