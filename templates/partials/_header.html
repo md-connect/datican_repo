@@ -14,21 +14,21 @@
         <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Models</a>
         
         <!-- Fixed Dropdown -->
-        <div class="relative group" x-data="{ aboutOpen: false }">
+        <div class="relative" x-data="{ aboutOpen: false, timeout: null }">
           <button
-            @mouseenter="aboutOpen = true"
-            @mouseleave="aboutOpen = false"
+            @mouseenter="clearTimeout(timeout); aboutOpen = true"
+            @mouseleave="timeout = setTimeout(() => aboutOpen = false, 200)"
             class="text-dark hover:text-accent transition-colors font-medium"
           >
             About Us ▾
           </button>
+          
           <div
             x-show="aboutOpen"
-            @mouseenter="aboutOpen = true"
-            @mouseleave="aboutOpen = false"
+            @mouseenter="clearTimeout(timeout)"
+            @mouseleave="timeout = setTimeout(() => aboutOpen = false, 200)"
             class="absolute top-full left-0 w-48 bg-white shadow-lg rounded-lg py-2 mt-1 z-50"
             x-cloak
-            style="display: none;"
           >
             <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Our Mission</a>
             <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Our Team</a>
@@ -36,21 +36,21 @@
           </div>
         </div>
 
-        <div class="relative group" x-data="{ aboutOpen: false }">
+        <div class="relative" x-data="{ donationOpen: false, timeout: null }">
           <button
-            @mouseenter="aboutOpen = true"
-            @mouseleave="aboutOpen = false"
+            @mouseenter="clearTimeout(timeout); donationOpen = true"
+            @mouseleave="timeout = setTimeout(() => donationOpen = false, 200)"
             class="text-dark hover:text-accent transition-colors font-medium"
           >
             Donation ▾
           </button>
+          
           <div
-            x-show="aboutOpen"
-            @mouseenter="aboutOpen = true"
-            @mouseleave="aboutOpen = false"
+            x-show="donationOpen"
+            @mouseenter="clearTimeout(timeout)"
+            @mouseleave="timeout = setTimeout(() => donationOpen = false, 200)"
             class="absolute top-full left-0 w-48 bg-white shadow-lg rounded-lg py-2 mt-1 z-50"
             x-cloak
-            style="display: none;"
           >
             <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Donate Datasets</a>
             <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Donate Cash</a>
