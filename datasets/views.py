@@ -229,7 +229,6 @@ def dataset_list(request):
         'current_filters': {
             'modality': modality,
             'format': format,
-            'dimension': dimension,
             'body_part': body_part,
             'min_subjects': min_subjects,
             'max_subjects': max_subjects,
@@ -247,7 +246,6 @@ def dataset_list(request):
         # Pass the choices for the filter template
         'modality_choices': Dataset.MODALITY_CHOICES,
         'format_choices': Dataset.FORMAT_CHOICES,
-        'dimension_choices': Dataset.DIMENSION_CHOICES,
     }
     
     return render(request, 'datasets/list.html', context)
