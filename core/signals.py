@@ -19,6 +19,7 @@ def handle_email_confirmation(sender, request, email_address, **kwargs):
     Send welcome email when a user confirms their email address
     """
     user = email_address.user
+    logger.info(f"✅ email_confirmed signal triggered for {email_address.email}")
     logger.info(f"Email confirmed for user: {user.email}")
     
     subject = f"Welcome to {settings.SITE_NAME}! 🎉"
