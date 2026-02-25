@@ -4,7 +4,7 @@ from .models import UserProfile
 from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 import logging
@@ -20,7 +20,6 @@ def handle_email_confirmation(sender, request, email_address, **kwargs):
     """
     user = email_address.user
     logger.info(f"✅ email_confirmed signal triggered for {email_address.email}")
-    logger.info(f"Email confirmed for user: {user.email}")
     
     subject = f"Welcome to {settings.SITE_NAME}! 🎉"
     
@@ -35,32 +34,42 @@ def handle_email_confirmation(sender, request, email_address, **kwargs):
         html_message = render_to_string('account/email/welcome_email.html', context)
         text_message = strip_tags(html_message)
         
-        send_mail(
+        email = EmailMultiAlternatives(
             subject=subject,
-            message=text_message,  # Add plain text version
+            body=text_message,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            html_message=html_message,
+            to=[user.email],
         )
+        email.attach_alternative(html_message, "text/html")
+        email.send()
         logger.info(f"Welcome email sent to {user.email}")
     except Exception as e:
         logger.error(f"Failed to send welcome email to {user.email}: {e}")
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
+    """
+    Create or get user profile when user is saved.
+    Uses get_or_create to avoid duplicate key errors.
+    """
+    profile, created = UserProfile.objects.get_or_create(user=instance)
     if created:
-        profile, created = UserProfile.objects.get_or_create(user=instance)
-        if created:
-            logger.info(f"UserProfile created for {instance.email}")
-        else:
-            logger.info(f"UserProfile already exists for {instance.email}")
+        logger.info(f"User profile created for {instance.email}")
+    else:
+        logger.info(f"User profile already exists for {instance.email}")
 
 @receiver(user_signed_up)
-def populate_profile(sociallogin, user, **kwargs):
+def populate_profile(sender, request, user, sociallogin=None, **kwargs):
     """
-    Handle Google signup - populate user profile with Google data
+    Handle user signup - populates profile based on signup type.
+    For social logins (Google), populate from Google data.
+    For email signups, just ensure profile exists.
     """
-    if sociallogin.account.provider == 'google':
+    # Always ensure profile exists (though post_save should handle this)
+    profile, created = UserProfile.objects.get_or_create(user=user)
+    
+    # Only process social login data if this is a social signup
+    if sociallogin and sociallogin.account.provider == 'google':
         data = sociallogin.account.extra_data
         picture = data.get('picture')
         
@@ -69,10 +78,11 @@ def populate_profile(sociallogin, user, **kwargs):
         user.last_name = data.get('family_name', '')
         user.save()
         
-        # Create or update profile with avatar
-        profile, created = UserProfile.objects.get_or_create(user=user)
+        # Update profile with avatar
         if picture:
             profile.avatar = picture
             profile.save()
         
         logger.info(f"Google signup processed for {user.email}")
+    else:
+        logger.info(f"Email signup processed for {user.email}")
