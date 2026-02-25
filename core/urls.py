@@ -21,5 +21,4 @@ urlpatterns = [
     path('profile/password/', views.change_password, name='change_password'),
     path('logout/', LogoutView.as_view(next_page='/'), name='account_logout'),
     path('accounts/3rdparty/signup/', views.social_login_callback, name='social_callback'),
-    path('accounts/verification-sent/', views.verification_sent, name='account_email_verification_sent'),
 ]
