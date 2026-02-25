@@ -1,14 +1,15 @@
-from allauth.account.signals import user_signed_up
+from allauth.account.signals import user_signed_up, email_confirmed
 from django.dispatch import receiver
 from .models import UserProfile
 from django.db.models.signals import post_save
 from django.contrib.auth import get_user_model
-from allauth.account.signals import email_confirmed
-from core.utils import send_welcome_email
+from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+import logging
 
-
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -18,11 +19,8 @@ def handle_email_confirmation(sender, request, email_address, **kwargs):
     Send welcome email when a user confirms their email address
     """
     user = email_address.user
-    send_welcome_email(user, social_signup=False)
-
-@receiver(email_confirmed)
-def send_welcome_email(sender, request, email_address, **kwargs):
-    user = email_address.user
+    logger.info(f"Email confirmed for user: {user.email}")
+    
     subject = f"Welcome to {settings.SITE_NAME}! 🎉"
     
     context = {
@@ -32,37 +30,49 @@ def send_welcome_email(sender, request, email_address, **kwargs):
         'support_email': settings.SUPPORT_EMAIL,
     }
     
-    html_message = render_to_string('account/email/welcome_email.html', context)
-    send_mail(
-        subject=subject,
-        message='',  # Plain text version optional
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        html_message=html_message,
-    )
-    
+    try:
+        html_message = render_to_string('account/email/welcome_email.html', context)
+        text_message = strip_tags(html_message)
+        
+        send_mail(
+            subject=subject,
+            message=text_message,  # Add plain text version
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            html_message=html_message,
+        )
+        logger.info(f"Welcome email sent to {user.email}")
+    except Exception as e:
+        logger.error(f"Failed to send welcome email to {user.email}: {e}")
+
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
+        logger.info(f"User profile created for {instance.email}")
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
-    
+
 @receiver(user_signed_up)
 def populate_profile(sociallogin, user, **kwargs):
-    data = sociallogin.account.extra_data
-    picture = data.get('picture')
-    name = data.get('name', '').split()
-    first_name = name[0] if name else ''
-    last_name = name[1] if len(name) > 1 else ''
-    
-    user.first_name = first_name
-    user.last_name = last_name
-    user.save()
-
-    UserProfile.objects.get_or_create(user=user, defaults={
-        'avatar': picture,
-        # You can save institution later via profile edit
-    })
+    """
+    Handle Google signup - populate user profile with Google data
+    """
+    if sociallogin.account.provider == 'google':
+        data = sociallogin.account.extra_data
+        picture = data.get('picture')
+        
+        # Set name from Google data
+        user.first_name = data.get('given_name', '')
+        user.last_name = data.get('family_name', '')
+        user.save()
+        
+        # Create or update profile with avatar
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        if picture:
+            profile.avatar = picture
+            profile.save()
+        
+        logger.info(f"Google signup processed for {user.email}")

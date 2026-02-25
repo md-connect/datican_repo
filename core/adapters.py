@@ -9,6 +9,7 @@ from allauth.account.adapter import DefaultAccountAdapter
 from core.utils import send_welcome_email  # Import your welcome email function
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 class CustomAccountAdapter(DefaultAccountAdapter):
