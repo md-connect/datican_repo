@@ -476,11 +476,59 @@
                         style="display: none;"
                     >
                         <a href="#" class="block px-4 py-2 text-sm rounded-lg hover:bg-gray-100">Our Mission</a>
-                        <a href="#" class="block px-4 py-2 text-sm rounded-lg hover:bg-gray-100">Team</a>
+                        <a href="#" class="block px-4 py-2 text-sm rounded-lg hover:bg-gray-100">Our Team</a>
                         <a href="#" class="block px-4 py-2 text-sm rounded-lg hover:bg-gray-100">Partners</a>
                     </div>
                 </div>
             </div>
+
+            <!-- Donation Section (Visible to all) -->
+            <div class="pt-2 border-t">
+                <div class="relative" x-data="{ donationOpen: false }">
+                    <button
+                        @click="donationOpen = !donationOpen"
+                        class="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 hover:text-primary group"
+                    >
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span x-show="!collapsed" class="ml-3 whitespace-nowrap overflow-hidden">Donation</span>
+                        </div>
+                        <svg x-show="!collapsed" class="h-4 w-4 flex-shrink-0 transition-transform" :class="{ 'rotate-180': donationOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+                    <div
+                        x-show="donationOpen && !collapsed"
+                        x-cloak
+                        class="ml-11 mt-1 space-y-1"
+                        style="display: none;"
+                    >
+                        <a href="#" class="block px-4 py-2 text-sm rounded-lg hover:bg-gray-100">Donate Datasets</a>
+                        <a href="#" class="block px-4 py-2 text-sm rounded-lg hover:bg-gray-100">Donate Cash</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Info (Visible to all) -->
+            <a 
+                href="#" 
+                class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors text-gray-700 hover:text-primary group"
+                :title="collapsed ? 'Contact' : ''"
+            >
+                <svg class="h-5 w-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 10v2a6 6 0 01-12 0v-2a6 6 0 1112 0z M6 18h12 M9 21h6" />
+                </svg>
+                <span x-show="!collapsed" class="ml-3 whitespace-nowrap overflow-hidden">Contact</span>
+                
+                <!-- Tooltip for collapsed state -->
+                <div x-show="collapsed" x-cloak class="hidden">
+                    <div class="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                        Contact
+                    </div>
+                </div>
+            </a>
 
             <!-- Authentication Section (at the bottom) -->
             <div class="pt-4 border-t">
