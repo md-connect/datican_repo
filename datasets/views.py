@@ -72,6 +72,192 @@ def is_superuser(user):
 
 
 # ==================== DATASET LISTING AND DETAIL VIEWS ====================
+def dataset_list(request):
+    # Get filter parameters from request
+    modality = request.GET.getlist('modality')
+    format = request.GET.getlist('format')
+    dimension = request.GET.getlist('dimension')
+    body_part = request.GET.get('body_part', '').strip()
+    min_subjects = request.GET.get('min_subjects')
+    max_subjects = request.GET.get('max_subjects')
+    min_rating = request.GET.get('min_rating', '0')
+    upload_date = request.GET.get('upload_date', 'all')
+    popularity = request.GET.get('popularity', 'all')
+    sort = request.GET.get('sort', 'newest')
+    search_query = request.GET.get('q', '').strip()
+
+    # Start with base queryset
+    datasets = Dataset.objects.prefetch_related(
+        Prefetch('thumbnails', 
+                queryset=Thumbnail.objects.filter(is_primary=True), 
+                to_attr='primary_thumbnails')
+    )
+
+    # Apply search filter
+    if search_query:
+        datasets = datasets.filter(
+            Q(title__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(body_part__icontains=search_query) |
+            Q(modality__icontains=search_query)
+        )
+
+    # Apply modality filter
+    if modality:
+        datasets = datasets.filter(modality__in=modality)
+    
+    # Apply format filter
+    if format:
+        # Handle both uppercase values from choices and case variations
+        format_query = Q()
+        for fmt in format:
+            format_query |= Q(format__iexact=fmt)
+        datasets = datasets.filter(format_query)
+    
+    # Apply dimension filter
+    if dimension:
+        datasets = datasets.filter(dimension__in=dimension)
+    
+    # Apply body part filter
+    if body_part:
+        datasets = datasets.filter(body_part__icontains=body_part)
+    
+    # Apply number of subjects filter
+    if min_subjects:
+        try:
+            datasets = datasets.filter(no_of_subjects__gte=int(min_subjects))
+        except ValueError:
+            pass
+    
+    if max_subjects:
+        try:
+            datasets = datasets.filter(no_of_subjects__lte=int(max_subjects))
+        except ValueError:
+            pass
+    
+    # Apply rating filter
+    try:
+        min_rating_value = float(min_rating)
+        if min_rating_value > 0:
+            datasets = datasets.filter(rating__gte=min_rating_value)
+    except ValueError:
+        pass
+    
+    # Apply upload date filter
+    if upload_date != 'all':
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        now = timezone.now()
+        if upload_date == 'today':
+            datasets = datasets.filter(upload_date__date=now.date())
+        elif upload_date == 'week':
+            week_ago = now - timedelta(days=7)
+            datasets = datasets.filter(upload_date__gte=week_ago)
+        elif upload_date == 'month':
+            month_ago = now - timedelta(days=30)
+            datasets = datasets.filter(upload_date__gte=month_ago)
+        elif upload_date == 'year':
+            year_ago = now - timedelta(days=365)
+            datasets = datasets.filter(upload_date__gte=year_ago)
+    
+    # Apply popularity filter
+    if popularity != 'all':
+        if popularity == 'trending':
+            datasets = datasets.filter(download_count__gte=100)
+        elif popularity == 'popular':
+            datasets = datasets.filter(download_count__gte=500)
+        elif popularity == 'viral':
+            datasets = datasets.filter(download_count__gte=1000)
+    
+    # Apply sorting
+    if sort == 'custom':
+        datasets = datasets.order_by('display_order', 'title')
+    elif sort == 'newest':
+        datasets = datasets.order_by('-upload_date')
+    elif sort == 'oldest':
+        datasets = datasets.order_by('upload_date')
+    elif sort == 'rating_high':
+        datasets = datasets.order_by('-rating')
+    elif sort == 'rating_low':
+        datasets = datasets.order_by('rating')
+    elif sort == 'downloads':
+        datasets = datasets.order_by('-download_count')
+    elif sort == 'title_asc':
+        datasets = datasets.order_by('title')
+    elif sort == 'title_desc':
+        datasets = datasets.order_by('-title')
+    elif sort == 'updated':
+        datasets = datasets.order_by('-update_date')
+    else:  
+        datasets = datasets.order_by('display_order', 'title')
+    
+    # Pagination
+    paginator = Paginator(datasets, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get available years for filter (optional, if you want to keep this)
+    available_years = Dataset.objects.dates('upload_date', 'year').order_by('-upload_date__year')
+    
+    # Prepare URL parameters for templates
+    url_params = request.GET.copy()
+    
+    # Create versions without specific parameters
+    url_params_no_page = request.GET.copy()
+    if 'page' in url_params_no_page:
+        url_params_no_page.pop('page')
+    
+    url_params_no_body_part = request.GET.copy()
+    if 'body_part' in url_params_no_body_part:
+        url_params_no_body_part.pop('body_part')
+    
+    # Create URL parameters for removing each modality
+    modality_removal_urls = {}
+    if 'modality' in request.GET:
+        modalities = request.GET.getlist('modality')
+        for modality in modalities:
+            # Create a copy of GET parameters
+            params = request.GET.copy()
+            # Get current modalities list
+            current_modalities = params.getlist('modality')
+            # Remove this specific modality
+            if modality in current_modalities:
+                current_modalities.remove(modality)
+                # Update the parameters
+                params.setlist('modality', current_modalities)
+            # Store the URL
+            modality_removal_urls[modality] = f"?{params.urlencode()}" if params else ""
+    
+    context = {
+        'datasets': page_obj,
+        'available_years': available_years,
+        'current_filters': {
+            'modality': modality,
+            'format': format,
+            'dimension': dimension,
+            'body_part': body_part,
+            'min_subjects': min_subjects,
+            'max_subjects': max_subjects,
+            'min_rating': min_rating,
+            'upload_date': upload_date,
+            'popularity': popularity,
+            'sort': sort,
+            'q': search_query
+        },
+        # Pass URL parameters
+        'url_params': url_params,
+        'url_params_no_page': url_params_no_page,
+        'url_params_no_body_part': url_params_no_body_part,
+        'modality_removal_urls': modality_removal_urls,
+        # Pass the choices for the filter template
+        'modality_choices': Dataset.MODALITY_CHOICES,
+        'format_choices': Dataset.FORMAT_CHOICES,
+        'dimension_choices': Dataset.DIMENSION_CHOICES,
+    }
+    
+    return render(request, 'datasets/list.html', context)
+
 
 def dataset_list(request):
     # Get filter parameters from request
