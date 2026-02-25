@@ -167,7 +167,9 @@ def dataset_list(request):
             datasets = datasets.filter(download_count__gte=1000)
     
     # Apply sorting
-    if sort == 'newest':
+    if sort == 'custom':
+        datasets = datasets.order_by('display_order', 'title')
+    elif sort == 'newest':
         datasets = datasets.order_by('-upload_date')
     elif sort == 'oldest':
         datasets = datasets.order_by('upload_date')
@@ -183,9 +185,9 @@ def dataset_list(request):
         datasets = datasets.order_by('-title')
     elif sort == 'updated':
         datasets = datasets.order_by('-update_date')
-    else:  # relevance or default
-        datasets = datasets.order_by('-upload_date')  # Default to newest
-    
+    else:  
+        datasets = datasets.order_by('display_order', 'title') 
+
     # Pagination
     paginator = Paginator(datasets, 12)
     page_number = request.GET.get('page')

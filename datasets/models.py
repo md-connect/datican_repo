@@ -319,6 +319,7 @@ class Dataset(models.Model):
         default=0,
         help_text="Number of subjects/patients in the dataset"
     )
+    display_order = models.IntegerField(default=0, help_text="Custom display order (lower numbers appear first)")
     upload_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
     rating = models.FloatField(
