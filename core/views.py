@@ -24,6 +24,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from allauth.account.views import SignupView
+from allauth.account.views import ConfirmEmailView 
 
 class CustomSignupView(SignupView):
     """Custom signup view that uses Allauth but our custom template"""
@@ -83,6 +84,22 @@ class CustomLoginView(LoginView):
         
         # Otherwise, use our custom redirect_after_login
         return reverse('redirect_after_login')
+
+class CustomConfirmEmailView(ConfirmEmailView):
+    """Custom email confirmation view that redirects already authenticated users"""
+    
+    def get(self, *args, **kwargs):
+        # If user is already authenticated (verified), send them to home
+        if self.request.user.is_authenticated:
+            messages.success(self.request, 'Your email has already been verified!')
+            return redirect('home')
+        return super().get(*args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Add any custom context if needed
+        context['site_name'] = settings.SITE_NAME
+        return context
 
 def google_login(request):
     # Redirect to Google OAuth2

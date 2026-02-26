@@ -12,6 +12,7 @@ urlpatterns = [
     # Override Allauth's default login/signup with our custom views
     path('accounts/login/', CustomLoginView.as_view(), name='account_login'),
     path('accounts/signup/', CustomSignupView.as_view(), name='account_signup'),
+    path('accounts/confirm-email/', views.CustomConfirmEmailView.as_view(), name='account_confirm_email'),
 
     path('auth/google/login/', views.google_login, name='google_login'),
     path('auth/google/callback/', views.google_callback, name='google_callback'),
