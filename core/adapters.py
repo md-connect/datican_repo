@@ -21,45 +21,48 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return True  # Changed from False to True
     
     def send_confirmation_mail(self, request, emailconfirmation, signup):
-        """
-        Override to URL-encode the confirmation key in the email
-        This prevents email clients from truncating URLs with : characters
-        """
-        logger.info(f"📧 Custom send_confirmation_mail called for {emailconfirmation.email_address.email}")
-        
-        # Get the current site
-        current_site = Site.objects.get_current()
-        
-        # URL-encode the key to handle : characters safely
-        key = emailconfirmation.key
-        encoded_key = quote(key, safe='')
-        
-        # Create the activation URL with encoded key
-        activate_url = request.build_absolute_uri(
-            reverse('account_confirm_email', args=[encoded_key])
-        )
-        
-        logger.info(f"🔗 Encoded URL: {activate_url}")
-        
-        # Prepare context for the email template
-        context = {
-            'user': emailconfirmation.email_address.user,
-            'activate_url': activate_url,
-            'key': encoded_key,
-            'expiration_days': self.get_email_confirmation_ttl_days(),
-            'site_name': current_site.name,
-            'site_domain': current_site.domain,
-            'site_url': settings.SITE_URL,
-            'support_email': settings.SUPPORT_EMAIL,
-        }
-        
-        # Send the email using your HTML template
-        self.send_mail('account/email/email_confirmation', 
-                      emailconfirmation.email_address.email, 
-                      context)
-        
-        logger.info(f"✅ Custom confirmation email sent to {emailconfirmation.email_address.email}")
-                   
+    """
+    Override to URL-encode the confirmation key in the email
+    This prevents email clients from truncating URLs with : characters
+    """
+    logger.info(f"📧 Custom send_confirmation_mail called for {emailconfirmation.email_address.email}")
+    
+    # Get the current site
+    current_site = Site.objects.get_current()
+    
+    # Get the original key
+    key = emailconfirmation.key
+    
+    # First, generate the URL with the unencoded key (for reverse)
+    unencoded_url = request.build_absolute_uri(
+        reverse('account_confirm_email', args=[key])
+    )
+    
+    # Then, replace the key part with the encoded version
+    encoded_key = quote(key, safe='')
+    activate_url = unencoded_url.replace(key, encoded_key, 1)
+    
+    logger.info(f"🔗 Encoded URL: {activate_url}")
+    
+    # Prepare context for the email template
+    context = {
+        'user': emailconfirmation.email_address.user,
+        'activate_url': activate_url,
+        'key': encoded_key,
+        'expiration_days': self.get_email_confirmation_ttl_days(),
+        'site_name': current_site.name,
+        'site_domain': current_site.domain,
+        'site_url': settings.SITE_URL,
+        'support_email': settings.SUPPORT_EMAIL,
+    }
+    
+    # Send the email using your HTML template
+    self.send_mail('account/email/email_confirmation', 
+                  emailconfirmation.email_address.email, 
+                  context)
+    
+    logger.info(f"✅ Custom confirmation email sent to {emailconfirmation.email_address.email}")
+       
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_app(self, request, provider, client_id=None):
         """
