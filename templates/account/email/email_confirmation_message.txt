@@ -13,7 +13,7 @@ Please verify your email within this timeframe to activate your account.
 
 Verify your email address by clicking the link below:
 
-{{ protocol }}://{{ site.domain }}{% url 'account_confirm_email' key=key|urlencode %}
+{{ protocol }}://{{ site.domain }}{% url 'account_confirm_email' key=key %}
 
 📌 Important:
 - Your account is not fully active until you verify your email.
