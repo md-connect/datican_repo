@@ -8,6 +8,9 @@ from accounts.models import CustomUser
 from allauth.account.adapter import DefaultAccountAdapter
 from core.utils import send_welcome_email  # Import your welcome email function
 import logging
+from urllib.parse import quote
+from django.urls import reverse
+
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +19,41 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request):
         # Disable allauth's regular signup since we're using our custom view
         return False
-
+    
+    def send_confirmation_mail(self, request, emailconfirmation, signup):
+        """
+        Override to URL-encode the confirmation key in the email
+        This prevents email clients from truncating URLs with : characters
+        """
+        # Get the current site
+        current_site = Site.objects.get_current()
+        
+        # URL-encode the key to handle : characters safely
+        key = emailconfirmation.key
+        encoded_key = quote(key, safe='')
+        
+        # Create the activation URL with encoded key
+        activate_url = request.build_absolute_uri(
+            reverse('account_confirm_email', args=[encoded_key])
+        )
+        
+        # Prepare context for the email template
+        context = {
+            'user': emailconfirmation.email_address.user,
+            'activate_url': activate_url,
+            'key': encoded_key,
+            'expiration_days': self.get_email_confirmation_ttl_days(),
+            'site_name': current_site.name,
+            'site_domain': current_site.domain,
+            'site_url': settings.SITE_URL,
+            'support_email': settings.SUPPORT_EMAIL,
+        }
+        
+        # Send the email using your HTML template
+        self.send_mail('account/email/email_confirmation', 
+                      emailconfirmation.email_address.email, 
+                      context)
+                      
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_app(self, request, provider, client_id=None):
         """
