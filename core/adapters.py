@@ -17,14 +17,16 @@ logger = logging.getLogger(__name__)
 
 class CustomAccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request):
-        # Disable allauth's regular signup since we're using our custom view
-        return False
+        # Enable signup through your custom views
+        return True  # Changed from False to True
     
     def send_confirmation_mail(self, request, emailconfirmation, signup):
         """
         Override to URL-encode the confirmation key in the email
         This prevents email clients from truncating URLs with : characters
         """
+        logger.info(f"📧 Custom send_confirmation_mail called for {emailconfirmation.email_address.email}")
+        
         # Get the current site
         current_site = Site.objects.get_current()
         
@@ -36,6 +38,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         activate_url = request.build_absolute_uri(
             reverse('account_confirm_email', args=[encoded_key])
         )
+        
+        logger.info(f"🔗 Encoded URL: {activate_url}")
         
         # Prepare context for the email template
         context = {
@@ -53,7 +57,9 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         self.send_mail('account/email/email_confirmation', 
                       emailconfirmation.email_address.email, 
                       context)
-                      
+        
+        logger.info(f"✅ Custom confirmation email sent to {emailconfirmation.email_address.email}")
+                   
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_app(self, request, provider, client_id=None):
         """

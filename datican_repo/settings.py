@@ -30,7 +30,7 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "re_UPu4S4KD_PcaH2tDQYadfpmJN1
 SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-(-hc=)gls3m91b5q(tat_t^2ilpu8#!_(61^tgxh!lcxb&r9x*")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-
+ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
 
 # Host configuration
 if IS_PRODUCTION:
