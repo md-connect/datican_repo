@@ -86,27 +86,24 @@ class CustomLoginView(LoginView):
         return reverse('redirect_after_login')
 
 class CustomConfirmEmailView(ConfirmEmailView):
-    """
-    Custom email confirmation view that handles:
-    1. Key provided → confirm email
-    2. No key, user authenticated → redirect home
-    3. No key, user not authenticated → show 'verification sent' page
-    """
-    
+    """Handles both email confirmation and verification sent page."""
+
     def get(self, request, *args, **kwargs):
-        if 'key' in kwargs:
-            # Key provided → let parent handle confirmation
+        key = kwargs.get("key", None)
+
+        if key:
+            # Case: clicking email link → normal confirmation
             return super().get(request, *args, **kwargs)
-        
-        # No key
+
         if request.user.is_authenticated:
-            # User already logged in → likely stale link
-            messages.info(request, 'Your email is already verified.')
-            return redirect('home')
-        
-        # Not authenticated → show 'verification sent' page
-        # Render a custom template or use default
-        return self.render_to_response(self.get_context_data())
+            # Case: user already logged in, no key → redirect
+            messages.info(request, "Your email is already verified.")
+            return redirect("home")
+
+        # Case: base URL, not logged in → verification sent page
+        # Prevent Allauth from crashing: set self.object = None
+        self.object = None
+        return super().get(request, *args, **kwargs)
 
 def google_login(request):
     # Redirect to Google OAuth2

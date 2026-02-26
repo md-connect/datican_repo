@@ -12,13 +12,13 @@ urlpatterns = [
     # Override Allauth's default login/signup with our custom views
     path('accounts/login/', CustomLoginView.as_view(), name='account_login'),
     path('accounts/signup/', CustomSignupView.as_view(), name='account_signup'),
-    # Confirm email with key → actual confirmation
-    path('accounts/confirm-email/<str:key>/',
+    # Most specific first: URL with key
+    path('accounts/confirm-email/<str:key>/', 
          CustomConfirmEmailView.as_view(),
          name='account_confirm_email'),
 
     # Base confirm-email URL → verification sent page
-    path('accounts/confirm-email/',
+    path('accounts/confirm-email/', 
          CustomConfirmEmailView.as_view(),
          name='account_confirm_email_sent'),
 
