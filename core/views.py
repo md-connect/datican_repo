@@ -107,7 +107,7 @@ class CustomConfirmEmailView(ConfirmEmailView):
             "support_email": "support@datican.org",
             "expiration_days": 3,  # or settings.EMAIL_CONFIRMATION_EXPIRY_DAYS
         }
-        return render(request, "account/email/verification_sent.html", context)
+        return render(request, "account/verification_sent.html", context)
 
 def google_login(request):
     # Redirect to Google OAuth2
