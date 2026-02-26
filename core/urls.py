@@ -1,7 +1,7 @@
 from django.urls import path
 from . import views
 from django.contrib.auth.views import LogoutView
-from core.views import CustomLoginView, CustomSignupView
+from core.views import CustomLoginView, CustomSignupView, CustomConfirmEmailView
 
 urlpatterns = [
     path('', views.home, name='home'),
