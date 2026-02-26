@@ -85,6 +85,21 @@ class CustomLoginView(LoginView):
         # Otherwise, use our custom redirect_after_login
         return reverse('redirect_after_login')
 
+class CustomConfirmEmailView(ConfirmEmailView):
+    """Handles both the verification sent page and actual email confirmation"""
+    
+    def get(self, request, *args, **kwargs):
+        # Case 1: Accessing URL with key -> confirm email
+        if 'key' in kwargs:
+            return super().get(request, *args, **kwargs)
+        
+        # Case 2: No key, user logged in -> redirect with info
+        if request.user.is_authenticated:
+            messages.info(request, "Your email is already verified.")
+            return redirect('home')
+        
+        # Case 3: No key, not authenticated -> verification sent page
+        return super().get(request, *args, **kwargs)
 
 def google_login(request):
     # Redirect to Google OAuth2
