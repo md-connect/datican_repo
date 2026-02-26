@@ -34,7 +34,7 @@ a { text-decoration: none; }
                 Welcome to DATICAN Repository! 🎉
             </div>
             <div style="font-size:16px; color:#CBD5F5; margin-top:8px;">
-                Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+                Subject: Welcome to DATICAN Repository – Medical Dataset Provision Services
             </div>
         </td>
     </tr>
@@ -55,12 +55,11 @@ a { text-decoration: none; }
             </table>
 
             <p style="font-size:16px; color:#475569; line-height:1.7; margin:0 0 20px;">
-                {% if social_signup %}
-                    Thank you for signing up with Google! Your account has been created and your email has been verified.
-                {% else %}
-                    Thank you for verifying your email address! Your account is now fully activated.
-                {% endif %}
-                You now have access to all features of the DATICAN Repository.
+                Dear <strong>{{ user.first_name|default:"Valued Researcher" }} {{ user.last_name }}</strong>,
+            </p>
+
+            <p style="font-size:16px; color:#475569; line-height:1.7; margin:0 0 20px;">
+                Welcome to <strong>DATICAN</strong>, a medical dataset repository designed to support researchers and healthcare workers. We look forward to serving you through our modern and efficient platform, which offers seamless exploration, analysis, and sharing of high-quality medical data.
             </p>
 
             <!-- Account Overview -->
@@ -73,103 +72,49 @@ a { text-decoration: none; }
                         <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                                 <td colspan="2" style="font-size:18px; font-weight:bold; padding-bottom:16px;">
-                                    Your Account Overview
+                                    Your Registration Details
                                 </td>
                             </tr>
                             <tr>
-                                <td style="font-size:12px; color:#64748B; width:120px;">Email</td>
-                                <td style="font-size:16px;">{{ user.email }}</td>
-                            </tr>
-                            <tr>
-                                <td style="font-size:12px; color:#64748B;">Name</td>
+                                <td style="font-size:12px; color:#64748B; width:120px;">Registered as:</td>
                                 <td style="font-size:16px;">{{ user.first_name }} {{ user.last_name }}</td>
                             </tr>
                             <tr>
-                                <td style="font-size:12px; color:#64748B;">Member Since</td>
+                                <td style="font-size:12px; color:#64748B;">Email:</td>
+                                <td style="font-size:16px;">{{ user.email }}</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size:12px; color:#64748B;">Member Since:</td>
                                 <td style="font-size:16px;">{{ user.date_joined|date:"F d, Y" }}</td>
                             </tr>
                             <tr>
-                                <td style="font-size:12px; color:#64748B;">Account Status</td>
+                                <td style="font-size:12px; color:#64748B;">Account Status:</td>
                                 <td style="font-size:16px;">
                                     <span style="color:#10b981;">✓ Active & Verified</span>
                                 </td>
                             </tr>
                         </table>
+                        
+                        <div style="margin-top:20px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:4px;">
+                            <p style="margin:0; font-size:14px; color:#92400E;">
+                                <span style="font-weight:bold;">Note:</span> If any of the above information is incorrect, kindly update your profile under the 
+                                <a href="{{ site_url }}{% url 'profile' %}" style="color:#E11D48; font-weight:bold; text-decoration:underline;">My Profile Section</a>.
+                            </p>
+                        </div>
                     </td>
                 </tr>
             </table>
 
-            <!-- What You Can Do -->
-            <h3 style="font-size:18px; margin:32px 0 16px; color:#0F172A;">
-                🚀 What You Can Do Now
-            </h3>
+            <p style="font-size:16px; color:#475569; line-height:1.7; margin:20px 0;">
+                We wish you an enjoyable and productive experience exploring our website.
+            </p>
 
-            <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                    <td style="padding:8px 0;">
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td width="40" valign="top" style="font-size:20px;">📊</td>
-                                <td style="font-size:15px; color:#475569;">
-                                    <strong>Browse Datasets</strong> - Explore our collection of medical imaging datasets
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:8px 0;">
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td width="40" valign="top" style="font-size:20px;">🔍</td>
-                                <td style="font-size:15px; color:#475569;">
-                                    <strong>Request Access</strong> - Apply for datasets that match your research
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:8px 0;">
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td width="40" valign="top" style="font-size:20px;">⭐</td>
-                                <td style="font-size:15px; color:#475569;">
-                                    <strong>Rate & Review</strong> - Share your feedback on datasets
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding:8px 0;">
-                        <table width="100%" cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td width="40" valign="top" style="font-size:20px;">📁</td>
-                                <td style="font-size:15px; color:#475569;">
-                                    <strong>Create Collections</strong> - Save datasets for later reference
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-
-            <!-- CTA Buttons -->
-            <div style="text-align:center; margin:40px 0 20px;">
-                <a href="{{ site_url }}/datasets/"
-                   style="display:inline-block; background:#E11D48; color:#FFFFFF;
-                          padding:14px 32px; border-radius:10px;
-                          font-size:16px; font-weight:bold; margin:0 8px;">
-                    Browse Datasets
-                </a>
-                
-                <a href="{{ site_url }}{% url 'profile' %}"
-                   style="display:inline-block; background:#FFFFFF; color:#E11D48;
-                          padding:14px 32px; border-radius:10px; border:2px solid #E11D48;
-                          font-size:16px; font-weight:bold; margin:0 8px;">
-                    View Profile
-                </a>
+            <div style="margin-top:32px;">
+                <p style="font-size:16px; color:#475569; line-height:1.7; margin:0;">
+                    Warm regards,<br>
+                    <strong>Team DATICAN</strong><br>
+                    <a href="https://repo.datican.org" style="color:#E11D48; text-decoration:underline;">https://repo.datican.org</a>
+                </p>
             </div>
 
             <!-- Quick Links -->
@@ -181,9 +126,9 @@ a { text-decoration: none; }
                             <strong>Quick Links:</strong>
                         </p>
                         <div>
+                            <a href="{{ site_url }}/datasets/" style="color:#E11D48; margin:0 10px;">Browse Datasets</a>
+                            <a href="{{ site_url }}{% url 'profile' %}" style="color:#E11D48; margin:0 10px;">My Profile</a>
                             <a href="{{ site_url }}/datasets/my-requests/" style="color:#E11D48; margin:0 10px;">My Requests</a>
-                            <a href="{{ site_url }}/datasets/" style="color:#E11D48; margin:0 10px;">All Datasets</a>
-                            <a href="{{ site_url }}/faq/" style="color:#E11D48; margin:0 10px;">FAQ</a>
                         </div>
                     </td>
                 </tr>
