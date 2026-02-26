@@ -44,12 +44,15 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         
         logger.info(f"🔗 Encoded URL: {activate_url}")
         
+        # Get expiration days - FIXED METHOD NAME
+        expiration_days = self.get_email_confirmation_ttl() // (24 * 3600)  # Convert seconds to days
+        
         # Prepare context for the email template
         context = {
             'user': emailconfirmation.email_address.user,
             'activate_url': activate_url,
             'key': encoded_key,
-            'expiration_days': self.get_email_confirmation_ttl_days(),
+            'expiration_days': expiration_days,
             'site_name': current_site.name,
             'site_domain': current_site.domain,
             'site_url': settings.SITE_URL,
@@ -62,7 +65,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
                     context)
         
         logger.info(f"✅ Custom confirmation email sent to {emailconfirmation.email_address.email}")
-       
+        
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
     def get_app(self, request, provider, client_id=None):
         """
