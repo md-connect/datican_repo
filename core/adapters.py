@@ -45,7 +45,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         logger.info(f"🔗 Encoded URL: {activate_url}")
         
         # Get expiration days - FIXED METHOD NAME
-        expiration_days = self.get_email_confirmation_ttl() // (24 * 3600)  # Convert seconds to days
+        expiration_days = 1
         
         # Prepare context for the email template
         context = {
