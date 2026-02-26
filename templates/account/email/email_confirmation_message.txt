@@ -1,0 +1,27 @@
+Welcome to DATICAN Repository! 🎉
+
+Hello{% if user.first_name %} {{ user.first_name }}{% endif %},
+
+✔ Account Created Successfully
+
+Thank you for creating an account on DATICAN Repository.
+To complete your registration and access all features, please verify your email address.
+
+⏰ IMPORTANT:
+This verification link will expire in {{ expiration_days }} day(s).
+Please verify your email within this timeframe to activate your account.
+
+Verify your email address by clicking the link below:
+
+{{ protocol }}://{{ site.domain }}{% url 'account_confirm_email' key=key|urlencode %}
+
+📌 Important:
+- Your account is not fully active until you verify your email.
+- You'll be automatically logged in after verification.
+- If you didn't create this account, please ignore this email.
+
+Need help?
+Contact us at {{ support_email }}
+
+© {% now "Y" %} {{ site_name }}
+{{ site_url }}
