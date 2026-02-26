@@ -21,8 +21,6 @@ a { text-decoration: none; }
 
 <body style="margin:0; padding:0; background:#F8FAFC; font-family:Arial, Helvetica, sans-serif;">
 
-{% with confirmation_key=key|urlencode %}
-
 <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC">
 <tr>
 <td align="center">
@@ -82,9 +80,9 @@ a { text-decoration: none; }
                 </tr>
             </table>
 
-            <!-- CTA Button with URL-ENCODED token -->
+            <!-- CTA Button with activate_url -->
             <div style="text-align:center; margin:36px 0;">
-                <a href="{{ protocol }}://{{ site.domain }}{% url 'account_confirm_email' key=confirmation_key %}"
+                <a href="{{ activate_url }}"
                    style="display:inline-block; background:#E11D48; color:#FFFFFF;
                           padding:16px 40px; border-radius:10px;
                           font-size:16px; font-weight:bold; text-decoration:none;">
@@ -98,7 +96,7 @@ a { text-decoration: none; }
                 <div style="font-family:Courier New, monospace; font-size:13px;
                             background:#F8FAFC; border:1px solid #E2E8F0;
                             padding:12px; border-radius:8px; word-break:break-all;">
-                    {{ protocol }}://{{ site.domain }}{% url 'account_confirm_email' key=confirmation_key %}
+                    {{ activate_url }}
                 </div>
             </div>
 
@@ -154,6 +152,5 @@ a { text-decoration: none; }
 </tr>
 </table>
 
-{% endwith %}
 </body>
 </html>
