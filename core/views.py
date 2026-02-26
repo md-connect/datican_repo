@@ -86,24 +86,28 @@ class CustomLoginView(LoginView):
         return reverse('redirect_after_login')
 
 class CustomConfirmEmailView(ConfirmEmailView):
-    """Handles both email confirmation and verification sent page."""
+    """Handles email confirmation and 'verification sent' page."""
 
     def get(self, request, *args, **kwargs):
         key = kwargs.get("key", None)
 
         if key:
-            # Case: clicking email link → normal confirmation
+            # Key provided → normal confirmation
             return super().get(request, *args, **kwargs)
 
         if request.user.is_authenticated:
-            # Case: user already logged in, no key → redirect
+            # Already logged in, no key → redirect
             messages.info(request, "Your email is already verified.")
             return redirect("home")
 
-        # Case: base URL, not logged in → verification sent page
-        # Prevent Allauth from crashing: set self.object = None
-        self.object = None
-        return super().get(request, *args, **kwargs)
+        # Base URL, not logged in → render custom "verification sent" template
+        context = {
+            "site_name": "DATICAN Repository",
+            "site_url": "https://repo.datican.org",
+            "support_email": "support@datican.org",
+            "expiration_days": 3,  # or settings.EMAIL_CONFIRMATION_EXPIRY_DAYS
+        }
+        return render(request, "account/email/verification_sent.html", context)
 
 def google_login(request):
     # Redirect to Google OAuth2
