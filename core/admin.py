@@ -5,6 +5,7 @@ from .models import TeamMember
 class TeamMemberAdmin(admin.ModelAdmin):
     list_display = ['order', 'full_name', 'position', 'created_at']
     list_editable = ['order']
+    list_display_links = ['full_name']
     list_filter = ['position']
     search_fields = ['first_name', 'last_name', 'position', 'bio']
     readonly_fields = ['created_at', 'updated_at']
