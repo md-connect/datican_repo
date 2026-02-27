@@ -40,7 +40,7 @@
         
         {% if path == '/' %}
           {% include 'partials/_header.html' %}
-        {% elif url_name == 'login' or url_name == 'signup' %}
+        {% elif url_name == 'login' or url_name == 'signup' or url_name == 'team' or url_name == 'partners' %}
           {% include 'partials/_header.html' %}
         {% elif 'account' in path %}
           {% include 'partials/_header.html' %}
