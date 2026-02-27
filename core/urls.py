@@ -5,7 +5,9 @@ from core.views import CustomLoginView, CustomSignupView, CustomConfirmEmailView
 
 urlpatterns = [
     path('', views.home, name='home'),
-
+    path('partners/', views.partners_view, name='partners'),
+    path('team/', views.team_view, name='team'),
+    
     path('login/', CustomLoginView.as_view(), name='login'),
     path('signup/', CustomSignupView.as_view(), name='signup'),
     

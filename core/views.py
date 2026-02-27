@@ -25,6 +25,8 @@ from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from allauth.account.views import SignupView
 from allauth.account.views import ConfirmEmailView 
+from .models import TeamMember
+
 
 class CustomSignupView(SignupView):
     """Custom signup view that uses Allauth but our custom template"""
@@ -198,6 +200,29 @@ def home(request):
         'featured_datasets': featured_datasets,
         'dataset_count': dataset_count,
     })
+
+def partners_view(request):
+    """View for partner universities page"""
+    return render(request, 'partners.html')
+
+def team_view(request):
+    """View for our team page - sorted by order field"""
+    # Get all team members sorted by the order field (then by name as fallback)
+    team_members = TeamMember.objects.all().order_by('order', 'last_name', 'first_name')
+    
+    # Optional: Group by institution while preserving order within each group
+    grouped_by_institution = {}
+    for member in team_members:
+        if member.institution not in grouped_by_institution:
+            grouped_by_institution[member.institution] = []
+        grouped_by_institution[member.institution].append(member)
+    
+    context = {
+        'team_members': team_members,
+        'grouped_by_institution': grouped_by_institution,
+        'total_members': team_members.count(),
+    }
+    return render(request, 'team.html', context)
 
 def verification_sent(request):
     """Page shown after registration, asking user to verify email"""

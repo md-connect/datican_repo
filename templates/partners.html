@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Our Partner Universities - DATICAN Repository{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-secondary py-16 text-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <h1 class="text-4xl md:text-5xl font-bold mb-4">Our Partner Universities</h1>
+    <p class="text-xl opacity-90 max-w-3xl mx-auto">
+      Collaborating with leading institutions to advance medical research and innovation across Nigeria and beyond.
+    </p>
+  </div>
+</section>
+
+<!-- Partner Universities Grid -->
+<section class="py-20 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- Section Intro -->
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-secondary mb-4">Trusted by Leading Academic Institutions</h2>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        We're proud to collaborate with these prestigious universities to drive medical research and data accessibility.
+      </p>
+    </div>
+
+    <!-- Universities Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      
+      <!-- Card 1: Lagos State University -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+        <div class="h-48 bg-gray-100 flex items-center justify-center p-8">
+          <img src="{% static 'images/lasu_logo.jpg' %}" 
+               alt="Lagos State University Logo" 
+               class="max-h-32 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
+               onerror="this.src='{% static 'images/placeholder-university.jpg' %}'">
+        </div>
+        <div class="p-6 text-center">
+          <h3 class="text-xl font-bold text-secondary mb-2">Lagos State University</h3>
+          <p class="text-accent font-medium mb-3">Ojo, Lagos, Nigeria</p>
+          <p class="text-gray-600 text-sm mb-4">
+            Nigeria's leading university driving educational excellence and medical research innovation.
+          </p>
+          <a href="https://www.lasu.edu.ng" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center text-accent hover:text-red-700 font-medium transition-colors">
+            Visit Website 
+            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 2: University of Ibadan -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+        <div class="h-48 bg-gray-100 flex items-center justify-center p-8">
+          <img src="{% static 'images/ui_logo.jpg' %}" 
+               alt="University of Ibadan Logo" 
+               class="max-h-32 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
+               onerror="this.src='{% static 'images/placeholder-university.jpg' %}'">
+        </div>
+        <div class="p-6 text-center">
+          <h3 class="text-xl font-bold text-secondary mb-2">University of Ibadan</h3>
+          <p class="text-accent font-medium mb-3">Ibadan, Oyo, Nigeria</p>
+          <p class="text-gray-600 text-sm mb-4">
+            Nigeria's premier university fostering academic excellence and medical breakthroughs since 1948.
+          </p>
+          <a href="https://www.ui.edu.ng" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center text-accent hover:text-red-700 font-medium transition-colors">
+            Visit Website 
+            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 3: Redeemer's University -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+        <div class="h-48 bg-gray-100 flex items-center justify-center p-8">
+          <img src="{% static 'images/run_logo.jpg' %}" 
+               alt="Redeemer's University Logo" 
+               class="max-h-32 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
+               onerror="this.src='{% static 'images/placeholder-university.jpg' %}'">
+        </div>
+        <div class="p-6 text-center">
+          <h3 class="text-xl font-bold text-secondary mb-2">Redeemer's University</h3>
+          <p class="text-accent font-medium mb-3">Ede, Osun, Nigeria</p>
+          <p class="text-gray-600 text-sm mb-4">
+            Promoting faith-based education and global competitiveness in medical research and innovation.
+          </p>
+          <a href="https://www.run.edu.ng" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center text-accent hover:text-red-700 font-medium transition-colors">
+            Visit Website 
+            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 4: University of Chicago -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+        <div class="h-48 bg-gray-100 flex items-center justify-center p-8">
+          <img src="{% static 'images/uchicago.png' %}" 
+               alt="University of Chicago Logo" 
+               class="max-h-32 w-auto object-contain group-hover:scale-110 transition-transform duration-300"
+               onerror="this.src='{% static 'images/placeholder-university.jpg' %}'">
+        </div>
+        <div class="p-6 text-center">
+          <h3 class="text-xl font-bold text-secondary mb-2">University of Chicago</h3>
+          <p class="text-accent font-medium mb-3">Chicago, Illinois, USA</p>
+          <p class="text-gray-600 text-sm mb-4">
+            World-class institution renowned for groundbreaking research and innovation in medical sciences.
+          </p>
+          <a href="https://www.uchicago.edu" target="_blank" rel="noopener noreferrer" 
+             class="inline-flex items-center text-accent hover:text-red-700 font-medium transition-colors">
+            Visit Website 
+            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Additional Partners Section (Optional) -->
+    <div class="mt-16 text-center">
+      <h3 class="text-2xl font-bold text-secondary mb-6">Join Our Growing Network</h3>
+      <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+        Interested in partnering with DATICAN? We're always looking to collaborate with forward-thinking institutions.
+      </p>
+      <a href="{% url 'contact' %}" 
+         class="inline-block bg-accent text-white px-8 py-3 rounded-lg hover:bg-red-600 transition-colors font-medium">
+        Become a Partner
+      </a>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
