@@ -6,11 +6,11 @@
 {% block content %}
 
 <!-- Team Grid -->
-<section class="py-16 bg-gray-50">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<section class="py-16">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
     
     <!-- Team Introduction -->
-    <div class="text-center mb-12">
+    <div class="text-center mb-12 bg-gray-100">
       <h2 class="text-3xl font-bold text-secondary mb-4">Meet the Minds Behind DATICAN</h2>
       <p class="text-md text-gray-600 max-w-2xl mx-auto">
         Our interdisciplinary team brings together expertise in medicine, data science, and research.
@@ -23,7 +23,7 @@
     {% if grouped_by_institution %}
       {% for institution, members in grouped_by_institution.items %}
       <!-- Institution Section -->
-      <div class="mb-16 last:mb-0">
+      <div class="mb-16 last:mb-0 bg-gray-50">
         <h3 class="text-2xl font-bold text-secondary mb-8 pb-2 border-b-2 border-accent inline-block">{{ institution }}</h3>
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -104,7 +104,7 @@
       {% endfor %}
     {% else %}
       <!-- No team members yet -->
-      <div class="text-center py-20">
+      <div class="text-center py-20 bg-gray-50">
         <svg class="w-24 h-24 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
         </svg>
