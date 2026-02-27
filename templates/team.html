@@ -4,39 +4,6 @@
 {% block title %}Our Team - DATICAN Repository{% endblock %}
 
 {% block content %}
-<!-- Hero Section -->
-<section class="bg-secondary py-16 text-white">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-    <h1 class="text-4xl md:text-5xl font-bold mb-4">Our Team</h1>
-    <p class="text-xl opacity-90 max-w-3xl mx-auto">
-      Meet the dedicated professionals working to advance medical research through data accessibility.
-    </p>
-  </div>
-</section>
-
-<!-- Team Stats -->
-<section class="py-12 bg-white">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-      <div>
-        <div class="text-4xl font-bold text-secondary mb-2">{{ total_members }}</div>
-        <div class="text-gray-600">Team Members</div>
-      </div>
-      <div>
-        <div class="text-4xl font-bold text-secondary mb-2">10+</div>
-        <div class="text-gray-600">Research Projects</div>
-      </div>
-      <div>
-        <div class="text-4xl font-bold text-secondary mb-2">5+</div>
-        <div class="text-gray-600">Institutions</div>
-      </div>
-      <div>
-        <div class="text-4xl font-bold text-secondary mb-2">20+</div>
-        <div class="text-gray-600">Publications</div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- Team Grid -->
 <section class="py-16 bg-gray-50">
@@ -48,6 +15,9 @@
       <p class="text-lg text-gray-600 max-w-2xl mx-auto">
         Our interdisciplinary team brings together expertise in medicine, data science, and research.
       </p>
+      <p class="text-xl opacity-90 max-w-3xl mx-auto">
+      Meet the dedicated professionals working to advance medical research through data accessibility.
+    </p>
     </div>
 
     {% if grouped_by_institution %}
@@ -146,7 +116,7 @@
 </section>
 
 <!-- Join Our Team CTA -->
-<section class="py-16 bg-accent text-white">
+<section class="py-16 bg-gray-60 text-white">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
     <h2 class="text-3xl font-bold mb-4">Join Our Mission</h2>
     <p class="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
