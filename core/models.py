@@ -69,69 +69,37 @@ class TeamMember(models.Model):
     TITLE_CHOICES = [
         ('Mr.', 'Mr.'),
         ('Mrs.', 'Mrs.'),
+        ('Ms.', 'Ms.'),
         ('Dr.', 'Dr.'),
-        ('Assoc. Prof.', 'Associate Prof.'),
         ('Prof.', 'Prof.'),
+        ('Assoc. Prof.', 'Associate Prof.'),
     ]
     
-    title = models.CharField(
-        max_length=20,
-        choices=TITLE_CHOICES,
-        default='Mr.',
-        help_text="Title (e.g., Dr., Prof.)"
-    )
+    title = models.CharField(max_length=20, choices=TITLE_CHOICES, default='Mr.')
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    professional_titles = models.CharField(
-        max_length=255, 
-        blank=True, 
-        null=True,
-        help_text="Additional professional titles (e.g., PhD, MD, MSc)"
-    )
-    position = models.CharField(
-        max_length=255,
-        help_text="Job position or role (e.g., Principal Investigator, Data Scientist)"
-    )
-    department = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        help_text="Department or unit"
-    )
-    institution = models.CharField(
-        max_length=255,
-        help_text="University, organization, or affiliation"
-    )
-    other_info = models.TextField(
-        blank=True,
-        null=True,
-        help_text="Additional information like research interests, bio, etc."
-    )
+    position = models.CharField(max_length=255, help_text="Job position or role")
+    bio = models.TextField(help_text="Short biography")
     
-    # ORDER FIELD - This is what you asked for
-    order = models.PositiveIntegerField(
-        default=0,
-        help_text="Display order (lower numbers appear first)"
-    )
+    # Profile image
+    profile_image = models.ImageField(upload_to='team/', blank=True, null=True)
     
-    # Optional fields for enhancement
-    profile_image = models.ImageField(
-        upload_to='team/',
-        blank=True,
-        null=True,
-        help_text="Profile photo (optional)"
-    )
-    email = models.EmailField(blank=True, null=True)
-    linkedin_url = models.URLField(blank=True, null=True)
+    # Social links
     google_scholar_url = models.URLField(blank=True, null=True)
+    linkedin_url = models.URLField(blank=True, null=True)
     researchgate_url = models.URLField(blank=True, null=True)
+    twitter_url = models.URLField(blank=True, null=True)  # Optional
+    github_url = models.URLField(blank=True, null=True)   # Optional
+    
+    # Display order
+    order = models.PositiveIntegerField(default=0, help_text="Display order (lower numbers appear first)")
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['order', 'last_name', 'first_name']  # Sort by order first, then name
+        ordering = ['order', 'first_name', 'last_name']
         verbose_name = "Team Member"
         verbose_name_plural = "Team Members"
     
@@ -140,12 +108,4 @@ class TeamMember(models.Model):
     
     @property
     def full_name(self):
-        """Return the full name with title"""
         return f"{self.get_title_display()} {self.first_name} {self.last_name}"
-    
-    @property
-    def short_name(self):
-        """Return first name and last initial"""
-        if self.last_name:
-            return f"{self.first_name} {self.last_name[0]}."
-        return self.first_name

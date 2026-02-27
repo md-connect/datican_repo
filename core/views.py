@@ -205,24 +205,18 @@ def partners_view(request):
     """View for partner universities page"""
     return render(request, 'partners.html')
 
+from django.shortcuts import render
+from .models import TeamMember
+
 def team_view(request):
-    """View for our team page - sorted by order field"""
-    # Get all team members sorted by the order field (then by name as fallback)
-    team_members = TeamMember.objects.all().order_by('order', 'last_name', 'first_name')
-    
-    # Optional: Group by institution while preserving order within each group
-    grouped_by_institution = {}
-    for member in team_members:
-        if member.institution not in grouped_by_institution:
-            grouped_by_institution[member.institution] = []
-        grouped_by_institution[member.institution].append(member)
+    team_members = TeamMember.objects.all().order_by('order', 'first_name')
     
     context = {
         'team_members': team_members,
-        'grouped_by_institution': grouped_by_institution,
         'total_members': team_members.count(),
     }
     return render(request, 'team.html', context)
+
 
 def verification_sent(request):
     """Page shown after registration, asking user to verify email"""
