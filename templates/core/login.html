@@ -12,14 +12,12 @@
 {% block content %}
 {% url 'redirect_after_login' as default_redirect_url %}
 <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4 bg-gray-50">
-  <div class="bg-white max-w-md w-full space-y-8">
-
-    <div class="text-center">
-      <img src="{% static 'images/datican_repo.png' %}" alt="DATICAN" class="h-16 mx-auto">
-    </div>
-
+  <div class="max-w-md w-full space-y-8">
     <!-- Login Card -->
     <div class="bg-white rounded-xl shadow-sm p-8 space-y-6">
+      <div class="text-center">
+      <img src="{% static 'images/datican_repo.png' %}" alt="DATICAN" class="h-16 mx-auto">
+    </div>
       <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
         Welcome back!
       </h2>
