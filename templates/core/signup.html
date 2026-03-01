@@ -1,12 +1,22 @@
-{% extends 'base.html' %} 
-{% load static %} 
-{% load socialaccount %} 
-{% block title %} Sign Up - Datican {% endblock %} 
+{% load static %}
+{% load socialaccount %}
+
+{# Override sidebar_header to show nothing #}
+{% block sidebar_header %}{% endblock %}
+
+{# Override footer to show nothing #}
+{% block footer %}{% endblock %}
+
+{% block title %} Sign UP - DATICAN Repo {% endblock %}
 
 {% block content %}
 {% url 'redirect_after_login' as default_redirect_url %}
 <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4 bg-gray-50">
   <div class="max-w-md w-full space-y-8">
+     <div class="bg-white rounded-xl shadow-sm p-8 space-y-6">
+      <div class="text-center">
+      <img src="{% static 'images/datican_repo.png' %}" alt="DATICAN" class="h-16 mx-auto">
+    </div>
     <!-- Signup Card -->
     <div class="bg-white rounded-xl shadow-sm p-8 space-y-6">
       {% if messages %}
