@@ -354,25 +354,36 @@ def dataset_detail(request, pk):
         count=Count('id')
     )
     
-    # Get preview data if available
+    # Get preview data if available - UPDATED TO HANDLE EXCEL FILES
     preview_data = None
     preview_columns = []
     preview_rows = []
     preview_error = None
     has_preview = False
+    preview_type = 'none'
     
+    # Check for preview file first
     if hasattr(dataset, 'preview_file') and dataset.preview_file:
+        preview_type = 'excel'  # Assuming your preview file is Excel
         try:
-            preview_data = get_preview_data(dataset, max_rows=10)  # Load only 10 rows initially
-            if preview_data:
-                preview_columns = preview_data.get('columns', [])
-                preview_rows = preview_data.get('rows', [])
+            # You'll need to install pandas and openpyxl: pip install pandas openpyxl
+            import pandas as pd
+            
+            file_path = dataset.preview_file.path
+            # Read Excel file
+            if file_path.endswith(('.xlsx', '.xls')):
+                df = pd.read_excel(file_path, nrows=10)  # Read only first 10 rows
+                preview_columns = df.columns.tolist()
+                preview_rows = df.to_dict('records')
                 has_preview = True
+            else:
+                preview_error = "Unsupported file format for preview"
         except Exception as e:
             preview_error = str(e)
             has_preview = False
     elif dataset.format and dataset.format.lower() in ['csv', 'json']:
         # If no preview file but dataset is CSV/JSON format, try to use the main file
+        preview_type = dataset.format.lower()
         try:
             if dataset.file and dataset.file.name.lower().endswith(('.csv', '.json')):
                 # Create a temporary dataset-like object for preview
@@ -431,12 +442,12 @@ def dataset_detail(request, pk):
         'rating_stats': rating_stats,
         'recent_reviews': recent_reviews,
         
-        # Preview context
+        # Preview context - UPDATED
         'preview_columns': preview_columns,
         'preview_rows': preview_rows,
         'preview_error': preview_error,
         'has_preview': has_preview,
-        'preview_type': getattr(dataset, 'preview_type', 'none'),
+        'preview_type': preview_type,  # 'excel', 'csv', 'json', or 'none'
         
         # Multi-part file context
         'files': file_list,
@@ -451,7 +462,7 @@ def dataset_detail(request, pk):
         'collection_form': CollectionForm(),
         'report_form': ReportForm(),
     }
-    
+
     return render(request, 'datasets/detail.html', context)
 
 def get_preview_data(dataset, max_rows=100):
