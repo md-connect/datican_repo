@@ -558,180 +558,224 @@
   </div>
 </div>
 
-<script>
-// This script runs AFTER all HTML is loaded
-console.log('Page loaded, setting up event listeners...');
 
-// Set up Proceed button
-const proceedBtn = document.getElementById('proceedToForm');
-if (proceedBtn) {
-  console.log('Found proceed button:', proceedBtn);
-  proceedBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    console.log('Proceed button clicked!');
-    
-    // Toggle sections
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Page loaded, setting up event listeners...');
+  
+  // Initialize Lucide icons
+  if (typeof lucide !== 'undefined') {
+    lucide.createIcons();
+  }
+  
+  // ===== STEP MANAGEMENT =====
+  // Check if there are form errors - if so, show step 2
+  const hasFormErrors = {% if form.errors %}true{% else %}false{% endif %};
+  
+  if (hasFormErrors) {
+    console.log('Form errors detected, showing step 2');
+    // Show step 2 (form section)
     document.getElementById('guidelinesSection').classList.remove('active');
     document.getElementById('formSection').classList.add('active');
     
-    // Toggle steps
+    // Update step indicators
     document.getElementById('step1').classList.remove('active');
     document.getElementById('step2').classList.add('active');
     
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-} else {
-  console.error('Could not find proceed button!');
-}
-
-// Set up Back button
-const backBtn = document.getElementById('backToGuidelines');
-if (backBtn) {
-  backBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    console.log('Back button clicked');
-    
-    // Toggle sections
-    document.getElementById('formSection').classList.remove('active');
-    document.getElementById('guidelinesSection').classList.add('active');
-    
-    // Toggle steps
-    document.getElementById('step2').classList.remove('active');
-    document.getElementById('step1').classList.add('active');
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-}
-
-// Initialize Lucide icons
-if (typeof lucide !== 'undefined') {
-  lucide.createIcons();
-}
-
-// File upload display functions
-function updateFormFileName(input) {
-  const uploadContent = document.getElementById('formUploadContent');
-  const filePreview = document.getElementById('formFilePreview');
-  const fileName = document.getElementById('formFileName');
-  const fileSize = document.getElementById('formFileSize');
-  
-  if (input.files.length > 0) {
-    const file = input.files[0];
-    
-    // Hide upload prompt, show file preview
-    uploadContent.style.display = 'none';
-    filePreview.classList.remove('hidden');
-    
-    // Display file info
-    fileName.textContent = file.name;
-    fileSize.textContent = formatBytes(file.size);
-    
-    // Show PDF preview if available
-    if (file.type === 'application/pdf') {
-      showPdfPreview(file, 'formFilePreview');
-    }
+    // Scroll to the form section to show errors
+    setTimeout(() => {
+      document.getElementById('formSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   }
-}
-
-function updateEthicalFileName(input) {
-  const uploadContent = document.getElementById('ethicalUploadContent');
-  const filePreview = document.getElementById('ethicalFilePreview');
-  const fileName = document.getElementById('ethicalFileName');
-  const fileSize = document.getElementById('ethicalFileSize');
   
-  if (input.files.length > 0) {
-    const file = input.files[0];
-    
-    // Hide upload prompt, show file preview
-    uploadContent.style.display = 'none';
-    filePreview.classList.remove('hidden');
-    
-    // Display file info
-    fileName.textContent = file.name;
-    fileSize.textContent = formatBytes(file.size);
-    
-    // Show image preview if it's an image
-    if (file.type.startsWith('image/')) {
-      showImagePreview(file, 'ethicalFilePreview');
-    }
+  // ===== PROCEED BUTTON =====
+  const proceedBtn = document.getElementById('proceedToForm');
+  if (proceedBtn) {
+    console.log('Found proceed button');
+    proceedBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Proceed button clicked!');
+      
+      // Toggle sections
+      document.getElementById('guidelinesSection').classList.remove('active');
+      document.getElementById('formSection').classList.add('active');
+      
+      // Toggle steps
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  } else {
+    console.error('Could not find proceed button!');
   }
-}
-
-// Remove file functions
-function removeFormFile(event) {
-  event.stopPropagation();
   
-  const input = document.getElementById('form_submission');
-  const uploadContent = document.getElementById('formUploadContent');
-  const filePreview = document.getElementById('formFilePreview');
+  // ===== BACK BUTTON =====
+  const backBtn = document.getElementById('backToGuidelines');
+  if (backBtn) {
+    backBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Back button clicked');
+      
+      // Toggle sections
+      document.getElementById('formSection').classList.remove('active');
+      document.getElementById('guidelinesSection').classList.add('active');
+      
+      // Toggle steps
+      document.getElementById('step2').classList.remove('active');
+      document.getElementById('step1').classList.add('active');
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
   
-  // Reset file input
-  input.value = '';
+  // ===== FILE UPLOAD FUNCTIONS =====
+  window.updateFormFileName = function(input) {
+    const uploadContent = document.getElementById('formUploadContent');
+    const filePreview = document.getElementById('formFilePreview');
+    const fileName = document.getElementById('formFileName');
+    const fileSize = document.getElementById('formFileSize');
+    
+    if (input.files.length > 0) {
+      const file = input.files[0];
+      
+      // Hide upload prompt, show file preview
+      uploadContent.style.display = 'none';
+      filePreview.classList.remove('hidden');
+      
+      // Display file info
+      fileName.textContent = file.name;
+      fileSize.textContent = formatBytes(file.size);
+      
+      // Show PDF preview if available
+      if (file.type === 'application/pdf') {
+        showPdfPreview(file, 'formFilePreview');
+      }
+    }
+  };
   
-  // Show upload prompt, hide file preview
-  uploadContent.style.display = 'flex';
-  filePreview.classList.add('hidden');
-}
-
-function removeEthicalFile(event) {
-  event.stopPropagation();
+  window.updateEthicalFileName = function(input) {
+    const uploadContent = document.getElementById('ethicalUploadContent');
+    const filePreview = document.getElementById('ethicalFilePreview');
+    const fileName = document.getElementById('ethicalFileName');
+    const fileSize = document.getElementById('ethicalFileSize');
+    
+    if (input.files.length > 0) {
+      const file = input.files[0];
+      
+      // Hide upload prompt, show file preview
+      uploadContent.style.display = 'none';
+      filePreview.classList.remove('hidden');
+      
+      // Display file info
+      fileName.textContent = file.name;
+      fileSize.textContent = formatBytes(file.size);
+      
+      // Show image preview if it's an image
+      if (file.type.startsWith('image/')) {
+        showImagePreview(file, 'ethicalFilePreview');
+      }
+    }
+  };
   
-  const input = document.getElementById('ethical_approval_proof');
-  const uploadContent = document.getElementById('ethicalUploadContent');
-  const filePreview = document.getElementById('ethicalFilePreview');
+  window.removeFormFile = function(event) {
+    event.stopPropagation();
+    
+    const input = document.getElementById('form_submission');
+    const uploadContent = document.getElementById('formUploadContent');
+    const filePreview = document.getElementById('formFilePreview');
+    
+    // Reset file input
+    input.value = '';
+    
+    // Show upload prompt, hide file preview
+    uploadContent.style.display = 'flex';
+    filePreview.classList.add('hidden');
+    
+    // Remove any preview iframe
+    const existingIframe = filePreview.querySelector('iframe');
+    if (existingIframe) existingIframe.remove();
+  };
   
-  // Reset file input
-  input.value = '';
+  window.removeEthicalFile = function(event) {
+    event.stopPropagation();
+    
+    const input = document.getElementById('ethical_approval_proof');
+    const uploadContent = document.getElementById('ethicalUploadContent');
+    const filePreview = document.getElementById('ethicalFilePreview');
+    
+    // Reset file input
+    input.value = '';
+    
+    // Show upload prompt, hide file preview
+    uploadContent.style.display = 'flex';
+    filePreview.classList.add('hidden');
+    
+    // Remove any preview image
+    const existingImg = filePreview.querySelector('img');
+    if (existingImg) existingImg.remove();
+    
+    // Remove any preview iframe
+    const existingIframe = filePreview.querySelector('iframe');
+    if (existingIframe) existingIframe.remove();
+  };
   
-  // Show upload prompt, hide file preview
-  uploadContent.style.display = 'flex';
-  filePreview.classList.add('hidden');
-}
-
-// Show PDF preview
-function showPdfPreview(file, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+  // ===== HELPER FUNCTIONS =====
+  function showPdfPreview(file, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Remove existing iframe
+    const existingIframe = container.querySelector('iframe');
+    if (existingIframe) existingIframe.remove();
+    
+    const fileURL = URL.createObjectURL(file);
+    const iframe = document.createElement('iframe');
+    iframe.src = fileURL;
+    iframe.className = 'w-full h-48 mt-3 rounded-lg border border-gray-200';
+    iframe.title = 'PDF Preview';
+    container.appendChild(iframe);
+    
+    // Clean up object URL after iframe loads
+    iframe.onload = function() {
+      URL.revokeObjectURL(fileURL);
+    };
+  }
   
-  // Create iframe for PDF preview
-  const existingIframe = container.querySelector('iframe');
-  if (existingIframe) existingIframe.remove();
+  function showImagePreview(file, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Remove existing image
+    const existingImg = container.querySelector('img');
+    if (existingImg) existingImg.remove();
+    
+    const fileURL = URL.createObjectURL(file);
+    const img = document.createElement('img');
+    img.src = fileURL;
+    img.className = 'w-full h-48 object-contain mt-3 rounded-lg border border-gray-200';
+    img.alt = 'Image Preview';
+    container.appendChild(img);
+    
+    // Clean up object URL after image loads
+    img.onload = function() {
+      URL.revokeObjectURL(fileURL);
+    };
+  }
   
-  const fileURL = URL.createObjectURL(file);
-  const iframe = document.createElement('iframe');
-  iframe.src = fileURL;
-  iframe.className = 'w-full h-48 mt-3 rounded-lg border border-gray-200';
-  iframe.title = 'PDF Preview';
-  container.appendChild(iframe);
-}
-
-// Show image preview
-function showImagePreview(file, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+  function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  }
   
-  // Create img for image preview
-  const existingImg = container.querySelector('img');
-  if (existingImg) existingImg.remove();
-  
-  const fileURL = URL.createObjectURL(file);
-  const img = document.createElement('img');
-  img.src = fileURL;
-  img.className = 'w-full h-48 object-contain mt-3 rounded-lg border border-gray-200';
-  img.alt = 'Image Preview';
-  container.appendChild(img);
-}
-
-// Format file size
-function formatBytes(bytes, decimals = 2) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
+  // Make formatBytes available globally for the file upload functions
+  window.formatBytes = formatBytes;
+});
 </script>
 {% endblock %}
