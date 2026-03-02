@@ -766,132 +766,126 @@
           {% endif %}
         </div>
 
-       <!-- Data Preview Section -->
-      <div id="dataPreview" class="p-3 md:p-4 hidden">
-        {% if has_preview and not preview_error %}
-        <!-- Table Container with improved scroll -->
-        <div class="bg-white border rounded-lg overflow-hidden">
-          <!-- Table Controls -->
-          <div class="flex items-center justify-between p-3 border-b bg-gray-50">
-            <div class="flex items-center space-x-4">
-              <div class="text-sm text-gray-600">
-                <!-- Show data rows only (excluding header) -->
-                <span class="font-medium">{{ preview_rows|length }}</span> rows displayed 
-                {% if total_data_rows and total_data_rows > preview_rows|length %}
-                <span class="text-xs text-gray-500">(of {{ total_data_rows }} total data rows)</span>
-                {% endif %}
-                × 
-                <span class="font-medium">{{ preview_columns|length }}</span> columns
-                {% if preview_type == 'excel' %}
-                <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Excel Preview</span>
-                {% endif %}
+        <!-- Data Preview Section -->
+        <div id="dataPreview" class="p-3 md:p-4 hidden">
+          {% if has_preview and not preview_error %}
+          <!-- Table Container with improved scroll -->
+          <div class="bg-white border rounded-lg overflow-hidden">
+            <!-- Table Controls -->
+            <div class="flex items-center justify-between p-3 border-b bg-gray-50">
+              <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-600">
+                  <span class="font-medium">{{ preview_rows|length }}</span> rows × 
+                  <span class="font-medium">{{ preview_columns|length }}</span> columns
+                  {% if preview_type == 'excel' %}
+                  <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Excel Preview</span>
+                  {% endif %}
+                </div>
+                <div class="text-xs text-gray-500 hidden md:block">
+                  Use scroll bars to view all data
+                </div>
               </div>
-              <div class="text-xs text-gray-500 hidden md:block">
-                Use scroll bars to view all data • Header not counted in rows
+              <div class="flex items-center space-x-2">
+                <button onclick="scrollToTop()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="Scroll to top">
+                  <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                </button>
+                <button onclick="scrollToLeft()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded hidden md:block" title="Scroll left">
+                  <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </button>
+                <button onclick="scrollToRight()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded hidden md:block" title="Scroll right">
+                  <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+                <button onclick="scrollToBottom()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="Scroll to bottom">
+                  <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                </button>
               </div>
             </div>
-            <div class="flex items-center space-x-2">
-              <button onclick="scrollToTop()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="Scroll to top">
-                <i data-lucide="arrow-up" class="w-4 h-4"></i>
-              </button>
-              <button onclick="scrollToLeft()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded hidden md:block" title="Scroll left">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i>
-              </button>
-              <button onclick="scrollToRight()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded hidden md:block" title="Scroll right">
-                <i data-lucide="arrow-right" class="w-4 h-4"></i>
-              </button>
-              <button onclick="scrollToBottom()" class="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded" title="Scroll to bottom">
-                <i data-lucide="arrow-down" class="w-4 h-4"></i>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Table with improved sticky headers and scroll -->
-          <div class="relative overflow-auto max-h-[400px] md:max-h-[500px] border-t" id="tableContainer">
-            <table class="min-w-full divide-y divide-gray-200 border-collapse">
-              <thead class="bg-gray-50 sticky top-0 z-20 shadow-sm">
-                <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 sticky left-0 z-30 min-w-[60px] border-r border-gray-200">
-                    #
-                  </th>
-                  {% for col in preview_columns %}
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 min-w-[150px] max-w-[300px] border-r border-gray-200 last:border-r-0">
-                    <div class="flex items-center justify-between">
-                      <span title="{{ col }}" class="truncate">{{ col }}</span>
-                      <span class="text-xs text-gray-400 ml-1 hidden md:inline">▼</span>
-                    </div>
-                  </th>
-                  {% endfor %}
-                </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-                {% for row in preview_rows %}
-                <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-blue-50">
-                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 font-mono bg-inherit sticky left-0 z-10 min-w-[60px] border-r border-gray-200">
-                    {{ forloop.counter }}
-                  </td>
-                  {% for col in preview_columns %}
-                  <td class="px-4 py-4 text-sm text-gray-900 min-w-[150px] max-w-[300px] border-r border-gray-200 last:border-r-0">
-                    <div class="group relative">
-                      {% with value=row|get_item:col %}
-                        {% if value == None or value == '' or value == 'nan' %}
-                          <span class="text-gray-400 italic">null</span>
-                        {% else %}
-                          <div class="truncate" title="{{ value|stringformat:'s' }}">{{ value|stringformat:"s"|truncatechars:50 }}</div>
-                          {% if value|stringformat:"s"|length > 30 %}
-                            <div class="absolute left-0 top-full mt-1 w-64 md:w-96 p-2 md:p-3 bg-white border rounded-lg shadow-lg z-50 hidden group-hover:block">
-                              <div class="text-xs font-medium text-gray-900 mb-1 border-b pb-1">Full Content:</div>
-                              <div class="text-xs md:text-sm text-gray-600 whitespace-pre-wrap max-h-40 md:max-h-60 overflow-y-auto">{{ value|stringformat:"s" }}</div>
-                            </div>
+            
+            <!-- Table with improved sticky headers and scroll -->
+            <div class="relative overflow-auto max-h-[400px] md:max-h-[500px] border-t" id="tableContainer">
+              <table class="min-w-full divide-y divide-gray-200 border-collapse">
+                <thead class="bg-gray-50 sticky top-0 z-20 shadow-sm">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 sticky left-0 z-30 min-w-[60px] border-r border-gray-200">
+                      #
+                    </th>
+                    {% for col in preview_columns %}
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 min-w-[150px] max-w-[300px] border-r border-gray-200 last:border-r-0">
+                      <div class="flex items-center justify-between">
+                        <span title="{{ col }}" class="truncate">{{ col }}</span>
+                        <span class="text-xs text-gray-400 ml-1 hidden md:inline">▼</span>
+                      </div>
+                    </th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  {% for row in preview_rows %}
+                  <tr class="{% cycle 'bg-white' 'bg-gray-50' %} hover:bg-blue-50">
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 font-mono bg-inherit sticky left-0 z-10 min-w-[60px] border-r border-gray-200">
+                      {{ forloop.counter }}
+                    </td>
+                    {% for col in preview_columns %}
+                    <td class="px-4 py-4 text-sm text-gray-900 min-w-[150px] max-w-[300px] border-r border-gray-200 last:border-r-0">
+                      <div class="group relative">
+                        {% with value=row|get_item:col %}
+                          {% if value == None or value == '' or value == 'nan' %}
+                            <span class="text-gray-400 italic">null</span>
+                          {% else %}
+                            <div class="truncate" title="{{ value|stringformat:'s' }}">{{ value|stringformat:"s"|truncatechars:50 }}</div>
+                            {% if value|stringformat:"s"|length > 30 %}
+                              <div class="absolute left-0 top-full mt-1 w-64 md:w-96 p-2 md:p-3 bg-white border rounded-lg shadow-lg z-50 hidden group-hover:block">
+                                <div class="text-xs font-medium text-gray-900 mb-1 border-b pb-1">Full Content:</div>
+                                <div class="text-xs md:text-sm text-gray-600 whitespace-pre-wrap max-h-40 md:max-h-60 overflow-y-auto">{{ value|stringformat:"s" }}</div>
+                              </div>
+                            {% endif %}
                           {% endif %}
-                        {% endif %}
-                      {% endwith %}
-                    </div>
-                  </td>
+                        {% endwith %}
+                      </div>
+                    </td>
+                    {% endfor %}
+                  </tr>
                   {% endfor %}
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- Scroll position indicator with row count clarification -->
-          <div class="px-3 py-2 text-xs text-gray-500 border-t bg-gray-50 flex justify-between items-center">
-            <div>
-              <span id="scrollPosition">Scroll position: Top-Left</span>
-              <span class="ml-3 text-green-600">✓ {{ preview_rows|length }} data rows shown (header excluded)</span>
+                </tbody>
+              </table>
             </div>
-            <div class="flex items-center space-x-2">
-              <span class="text-gray-400">← → scroll horizontally | ↑ ↓ scroll vertically</span>
-            </div>
-          </div>
-        </div>
-        {% elif preview_error %}
-          <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div class="flex items-center text-red-700">
-              <i data-lucide="alert-circle" class="w-5 h-5 mr-2 flex-shrink-0"></i>
+            
+            <!-- Scroll position indicator -->
+            <div class="px-3 py-2 text-xs text-gray-500 border-t bg-gray-50 flex justify-between items-center">
               <div>
-                <p class="font-medium">Error loading preview</p>
-                <p class="text-sm">{{ preview_error }}</p>
+                <span id="scrollPosition">Scroll position: Top-Left</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="text-gray-400">← → scroll horizontally | ↑ ↓ scroll vertically</span>
               </div>
             </div>
           </div>
-        {% else %}
-          <div class="bg-gray-50 rounded-lg p-8 text-center">
-            <i data-lucide="file-question" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
-            <p class="text-gray-600 mb-2">No preview data available</p>
-            {% if dataset.preview_file %}
-            <p class="text-sm text-gray-500 mb-4">This file cannot be previewed directly.</p>
-            <a href="{{ dataset.preview_file.url }}" 
-              download
-              class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
-              <i data-lucide="download" class="w-4 h-4"></i>
-              Download Preview File
-            </a>
-            {% endif %}
-          </div>
-        {% endif %}
-      </div>
+          {% elif preview_error %}
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex items-center text-red-700">
+                <i data-lucide="alert-circle" class="w-5 h-5 mr-2 flex-shrink-0"></i>
+                <div>
+                  <p class="font-medium">Error loading preview</p>
+                  <p class="text-sm">{{ preview_error }}</p>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="bg-gray-50 rounded-lg p-8 text-center">
+              <i data-lucide="file-question" class="w-12 h-12 text-gray-400 mx-auto mb-4"></i>
+              <p class="text-gray-600 mb-2">No preview data available</p>
+              {% if dataset.preview_file %}
+              <p class="text-sm text-gray-500 mb-4">This file cannot be previewed directly.</p>
+              <a href="{{ dataset.preview_file.url }}" 
+                download
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                <i data-lucide="download" class="w-4 h-4"></i>
+                Download Preview File
+              </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
 
         <!-- README Preview Section -->
         <div id="readmePreview" class="p-3 md:p-4 hidden">

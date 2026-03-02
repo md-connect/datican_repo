@@ -361,7 +361,7 @@ def dataset_detail(request, pk):
     preview_error = None
     has_preview = False
     preview_type = 'none'
-    total_data_rows = 0
+    
     
     # Check for preview file first
     if hasattr(dataset, 'preview_file') and dataset.preview_file:
@@ -376,7 +376,6 @@ def dataset_detail(request, pk):
                 df = pd.read_excel(file_path, nrows=10)  # Read only first 10 rows
                 preview_columns = df.columns.tolist()
                 preview_rows = df.to_dict('records')
-                total_data_rows = preview_data.get('total_rows', 0)
                 has_preview = True
             else:
                 preview_error = "Unsupported file format for preview"
@@ -397,7 +396,6 @@ def dataset_detail(request, pk):
                 if preview_data:
                     preview_columns = preview_data.get('columns', [])
                     preview_rows = preview_data.get('rows', [])
-                    total_data_rows = preview_data.get('total_rows', 0)
                     has_preview = True
         except Exception as e:
             preview_error = str(e)
@@ -451,7 +449,6 @@ def dataset_detail(request, pk):
         'preview_error': preview_error,
         'has_preview': has_preview,
         'preview_type': preview_type,  # 'excel', 'csv', 'json', or 'none'
-        'total_data_rows': total_data_rows,
         
         # Multi-part file context
         'files': file_list,
