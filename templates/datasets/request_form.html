@@ -563,7 +563,6 @@
   </div>
 </div>
 
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Page loaded, setting up event listeners...');
@@ -636,15 +635,38 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // ===== FILE UPLOAD FUNCTIONS =====
-  window.updateFormFileName = function(input) {
+  // ===== FILE VALIDATION AND PREVIEW FUNCTIONS =====
+  const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+
+  // Form file validation and preview
+  window.validateFormFile = function(input) {
+    const fileError = document.getElementById('formFileError');
     const uploadContent = document.getElementById('formUploadContent');
     const filePreview = document.getElementById('formFilePreview');
     const fileName = document.getElementById('formFileName');
     const fileSize = document.getElementById('formFileSize');
     
+    // Hide any previous error
+    fileError.classList.add('hidden');
+    
     if (input.files.length > 0) {
       const file = input.files[0];
+      
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        fileError.textContent = `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`;
+        fileError.classList.remove('hidden');
+        input.value = ''; // Clear the input
+        return;
+      }
+      
+      // Validate file type
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        fileError.textContent = 'Invalid file type. Please upload a PDF file.';
+        fileError.classList.remove('hidden');
+        input.value = ''; // Clear the input
+        return;
+      }
       
       // Hide upload prompt, show file preview
       uploadContent.style.display = 'none';
@@ -654,21 +676,60 @@ document.addEventListener('DOMContentLoaded', function() {
       fileName.textContent = file.name;
       fileSize.textContent = formatBytes(file.size);
       
-      // Show PDF preview if available
-      if (file.type === 'application/pdf') {
-        showPdfPreview(file, 'formFilePreview');
-      }
+      // Remove any existing preview
+      const existingIframe = filePreview.querySelector('iframe');
+      if (existingIframe) existingIframe.remove();
+      
+      // Show PDF preview
+      const fileURL = URL.createObjectURL(file);
+      const iframe = document.createElement('iframe');
+      iframe.src = fileURL;
+      iframe.className = 'w-full h-48 mt-3 rounded-lg border border-gray-200';
+      iframe.title = 'PDF Preview';
+      filePreview.appendChild(iframe);
+      
+      // Clean up object URL after iframe loads
+      iframe.onload = function() {
+        URL.revokeObjectURL(fileURL);
+      };
+      
+      // Check all fields for submit button
+      checkAllFieldsValid();
     }
   };
-  
-  window.updateEthicalFileName = function(input) {
+
+  // Ethical file validation and preview
+  window.validateEthicalFile = function(input) {
+    const fileError = document.getElementById('ethicalFileError');
     const uploadContent = document.getElementById('ethicalUploadContent');
     const filePreview = document.getElementById('ethicalFilePreview');
     const fileName = document.getElementById('ethicalFileName');
     const fileSize = document.getElementById('ethicalFileSize');
     
+    // Hide any previous error
+    fileError.classList.add('hidden');
+    
     if (input.files.length > 0) {
       const file = input.files[0];
+      
+      // Validate file size
+      if (file.size > MAX_FILE_SIZE) {
+        fileError.textContent = `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`;
+        fileError.classList.remove('hidden');
+        input.value = ''; // Clear the input
+        return;
+      }
+      
+      // Validate file type
+      const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+      const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+      
+      if (!validExtensions.includes(fileExt)) {
+        fileError.textContent = 'Invalid file type. Please upload PDF, JPG, or PNG.';
+        fileError.classList.remove('hidden');
+        input.value = ''; // Clear the input
+        return;
+      }
       
       // Hide upload prompt, show file preview
       uploadContent.style.display = 'none';
@@ -678,19 +739,48 @@ document.addEventListener('DOMContentLoaded', function() {
       fileName.textContent = file.name;
       fileSize.textContent = formatBytes(file.size);
       
-      // Show image preview if it's an image
-      if (file.type.startsWith('image/')) {
-        showImagePreview(file, 'ethicalFilePreview');
+      // Remove any existing preview
+      const existingPreview = filePreview.querySelector('iframe, img');
+      if (existingPreview) existingPreview.remove();
+      
+      const fileURL = URL.createObjectURL(file);
+      
+      // Show appropriate preview based on file type
+      if (fileExt === '.pdf') {
+        const iframe = document.createElement('iframe');
+        iframe.src = fileURL;
+        iframe.className = 'w-full h-48 mt-3 rounded-lg border border-gray-200';
+        iframe.title = 'PDF Preview';
+        filePreview.appendChild(iframe);
+        
+        iframe.onload = function() {
+          URL.revokeObjectURL(fileURL);
+        };
+      } else {
+        const img = document.createElement('img');
+        img.src = fileURL;
+        img.className = 'w-full h-48 object-contain mt-3 rounded-lg border border-gray-200';
+        img.alt = 'Image Preview';
+        filePreview.appendChild(img);
+        
+        img.onload = function() {
+          URL.revokeObjectURL(fileURL);
+        };
       }
+      
+      // Check all fields for submit button
+      checkAllFieldsValid();
     }
   };
-  
+
+  // Remove form file
   window.removeFormFile = function(event) {
     event.stopPropagation();
     
     const input = document.getElementById('form_submission');
     const uploadContent = document.getElementById('formUploadContent');
     const filePreview = document.getElementById('formFilePreview');
+    const fileError = document.getElementById('formFileError');
     
     // Reset file input
     input.value = '';
@@ -699,17 +789,25 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadContent.style.display = 'flex';
     filePreview.classList.add('hidden');
     
-    // Remove any preview iframe
-    const existingIframe = filePreview.querySelector('iframe');
-    if (existingIframe) existingIframe.remove();
+    // Hide error if visible
+    fileError.classList.add('hidden');
+    
+    // Remove any preview
+    const existingPreview = filePreview.querySelector('iframe, img');
+    if (existingPreview) existingPreview.remove();
+    
+    // Check all fields for submit button
+    checkAllFieldsValid();
   };
-  
+
+  // Remove ethical file
   window.removeEthicalFile = function(event) {
     event.stopPropagation();
     
     const input = document.getElementById('ethical_approval_proof');
     const uploadContent = document.getElementById('ethicalUploadContent');
     const filePreview = document.getElementById('ethicalFilePreview');
+    const fileError = document.getElementById('ethicalFileError');
     
     // Reset file input
     input.value = '';
@@ -718,58 +816,61 @@ document.addEventListener('DOMContentLoaded', function() {
     uploadContent.style.display = 'flex';
     filePreview.classList.add('hidden');
     
-    // Remove any preview image
-    const existingImg = filePreview.querySelector('img');
-    if (existingImg) existingImg.remove();
+    // Hide error if visible
+    fileError.classList.add('hidden');
     
-    // Remove any preview iframe
-    const existingIframe = filePreview.querySelector('iframe');
-    if (existingIframe) existingIframe.remove();
+    // Remove any preview
+    const existingPreview = filePreview.querySelector('iframe, img');
+    if (existingPreview) existingPreview.remove();
+    
+    // Check all fields for submit button
+    checkAllFieldsValid();
   };
-  
-  // ===== HELPER FUNCTIONS =====
-  function showPdfPreview(file, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+
+  // Real-time text field validation
+  function validateTextField(input) {
+    const value = input.value.trim();
+    const errorElement = document.getElementById(input.id + 'Error');
     
-    // Remove existing iframe
-    const existingIframe = container.querySelector('iframe');
-    if (existingIframe) existingIframe.remove();
+    if (!errorElement) return true;
     
-    const fileURL = URL.createObjectURL(file);
-    const iframe = document.createElement('iframe');
-    iframe.src = fileURL;
-    iframe.className = 'w-full h-48 mt-3 rounded-lg border border-gray-200';
-    iframe.title = 'PDF Preview';
-    container.appendChild(iframe);
-    
-    // Clean up object URL after iframe loads
-    iframe.onload = function() {
-      URL.revokeObjectURL(fileURL);
-    };
+    if (value === '') {
+      errorElement.textContent = 'This field is required';
+      errorElement.classList.remove('hidden');
+      input.classList.remove('border-green-500');
+      input.classList.add('border-red-500');
+      return false;
+    } else {
+      errorElement.classList.add('hidden');
+      input.classList.remove('border-red-500');
+      input.classList.add('border-green-500');
+      return true;
+    }
   }
-  
-  function showImagePreview(file, containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+
+  // Check all fields before enabling submit
+  function checkAllFieldsValid() {
+    const institution = document.getElementById('institution')?.value.trim();
+    const phone = document.getElementById('phone_number')?.value.trim();
+    const projectTitle = document.getElementById('project_title')?.value.trim();
+    const projectDesc = document.getElementById('project_description')?.value.trim();
+    const formFile = document.getElementById('form_submission')?.files[0];
+    const ethicalFile = document.getElementById('ethical_approval_proof')?.files[0];
     
-    // Remove existing image
-    const existingImg = container.querySelector('img');
-    if (existingImg) existingImg.remove();
+    const submitBtn = document.getElementById('submitButton');
     
-    const fileURL = URL.createObjectURL(file);
-    const img = document.createElement('img');
-    img.src = fileURL;
-    img.className = 'w-full h-48 object-contain mt-3 rounded-lg border border-gray-200';
-    img.alt = 'Image Preview';
-    container.appendChild(img);
+    const isValid = institution && phone && projectTitle && projectDesc && formFile && ethicalFile;
     
-    // Clean up object URL after image loads
-    img.onload = function() {
-      URL.revokeObjectURL(fileURL);
-    };
+    if (isValid) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
   }
-  
+
+  // Format file size
   function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -778,166 +879,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
-  
-  // Make formatBytes available globally for the file upload functions
-  window.formatBytes = formatBytes;
 
-  // ===== FILE VALIDATION FUNCTIONS =====
-const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
-
-function validateFormFile(input) {
-  const fileError = document.getElementById('formFileError');
-  const uploadContent = document.getElementById('formUploadContent');
-  const filePreview = document.getElementById('formFilePreview');
-  const fileName = document.getElementById('formFileName');
-  const fileSize = document.getElementById('formFileSize');
-  
-  // Hide any previous error
-  fileError.classList.add('hidden');
-  
-  if (input.files.length > 0) {
-    const file = input.files[0];
-    
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      fileError.textContent = `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`;
-      fileError.classList.remove('hidden');
-      input.value = ''; // Clear the input
-      return;
-    }
-    
-    // Validate file type
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      fileError.textContent = 'Invalid file type. Please upload a PDF file.';
-      fileError.classList.remove('hidden');
-      input.value = ''; // Clear the input
-      return;
-    }
-    
-    // Hide upload prompt, show file preview
-    uploadContent.style.display = 'none';
-    filePreview.classList.remove('hidden');
-    
-    // Display file info
-    fileName.textContent = file.name;
-    fileSize.textContent = formatBytes(file.size);
-    
-    // Show PDF preview if available
-    if (file.type === 'application/pdf') {
-      showPdfPreview(file, 'formFilePreview');
-    }
-    
-    // Enable submit button if all validations pass
-    checkAllFieldsValid();
-  }
-}
-
-function validateEthicalFile(input) {
-  const fileError = document.getElementById('ethicalFileError');
-  const uploadContent = document.getElementById('ethicalUploadContent');
-  const filePreview = document.getElementById('ethicalFilePreview');
-  const fileName = document.getElementById('ethicalFileName');
-  const fileSize = document.getElementById('ethicalFileSize');
-  
-  // Hide any previous error
-  fileError.classList.add('hidden');
-  
-  if (input.files.length > 0) {
-    const file = input.files[0];
-    
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      fileError.textContent = `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`;
-      fileError.classList.remove('hidden');
-      input.value = ''; // Clear the input
-      return;
-    }
-    
-    // Validate file type
-    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-    const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
-    const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
-    
-    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExt)) {
-      fileError.textContent = 'Invalid file type. Please upload PDF, JPG, or PNG.';
-      fileError.classList.remove('hidden');
-      input.value = ''; // Clear the input
-      return;
-    }
-    
-    // Hide upload prompt, show file preview
-    uploadContent.style.display = 'none';
-    filePreview.classList.remove('hidden');
-    
-    // Display file info
-    fileName.textContent = file.name;
-    fileSize.textContent = formatBytes(file.size);
-    
-    // Show image preview if it's an image
-    if (file.type.startsWith('image/')) {
-      showImagePreview(file, 'ethicalFilePreview');
-    } else if (file.type === 'application/pdf') {
-      showPdfPreview(file, 'ethicalFilePreview');
-    }
-    
-    // Enable submit button if all validations pass
-    checkAllFieldsValid();
-  }
-}
-
-// Real-time text field validation
-function validateTextField(input) {
-  const value = input.value.trim();
-  const errorElement = document.getElementById(input.id + 'Error');
-  
-  if (!errorElement) return;
-  
-  if (value === '') {
-    errorElement.textContent = input.placeholder || 'This field is required';
-    errorElement.classList.remove('hidden');
-    input.classList.add('border-red-500');
-    return false;
-  } else {
-    errorElement.classList.add('hidden');
-    input.classList.remove('border-red-500');
-    input.classList.add('border-green-500');
-    return true;
-  }
-}
-
-// Check all fields before enabling submit
-function checkAllFieldsValid() {
-  const institution = document.getElementById('institution')?.value.trim();
-  const phone = document.getElementById('phone_number')?.value.trim();
-  const projectTitle = document.getElementById('project_title')?.value.trim();
-  const projectDesc = document.getElementById('project_description')?.value.trim();
-  const formFile = document.getElementById('form_submission')?.files[0];
-  const ethicalFile = document.getElementById('ethical_approval_proof')?.files[0];
-  
-  const submitBtn = document.getElementById('submitButton');
-  
-  if (institution && phone && projectTitle && projectDesc && formFile && ethicalFile) {
-    submitBtn.disabled = false;
-    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-  } else {
-    submitBtn.disabled = true;
-    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
-  }
-}
-
-// Add real-time validation listeners
-document.addEventListener('DOMContentLoaded', function() {
-  // Add error spans after each required field
+  // Add real-time validation listeners for text fields
   const requiredFields = ['institution', 'phone_number', 'project_title', 'project_description'];
   
   requiredFields.forEach(fieldId => {
     const field = document.getElementById(fieldId);
     if (field) {
-      // Create error span
-      const errorSpan = document.createElement('p');
-      errorSpan.id = fieldId + 'Error';
-      errorSpan.className = 'hidden text-xs text-red-600 mt-1';
-      field.parentNode.appendChild(errorSpan);
+      // Create error span if it doesn't exist
+      if (!document.getElementById(fieldId + 'Error')) {
+        const errorSpan = document.createElement('p');
+        errorSpan.id = fieldId + 'Error';
+        errorSpan.className = 'hidden text-xs text-red-600 mt-1';
+        field.parentNode.appendChild(errorSpan);
+      }
       
       // Add input event listener
       field.addEventListener('input', function() {
@@ -949,6 +904,9 @@ document.addEventListener('DOMContentLoaded', function() {
         validateTextField(this);
         checkAllFieldsValid();
       });
+      
+      // Initial validation
+      validateTextField(field);
     }
   });
   
@@ -958,8 +916,9 @@ document.addEventListener('DOMContentLoaded', function() {
     submitBtn.disabled = true;
     submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
   }
-});
-
+  
+  // Initial check for any pre-filled values
+  checkAllFieldsValid();
 });
 </script>
 {% endblock %}
