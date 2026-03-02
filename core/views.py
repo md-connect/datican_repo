@@ -203,7 +203,8 @@ def home(request):
         
         # Add usability score (you can customize this logic)
         # Using rating as usability score for now
-        dataset.usability_display = f"{dataset.rating}/10"
+        rating = 10
+        dataset.usability_display = f"{rating}/10"
 
     dataset_count = Dataset.objects.count()
     
