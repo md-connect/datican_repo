@@ -207,8 +207,6 @@ def home(request):
 
     dataset_count = Dataset.objects.count()
     
-    # Get total downloads across all datasets
-    total_downloads = Dataset.objects.aggregate(total=Sum('download_count'))['total'] or 0
 
     return render(request, 'home.html', {
         'featured_datasets': featured_datasets,
