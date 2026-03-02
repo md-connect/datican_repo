@@ -82,7 +82,7 @@ def dataset_list(request):
     min_rating = request.GET.get('min_rating', '0')
     upload_date = request.GET.get('upload_date', 'all')
     popularity = request.GET.get('popularity', 'all')
-    sort = request.GET.get('sort', 'newest')
+    sort = request.GET.get('sort', 'custom')
     search_query = request.GET.get('q', '').strip()
 
     # Start with base queryset

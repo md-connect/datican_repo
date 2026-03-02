@@ -175,6 +175,7 @@ class DatasetAdmin(admin.ModelAdmin):
     list_editable = ['display_order']
     list_filter = ['modality', 'format', 'upload_date', 'preview_type']
     search_fields = ['title', 'description', 'body_part', 'dataset_path']
+    ordering = ['display_order', 'title']
 
     readonly_fields = (
         'readme_updated',
