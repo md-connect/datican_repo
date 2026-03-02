@@ -258,7 +258,6 @@ def dataset_list(request):
     
     return render(request, 'datasets/list.html', context)
 
-
 def dataset_detail(request, pk):
     # Prefetch related thumbnails and optimize queries
     dataset = get_object_or_404(
@@ -895,7 +894,7 @@ def dataset_request(request, pk):
                     send_mail(
                         "URGENT: No Data Manager Available",
                         f"A new data request (#{data_request.id}) was submitted but no data manager is available to review it.",
-                        "no-reply@datican.org",
+                        settings.DEFAULT_FROM_EMAIL,
                         [admin_user.email],
                         fail_silently=True,
                     )
@@ -1227,7 +1226,7 @@ def director_review(request, pk):
                     f"Researcher: {data_request.user.get_full_name()}\n"
                     f"Approval Date: {data_request.approved_date.strftime('%Y-%m-%d %H:%M')}\n"
                     f"Director Notes: {director_comment}",
-                    "no-reply@datican.org",
+                    settings.DEFAULT_FROM_EMAIL,
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -1259,7 +1258,7 @@ def director_review(request, pk):
                     f"Researcher: {data_request.user.get_full_name()}\n"
                     f"Rejection Date: {timezone.now().strftime('%Y-%m-%d %H:%M')}\n"
                     f"Director Notes: {director_comment}",
-                    "no-reply@datican.org",
+                    settings.DEFAULT_FROM_EMAIL,
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -1345,7 +1344,7 @@ def director_review_request(request, pk):
                 send_mail(
                     f"Request #{data_request.id} Approved",
                     f"The data request you recommended has been approved by the director.",
-                    "no-reply@datican.org",
+                    settings.DEFAULT_FROM_EMAIL,
                     [data_request.manager.email],
                     fail_silently=True,
                 )
@@ -1382,7 +1381,7 @@ def director_review_request(request, pk):
                 send_mail(
                     f"Request #{data_request.id} Returned to Manager",
                     f"The data request you recommended has been returned to you for further review.",
-                    "no-reply@datican.org",
+                    settings.DEFAULT_FROM_EMAIL,
                     [data_request.manager.email],
                     fail_silently=True,
                 )

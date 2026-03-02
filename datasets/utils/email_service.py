@@ -41,7 +41,7 @@ class EmailService:
 
             # Use the provided from_email or fallback to settings
             if not from_email:
-                from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@datican.org")
+                from_email = settings.DEFAULT_FROM_EMAIL
 
             # Ensure the from_email uses a verified domain in development
             verified_domains = ["datican.org", "repo.datican.org"]
@@ -49,9 +49,9 @@ class EmailService:
             if domain not in verified_domains:
                 logger.warning(
                     f"From email '{from_email}' is not a verified domain. "
-                    f"Switching to default verified domain 'no-reply@datican.org' to prevent 403."
+                    f"Switching to default verified domain 'noreply@repo.datican.org' to prevent 403."
                 )
-                from_email = "no-reply@datican.org"
+                from_email = settings.DEFAULT_FROM_EMAIL
 
             send_mail(
                 subject=subject,

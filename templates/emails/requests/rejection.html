@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
-<title>Data Request Decision</title>
+<title>Data Request Decision - DATICAN Repository</title>
 
 <style>
 table { border-collapse: collapse; }
@@ -21,24 +21,42 @@ a { text-decoration: none; }
 
 <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC">
 <tr>
-<td align="center">
+<td align="center" style="padding:20px;">
 
 <!-- Container -->
 <table width="620" class="container" cellpadding="0" cellspacing="0"
        style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
 
-    <!-- Header -->
+    <!-- Header with Logo -->
     <tr>
-        <td bgcolor="#0F172A" style="padding:40px 32px; text-align:center;">
-            <div style="font-size:26px; font-weight:bold; color:#FFFFFF;">
-                Update on Your Data Request
-            </div>
-            <div style="font-size:16px; color:#CBD5F5; margin-top:8px;">
-                Dear {{ user_display_name }},
-            </div>
+        <td align="center" bgcolor="#0F172A" style="padding:40px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <!-- Logo -->
+                    <td width="80" align="left" valign="middle">
+                        <img 
+                            src="https://repo.datican.org/static/images/datican_repo.png"
+                            alt="DATICAN"
+                            width="64"
+                            style="display:block; border:0; outline:none;"
+                        />
+                    </td>
+                    <!-- Text -->
+                    <td align="left" valign="middle" style="padding-left:16px;">
+                        <div style="font-size:22px; font-weight:bold; color:#FFFFFF;">
+                            DATICAN Repository
+                        </div>
+                        <div style="font-size:26px; font-weight:bold; color:#FFFFFF; margin-top:8px;">
+                            Update on Your Data Request
+                        </div>
+                        <div style="font-size:16px; color:#CBD5F5; margin-top:6px;">
+                            Dear {{ user_display_name }},
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
-    
 
     <!-- Body -->
     <tr>
@@ -76,7 +94,7 @@ a { text-decoration: none; }
                             </tr>
 
                             <tr>
-                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:.08em;">
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase; width:120px;">
                                     Request ID
                                 </td>
                                 <td style="padding:8px 0; font-size:16px;">
@@ -125,16 +143,15 @@ a { text-decoration: none; }
                 </tr>
             </table>
 
-
             <!-- Reason -->
             {% if rejection_reason %}
             <table width="100%" cellpadding="0" cellspacing="0"
                    style="background:#FFF1F2; border:1px solid #FECACA;
                           border-left:4px solid #E11D48;
-                          border-radius:12px; padding:20px; margin:32px 0;">
+                          border-radius:12px; margin:32px 0;">
                 <tr>
-                    <td>
-                        <div style="font-size:16px; font-weight:bold; color:#9F1239; margin-bottom:6px;">
+                    <td style="padding:24px 32px;">
+                        <div style="font-size:16px; font-weight:bold; color:#9F1239; margin-bottom:12px;">
                             📝 Reason for Rejection
                         </div>
                         <div style="font-size:15px; color:#475569; line-height:1.6;">
@@ -146,62 +163,64 @@ a { text-decoration: none; }
             {% endif %}
 
             <!-- Next Steps -->
-            <p style="font-size:18px; font-weight:bold; margin-bottom:12px;">
+            <p style="font-size:18px; font-weight:bold; margin:32px 0 12px;">
                 🔄 Recommended Next Steps
             </p>
 
-            <ul style="padding-left:18px; color:#475569; font-size:15px; line-height:1.7;">
+            <ul style="padding-left:18px; color:#475569; font-size:15px; line-height:1.7; margin:0 0 32px;">
                 <li>Submit a revised request addressing the points above</li>
                 <li>Ensure all required documentation is complete and valid</li>
                 <li>Provide a clearer or more detailed project description</li>
                 <li>Confirm ethical approval documents are current</li>
             </ul>
 
-            <!-- Contact -->
+            <!-- Contact Information -->
             <table width="100%" cellpadding="0" cellspacing="0"
                    style="background:#F8FAFC; border:1px solid #E2E8F0;
                           border-left:4px solid #64748B;
-                          border-radius:12px; padding:20px; margin:32px 0;">
+                          border-radius:12px; margin:32px 0;">
                 <tr>
-                    <td colspan="2" style="font-size:16px; font-weight:bold; padding-bottom:12px;">
-                        📞 Contact Information
+                    <td style="padding:24px 32px;">
+                        <div style="font-size:16px; font-weight:bold; color:#0F172A; margin-bottom:16px;">
+                            📞 Contact Information
+                        </div>
+                        
+                        <table width="100%" cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td style="padding:4px 0; font-size:14px; color:#64748B; width:120px;">Data Manager</td>
+                                <td style="padding:4px 0; font-size:15px;">{{ manager_email }}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:4px 0; font-size:14px; color:#64748B;">Director (Appeal)</td>
+                                <td style="padding:4px 0; font-size:15px;">{{ director_email }}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:4px 0; font-size:14px; color:#64748B;">General Support</td>
+                                <td style="padding:4px 0; font-size:15px;">{{ contact_email }}</td>
+                            </tr>
+                        </table>
                     </td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:14px; color:#64748B;">Data Manager</td>
-                    <td style="font-size:15px;">{{ manager_email }}</td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:14px; color:#64748B;">Director (Appeal)</td>
-                    <td style="font-size:15px;">{{ director_email }}</td>
-                </tr>
-
-                <tr>
-                    <td style="font-size:14px; color:#64748B;">General Support</td>
-                    <td style="font-size:15px;">{{ contact_email }}</td>
                 </tr>
             </table>
 
             <!-- Actions -->
-            <div style="text-align:center; margin:36px 0;">
+            <div style="text-align:center; margin:40px 0;">
                 <a href="{{ new_request_url }}"
                    style="display:inline-block; background:#0F172A; color:#FFFFFF;
-                          padding:14px 32px; border-radius:10px;
-                          font-size:15px; font-weight:bold; margin-right:8px;">
+                          padding:16px 32px; border-radius:10px;
+                          font-size:15px; font-weight:bold; text-decoration:none; margin-right:8px;">
                     Submit Revised Request
                 </a>
 
                 <a href="mailto:{{ manager_email }}"
                    style="display:inline-block; background:#64748B; color:#FFFFFF;
-                          padding:14px 32px; border-radius:10px;
-                          font-size:15px; font-weight:bold; margin-top:12px;">
+                          padding:16px 32px; border-radius:10px;
+                          font-size:15px; font-weight:bold; text-decoration:none; margin-top:12px; display:inline-block;">
                     Contact Manager
                 </a>
             </div>
 
-            <p style="font-size:14px; color:#64748B; font-style:italic;">
+            <p style="font-size:14px; color:#64748B; font-style:italic; text-align:center;">
                 Thank you for your interest in our datasets. You are welcome to submit a revised
                 application if appropriate.
             </p>
@@ -212,18 +231,21 @@ a { text-decoration: none; }
     <!-- Footer -->
     <tr>
         <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
-            <div style="font-weight:bold; color:#FFFFFF;">
-                {{ site_name }}
+            <div style="font-weight:bold; color:#FFFFFF; margin-bottom:8px;">
+                DATICAN Repository
             </div>
 
-            <p style="font-size:14px; margin:10px 0;">
-                <a href="{{ site_url }}" style="color:#CBD5F5;">Data Portal</a> ·
-                <a href="{{ policy_url }}" style="color:#CBD5F5;">Access Policies</a> ·
-                <a href="{{ help_url }}" style="color:#CBD5F5;">Help Center</a>
+            <p style="font-size:14px; margin:0 0 20px;">
+                Secure research data access platform
             </p>
 
-            <p style="font-size:12px;">
-                © {% now "Y" %} {{ site_name }} · All rights reserved.
+            <p style="font-size:14px; margin:0;">
+                <a href="{{ site_url }}" style="color:#CBD5F5;">Visit Portal</a> ·
+                <a href="mailto:{{ support_email }}" style="color:#CBD5F5;">Contact Support</a>
+            </p>
+
+            <p style="font-size:12px; margin-top:24px;">
+                © {% now "Y" %} DATICAN Repository · All rights reserved.
             </p>
         </td>
     </tr>

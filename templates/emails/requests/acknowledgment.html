@@ -39,7 +39,7 @@ a {
 <!-- Container -->
 <table width="600" class="container" cellpadding="0" cellspacing="0" role="presentation" style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
 
-    <!-- Header -->
+    <!-- Header with Logo -->
     <tr>
     <td align="center" bgcolor="#0F172A" style="padding:40px 32px;">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
@@ -47,7 +47,7 @@ a {
             <!-- Logo -->
             <td width="80" align="left" valign="middle">
             <img 
-                src="https://repo.datican.org/static/images/datican_logo_io.png"
+                src="https://repo.datican.org/static/images/datican_repo.png"
                 alt="DATICAN"
                 width="64"
                 style="display:block; border:0; outline:none; text-decoration:none;"
@@ -57,7 +57,7 @@ a {
             <!-- Text -->
             <td align="left" valign="middle" style="padding-left:16px;">
             <div style="font-size:22px; font-weight:bold; letter-spacing:1px; color:#FFFFFF;">
-                {{ site_name }}
+                DATICAN Repository
             </div>
 
             <div style="font-size:26px; font-weight:bold; color:#FFFFFF; margin-top:8px;">
@@ -73,7 +73,6 @@ a {
     </td>
     </tr>
 
-
     <!-- Body -->
     <tr>
         <td class="padding" style="padding:40px 32px; color:#020617;">
@@ -83,8 +82,8 @@ a {
             </p>
 
             <p style="font-size:16px; line-height:1.7; color:#475569; margin:0 0 32px 0;">
-                Thank you for submitting your data request through the {{ site_name }} platform.
-                We’ve received your application and our team will begin reviewing it shortly.
+                Thank you for submitting your data request through the DATICAN Repository platform.
+                We've received your application and our team will begin reviewing it shortly.
             </p>
 
             <!-- Details Card -->
@@ -129,15 +128,6 @@ a {
 
                             <tr>
                                 <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
-                                    Project Description
-                                </td>
-                                <td style="padding:8px 0; font-size:16px;">
-                                    {{ request.project_description }}
-                                </td>
-                            </tr>
-
-                            <tr>
-                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase;">
                                     Institution
                                 </td>
                                 <td style="padding:8px 0; font-size:16px;">
@@ -149,7 +139,6 @@ a {
                     </td>
                 </tr>
             </table>
-
 
             <!-- Status -->
             <div style="text-align:center; margin:32px 0;">
@@ -222,7 +211,7 @@ a {
                         padding:20px; border-radius:10px;">
                 <strong>Important:</strong>
                 <p style="margin:8px 0 0; font-size:15px; color:#475569;">
-                    Please keep this email for your records. You’ll receive updates as your
+                    Please keep this email for your records. You'll receive updates as your
                     request progresses.
                 </p>
             </div>
@@ -234,7 +223,7 @@ a {
     <tr>
         <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
             <div style="font-weight:bold; color:#FFFFFF; margin-bottom:8px;">
-                {{ site_name }}
+                DATICAN Repository
             </div>
 
             <p style="font-size:14px; margin:0 0 20px;">
@@ -248,7 +237,7 @@ a {
             </p>
 
             <p style="font-size:12px; margin-top:24px;">
-                © {% now "Y" %} {{ site_name }} · All rights reserved.
+                © {% now "Y" %} DATICAN Repository · All rights reserved.
             </p>
         </td>
     </tr>

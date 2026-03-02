@@ -180,7 +180,7 @@ ANYMAIL = {
 }
 
 # Default email settings
-DEFAULT_FROM_EMAIL = "no-reply@repo.datican.org"  # Default Resend test domain
+DEFAULT_FROM_EMAIL = "DATICAN Repository <noreply@repo.datican.org>"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL  # For error messages
 EMAIL_SUBJECT_PREFIX = "[DATICAN] "
 
@@ -291,7 +291,8 @@ if IS_PRODUCTION:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     # Use your verified domain in production
-    DEFAULT_FROM_EMAIL = "noreply@repo.datican.org"
+    DEFAULT_FROM_EMAIL = "DATICAN Repository <noreply@repo.datican.org>"
+
 else:
     # Development-specific settings
     SECURE_SSL_REDIRECT = False

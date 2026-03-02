@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width">
-<title>New Data Request for Review - {{ site_name }}</title>
+<title>New Data Request for Review - DATICAN Repository</title>
 
 <style>
 table { border-collapse: collapse; }
@@ -21,25 +21,39 @@ a { text-decoration: none; }
 
 <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC">
 <tr>
-<td align="center">
+<td align="center" style="padding:20px;">
 
 <!-- Container -->
 <table width="620" class="container" cellpadding="0" cellspacing="0" style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
 
-    <!-- Header -->
+    <!-- Header with Logo -->
     <tr>
-        <td bgcolor="#0F172A" style="padding:40px 32px;">
-            <div style="font-size:22px; font-weight:bold; color:#FFFFFF; letter-spacing:1px;">
-                {{ site_name }}
-            </div>
-
-            <div style="font-size:26px; font-weight:bold; color:#FFFFFF; margin-top:16px;">
-                New Data Request for Review
-            </div>
-
-            <div style="font-size:16px; color:#CBD5F5; margin-top:8px;">
-                Manager action required
-            </div>
+        <td align="center" bgcolor="#0F172A" style="padding:40px 32px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <!-- Logo -->
+                    <td width="80" align="left" valign="middle">
+                        <img 
+                            src="https://repo.datican.org/static/images/datican_repo.png"
+                            alt="DATICAN"
+                            width="64"
+                            style="display:block; border:0; outline:none;"
+                        />
+                    </td>
+                    <!-- Text -->
+                    <td align="left" valign="middle" style="padding-left:16px;">
+                        <div style="font-size:22px; font-weight:bold; color:#FFFFFF;">
+                            DATICAN Repository
+                        </div>
+                        <div style="font-size:26px; font-weight:bold; color:#FFFFFF; margin-top:8px;">
+                            New Data Request for Review
+                        </div>
+                        <div style="font-size:16px; color:#CBD5F5; margin-top:6px;">
+                            Manager action required
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </td>
     </tr>
 
@@ -62,7 +76,7 @@ a { text-decoration: none; }
                 <tr>
                     <td style="padding:20px;">
                         <p style="font-size:16px; font-weight:bold; margin:0 0 6px; color:#9F1239;">
-                            Review required within 48 hours
+                            ⏰ Review required within 48 hours
                         </p>
                         <p style="font-size:15px; margin:0; color:#475569;">
                             Timely review ensures prompt access for the researcher.
@@ -85,7 +99,7 @@ a { text-decoration: none; }
                             </tr>
 
                             <tr>
-                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase; letter-spacing:.08em;">
+                                <td style="padding:8px 0; font-size:12px; color:#64748B; text-transform:uppercase; width:120px;">
                                     Request ID
                                 </td>
                                 <td style="padding:8px 0; font-size:16px;">
@@ -174,7 +188,6 @@ a { text-decoration: none; }
                 </tr>
             </table>
 
-
             <!-- Description -->
             <p style="font-size:18px; font-weight:bold; margin:32px 0 12px;">
                 Project Description
@@ -192,7 +205,7 @@ a { text-decoration: none; }
                 <a href="{{ review_url }}"
                    style="display:inline-block; background:#E11D48; color:#FFFFFF;
                           padding:16px 40px; border-radius:10px;
-                          font-size:16px; font-weight:bold;">
+                          font-size:16px; font-weight:bold; text-decoration:none;">
                     Review Request Now
                 </a>
 
@@ -213,16 +226,21 @@ a { text-decoration: none; }
     <!-- Footer -->
     <tr>
         <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
-            <div style="font-weight:bold; color:#FFFFFF;">
-                {{ site_name }}
+            <div style="font-weight:bold; color:#FFFFFF; margin-bottom:8px;">
+                DATICAN Repository
             </div>
 
-            <p style="font-size:14px; margin:8px 0 20px;">
+            <p style="font-size:14px; margin:0 0 20px;">
                 Secure research data access platform
             </p>
 
-            <p style="font-size:12px;">
-                © {% now "Y" %} {{ site_name }} · All rights reserved.
+            <p style="font-size:14px; margin:0;">
+                <a href="{{ site_url }}" style="color:#CBD5F5;">Visit Portal</a> ·
+                <a href="mailto:{{ support_email }}" style="color:#CBD5F5;">Contact Support</a>
+            </p>
+
+            <p style="font-size:12px; margin-top:24px;">
+                © {% now "Y" %} DATICAN Repository · All rights reserved.
             </p>
         </td>
     </tr>

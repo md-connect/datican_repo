@@ -87,8 +87,8 @@ class DatasetAdminForm(forms.ModelForm):
         widget=forms.Textarea(attrs={
             'rows': 5,
             'placeholder': '''datasets/breast-cancer/part1.zip
-datasets/breast-cancer/part2.zip
-datasets/breast-cancer/part3.zip''',
+                datasets/breast-cancer/part2.zip
+                datasets/breast-cancer/part3.zip''',
             'style': 'font-family: monospace;'
         }),
         help_text=mark_safe("""
@@ -169,9 +169,10 @@ class DatasetAdmin(admin.ModelAdmin):
     inlines = [ThumbnailInline, DatasetFileInline]
 
     list_display = [
-        'title', 'modality', 'file_stats', 'no_of_subjects', 'upload_date',
+        'title', 'modality', 'file_stats', 'no_of_subjects', 'display_order', 'upload_date',
         'rating', 'thumbnail_preview', 'has_preview', 'has_readme'
     ]
+    list_editable = ['display_order']
     list_filter = ['modality', 'format', 'upload_date', 'preview_type']
     search_fields = ['title', 'description', 'body_part', 'dataset_path']
 
@@ -205,7 +206,7 @@ class DatasetAdmin(admin.ModelAdmin):
             'fields': ('b2_file_key', 'b2_file_paths', 'total_size_display', 'file_count_display'),
             'classes': ('wide',),
             'description': mark_safe(
-                '<div style="padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff;">'
+                '<div style="padding: 15px; border-left: 4px solid #f8f9fa;">'
                 '<strong>📦 Add files from B2</strong><br>'
                 'Option 1: Single file - use the "B2 File Key" field<br>'
                 'Option 2: Multiple files - paste paths in the textarea (one per line)'
@@ -224,6 +225,11 @@ class DatasetAdmin(admin.ModelAdmin):
         ('Statistics', {'fields': ('rating', 'download_count')}),
         ('System Information', {'fields': ('upload_date', 'update_date'), 'classes': ('collapse',)}),
         ('Legacy B2 Fields', {'fields': ('b2_file_id',), 'classes': ('collapse',)}),
+        ('Display Settings', {  
+            'fields': ('display_order',),
+            'classes': ('wide',),
+            'description': 'Control the display order (lower numbers appear first)'
+        }),
     )
 
     # --------------------------
