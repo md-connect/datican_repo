@@ -462,88 +462,93 @@
           <p class="text-xs text-gray-500 mt-1">Maximum 100 words (about 500 characters)</p>
         </div>
 
-        <!-- File Uploads -->
-<div class="grid gap-6 md:grid-cols-2">
-  <!-- Completed Form Upload -->
-  <div>
-    <label class="block text-sm font-medium text-primary mb-2">
-      Completed Request Form (PDF) <span class="text-red-500">*</span>
-    </label>
-    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center h-full upload-area relative" 
-         onclick="document.getElementById('form_submission').click()">
-      <input type="file" 
-             name="form_submission" 
-             id="form_submission" 
-             accept=".pdf"
-             required
-             class="hidden"
-             onchange="updateFormFileName(this)">
-      <div id="formUploadContent" class="flex flex-col items-center text-secondary">
-        <i data-lucide="file-text" class="w-8 h-8 mb-2 text-accent"></i>
-        <span class="text-accent font-medium">Click to Upload Request Form</span>
-        <span class="text-sm">PDF format only</span>
-        <span class="text-xs text-gray-500">(Max: 25MB)</span>
-      </div>
-      <div id="formFilePreview" class="hidden mt-3">
-        <div id="formFileDisplay" class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-          <div class="flex items-center space-x-3">
-            <i data-lucide="file-text" class="w-6 h-6 text-accent"></i>
-            <div>
-              <p id="formFileName" class="text-sm font-medium text-primary"></p>
-              <p id="formFileSize" class="text-xs text-gray-500"></p>
+        <!-- File Uploads Section -->
+        <div class="grid gap-6 md:grid-cols-2">
+          <!-- Completed Form Upload -->
+          <div>
+            <label class="block text-sm font-medium text-primary mb-2">
+              Completed Request Form (PDF) <span class="text-red-500">*</span>
+            </label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center h-full upload-area relative" 
+                onclick="document.getElementById('form_submission').click()">
+              <input type="file" 
+                    name="form_submission" 
+                    id="form_submission" 
+                    accept=".pdf"
+                    required
+                    class="hidden"
+                    onchange="validateFormFile(this)">
+              <div id="formUploadContent" class="flex flex-col items-center text-secondary">
+                <i data-lucide="file-text" class="w-8 h-8 mb-2 text-accent"></i>
+                <span class="text-accent font-medium">Click to Upload Request Form</span>
+                <span class="text-sm">PDF format only</span>
+                <span class="text-xs text-gray-500">(Max: 2MB)</span>
+              </div>
+              <div id="formFilePreview" class="hidden mt-3">
+                <div id="formFileDisplay" class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <i data-lucide="file-text" class="w-6 h-6 text-accent"></i>
+                    <div>
+                      <p id="formFileName" class="text-sm font-medium text-primary"></p>
+                      <p id="formFileSize" class="text-xs text-gray-500"></p>
+                    </div>
+                  </div>
+                  <button type="button" onclick="removeFormFile(event)" class="text-red-500 hover:text-red-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                  </button>
+                </div>
+              </div>
+              <div id="formFileError" class="hidden mt-2 text-sm text-red-600"></div>
             </div>
+            <p class="text-xs text-gray-500 mt-1">Required - Upload the completed request form in PDF format (max 2MB)</p>
           </div>
-          <button type="button" onclick="removeFormFile(event)" class="text-red-500 hover:text-red-700">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-    <p class="text-xs text-gray-500 mt-1">Required - Upload the completed request form in PDF format (max 25MB)</p>
-  </div>
 
-  <!-- Ethical Approval Proof Upload -->
-  <div>
-    <label class="block text-sm font-medium text-primary mb-2">
-      Proof of Ethical Approval
-    </label>
-    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center h-full upload-area relative"
-         onclick="document.getElementById('ethical_approval_proof').click()">
-      <input type="file" 
-             name="ethical_approval_proof" 
-             id="ethical_approval_proof" 
-             accept=".pdf,.jpg,.jpeg,.png"
-             class="hidden"
-             onchange="updateEthicalFileName(this)">
-      <div id="ethicalUploadContent" class="flex flex-col items-center text-secondary">
-        <i data-lucide="shield-check" class="w-8 h-8 mb-2 text-green-500"></i>
-        <span class="text-green-600 font-medium">Click to Upload Ethical Approval</span>
-        <span class="text-sm">PDF, JPG, PNG</span>
-        <span class="text-xs text-gray-500">(Max: 25MB)</span>
-        <span class="text-xs text-gray-500 italic mt-2">Optional but recommended</span>
-      </div>
-      <div id="ethicalFilePreview" class="hidden mt-3">
-        <div id="ethicalFileDisplay" class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-          <div class="flex items-center space-x-3">
-            <i data-lucide="file" class="w-6 h-6 text-green-500"></i>
-            <div>
-              <p id="ethicalFileName" class="text-sm font-medium text-primary"></p>
-              <p id="ethicalFileSize" class="text-xs text-gray-500"></p>
+          <!-- Ethical Approval Proof Upload -->
+          <div>
+            <label class="block text-sm font-medium text-primary mb-2">
+              Proof of Ethical Approval <span class="text-red-500">*</span>
+            </label>
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center h-full upload-area relative"
+                onclick="document.getElementById('ethical_approval_proof').click()">
+              <input type="file" 
+                    name="ethical_approval_proof" 
+                    id="ethical_approval_proof" 
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    required
+                    class="hidden"
+                    onchange="validateEthicalFile(this)">
+              <div id="ethicalUploadContent" class="flex flex-col items-center text-secondary">
+                <i data-lucide="shield-check" class="w-8 h-8 mb-2 text-green-500"></i>
+                <span class="text-green-600 font-medium">Click to Upload Ethical Approval</span>
+                <span class="text-sm">PDF, JPG, PNG</span>
+                <span class="text-xs text-gray-500">(Max: 2MB)</span>
+              </div>
+              <div id="ethicalFilePreview" class="hidden mt-3">
+                <div id="ethicalFileDisplay" class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                  <div class="flex items-center space-x-3">
+                    <i data-lucide="file" class="w-6 h-6 text-green-500"></i>
+                    <div>
+                      <p id="ethicalFileName" class="text-sm font-medium text-primary"></p>
+                      <p id="ethicalFileSize" class="text-xs text-gray-500"></p>
+                    </div>
+                  </div>
+                  <button type="button" onclick="removeEthicalFile(event)" class="text-red-500 hover:text-red-700">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                  </button>
+                </div>
+              </div>
+              <div id="ethicalFileError" class="hidden mt-2 text-sm text-red-600"></div>
             </div>
+            <p class="text-xs text-gray-500 mt-1">Required - Upload proof of ethical approval (PDF, JPG, PNG, max 2MB)</p>
           </div>
-          <button type="button" onclick="removeEthicalFile(event)" class="text-red-500 hover:text-red-700">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
         </div>
-      </div>
-    </div>
-    <p class="text-xs text-gray-500 mt-1">Upload proof of ethical approval (PDF, JPG, PNG, max 25MB)</p>
-  </div>
-</div>
+
+        <!-- Space before submit button -->
+        <div class="mt-8"></div>
 
         <!-- Submit Button -->
         <div class="pt-4 border-t border-gray-200">
-          <button type="submit" class="w-full bg-accent text-white py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2">
+          <button type="submit" id="submitButton" class="w-full bg-accent text-white py-3 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2">
             <i data-lucide="send" class="w-5 h-5"></i>
             Submit Request
           </button>
@@ -776,6 +781,185 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Make formatBytes available globally for the file upload functions
   window.formatBytes = formatBytes;
+
+  // ===== FILE VALIDATION FUNCTIONS =====
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+
+function validateFormFile(input) {
+  const fileError = document.getElementById('formFileError');
+  const uploadContent = document.getElementById('formUploadContent');
+  const filePreview = document.getElementById('formFilePreview');
+  const fileName = document.getElementById('formFileName');
+  const fileSize = document.getElementById('formFileSize');
+  
+  // Hide any previous error
+  fileError.classList.add('hidden');
+  
+  if (input.files.length > 0) {
+    const file = input.files[0];
+    
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      fileError.textContent = `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`;
+      fileError.classList.remove('hidden');
+      input.value = ''; // Clear the input
+      return;
+    }
+    
+    // Validate file type
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      fileError.textContent = 'Invalid file type. Please upload a PDF file.';
+      fileError.classList.remove('hidden');
+      input.value = ''; // Clear the input
+      return;
+    }
+    
+    // Hide upload prompt, show file preview
+    uploadContent.style.display = 'none';
+    filePreview.classList.remove('hidden');
+    
+    // Display file info
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    
+    // Show PDF preview if available
+    if (file.type === 'application/pdf') {
+      showPdfPreview(file, 'formFilePreview');
+    }
+    
+    // Enable submit button if all validations pass
+    checkAllFieldsValid();
+  }
+}
+
+function validateEthicalFile(input) {
+  const fileError = document.getElementById('ethicalFileError');
+  const uploadContent = document.getElementById('ethicalUploadContent');
+  const filePreview = document.getElementById('ethicalFilePreview');
+  const fileName = document.getElementById('ethicalFileName');
+  const fileSize = document.getElementById('ethicalFileSize');
+  
+  // Hide any previous error
+  fileError.classList.add('hidden');
+  
+  if (input.files.length > 0) {
+    const file = input.files[0];
+    
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      fileError.textContent = `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`;
+      fileError.classList.remove('hidden');
+      input.value = ''; // Clear the input
+      return;
+    }
+    
+    // Validate file type
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExt)) {
+      fileError.textContent = 'Invalid file type. Please upload PDF, JPG, or PNG.';
+      fileError.classList.remove('hidden');
+      input.value = ''; // Clear the input
+      return;
+    }
+    
+    // Hide upload prompt, show file preview
+    uploadContent.style.display = 'none';
+    filePreview.classList.remove('hidden');
+    
+    // Display file info
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    
+    // Show image preview if it's an image
+    if (file.type.startsWith('image/')) {
+      showImagePreview(file, 'ethicalFilePreview');
+    } else if (file.type === 'application/pdf') {
+      showPdfPreview(file, 'ethicalFilePreview');
+    }
+    
+    // Enable submit button if all validations pass
+    checkAllFieldsValid();
+  }
+}
+
+// Real-time text field validation
+function validateTextField(input) {
+  const value = input.value.trim();
+  const errorElement = document.getElementById(input.id + 'Error');
+  
+  if (!errorElement) return;
+  
+  if (value === '') {
+    errorElement.textContent = input.placeholder || 'This field is required';
+    errorElement.classList.remove('hidden');
+    input.classList.add('border-red-500');
+    return false;
+  } else {
+    errorElement.classList.add('hidden');
+    input.classList.remove('border-red-500');
+    input.classList.add('border-green-500');
+    return true;
+  }
+}
+
+// Check all fields before enabling submit
+function checkAllFieldsValid() {
+  const institution = document.getElementById('institution')?.value.trim();
+  const phone = document.getElementById('phone_number')?.value.trim();
+  const projectTitle = document.getElementById('project_title')?.value.trim();
+  const projectDesc = document.getElementById('project_description')?.value.trim();
+  const formFile = document.getElementById('form_submission')?.files[0];
+  const ethicalFile = document.getElementById('ethical_approval_proof')?.files[0];
+  
+  const submitBtn = document.getElementById('submitButton');
+  
+  if (institution && phone && projectTitle && projectDesc && formFile && ethicalFile) {
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+  } else {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+}
+
+// Add real-time validation listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Add error spans after each required field
+  const requiredFields = ['institution', 'phone_number', 'project_title', 'project_description'];
+  
+  requiredFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      // Create error span
+      const errorSpan = document.createElement('p');
+      errorSpan.id = fieldId + 'Error';
+      errorSpan.className = 'hidden text-xs text-red-600 mt-1';
+      field.parentNode.appendChild(errorSpan);
+      
+      // Add input event listener
+      field.addEventListener('input', function() {
+        validateTextField(this);
+        checkAllFieldsValid();
+      });
+      
+      field.addEventListener('blur', function() {
+        validateTextField(this);
+        checkAllFieldsValid();
+      });
+    }
+  });
+  
+  // Disable submit button initially
+  const submitBtn = document.getElementById('submitButton');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+});
+
 });
 </script>
 {% endblock %}

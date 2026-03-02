@@ -839,8 +839,10 @@ def dataset_request(request, pk):
         form_submission = request.FILES.get('form_submission')
         ethical_approval_proof = request.FILES.get('ethical_approval_proof')
         
-        # Enhanced validation
+        # Enhanced validation with all fields required
         errors = []
+        
+        # Required text fields
         if not institution:
             errors.append('Institution is required')
         if not phone_number:
@@ -849,13 +851,28 @@ def dataset_request(request, pk):
             errors.append('Project title is required')
         if not project_description:
             errors.append('Project description is required')
+        
+        # Form submission file validation (required)
         if not form_submission:
             errors.append('Form submission file is required')
-        elif not form_submission.name.lower().endswith('.pdf'):
-            errors.append('Form submission must be a PDF file')
+        else:
+            # File size validation (2MB max)
+            if form_submission.size > 2 * 1024 * 1024:  # 2MB in bytes
+                errors.append('Form submission file must be less than 2MB')
+            
+            # File type validation
+            if not form_submission.name.lower().endswith('.pdf'):
+                errors.append('Form submission must be a PDF file')
         
-        # Optional validation for ethical approval proof
-        if ethical_approval_proof:
+        # Ethical approval proof validation (now required)
+        if not ethical_approval_proof:
+            errors.append('Ethical approval proof is required')
+        else:
+            # File size validation (2MB max)
+            if ethical_approval_proof.size > 2 * 1024 * 1024:  # 2MB in bytes
+                errors.append('Ethical approval proof must be less than 2MB')
+            
+            # File type validation
             allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
             file_ext = os.path.splitext(ethical_approval_proof.name.lower())[1]
             if file_ext not in allowed_extensions:
@@ -870,7 +887,9 @@ def dataset_request(request, pk):
                 'phone_number': phone_number,
                 'ethical_approval_no': ethical_approval_no,
                 'project_title': project_title,
-                'project_description': project_description
+                'project_description': project_description,
+                'form_submission_name': form_submission.name if form_submission else '',
+                'ethical_approval_proof_name': ethical_approval_proof.name if ethical_approval_proof else '',
             })
         
         try:
@@ -879,12 +898,12 @@ def dataset_request(request, pk):
                 user=request.user,
                 dataset=dataset,
                 institution=institution,
-                phone_number=phone_number if phone_number else None,
-                ethical_approval_no=ethical_approval_no if ethical_approval_no else None,
+                phone_number=phone_number,
+                ethical_approval_no=ethical_approval_no,
                 project_title=project_title,
                 project_description=project_description,
                 form_submission=form_submission,
-                ethical_approval_proof=ethical_approval_proof if ethical_approval_proof else None,
+                ethical_approval_proof=ethical_approval_proof,
             )
             data_request.save()
             
@@ -925,13 +944,14 @@ def dataset_request(request, pk):
                 'phone_number': phone_number,
                 'ethical_approval_no': ethical_approval_no,
                 'project_title': project_title,
-                'project_description': project_description
+                'project_description': project_description,
             })
     
     return render(request, 'datasets/request_form.html', {
         'dataset': dataset
     })
 
+    
 @login_required
 def request_status(request, pk):
     data_request = get_object_or_404(DataRequest, pk=pk)
