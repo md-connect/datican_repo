@@ -211,7 +211,6 @@ def home(request):
     return render(request, 'home.html', {
         'featured_datasets': featured_datasets,
         'dataset_count': dataset_count,
-        'total_downloads': total_downloads,
     })
 
 
