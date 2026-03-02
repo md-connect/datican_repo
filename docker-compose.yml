@@ -27,8 +27,8 @@ services:
              gunicorn datican_repo.wsgi:application --bind 0.0.0.0:8000"
     volumes:
       - .:/app
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
     ports:
       - "8000:8000"
     environment:

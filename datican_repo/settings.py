@@ -34,7 +34,7 @@ ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
 
 # Host configuration
 if IS_PRODUCTION:
-    ALLOWED_HOSTS = ['repo.datican.org']
+    ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
     CSRF_TRUSTED_ORIGINS = ['https://repo.datican.org']
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
