@@ -187,19 +187,35 @@ def home(request):
     )
 
     for dataset in featured_datasets:
+        # Handle thumbnails
         if dataset.primary_thumbnails:
             dataset.primary_thumbnail = dataset.primary_thumbnails[0]
         elif dataset.all_thumbnails:
             dataset.primary_thumbnail = dataset.all_thumbnails[0]
         else:
             dataset.primary_thumbnail = None
+        
+        # Add file size display
+        dataset.size_display = dataset.get_file_size_display()
+        
+        # Add download count
+        dataset.download_display = dataset.download_count
+        
+        # Add usability score (you can customize this logic)
+        # Using rating as usability score for now
+        dataset.usability_display = f"{dataset.rating}/10"
 
     dataset_count = Dataset.objects.count()
+    
+    # Get total downloads across all datasets
+    total_downloads = Dataset.objects.aggregate(total=Sum('download_count'))['total'] or 0
 
     return render(request, 'home.html', {
         'featured_datasets': featured_datasets,
         'dataset_count': dataset_count,
+        'total_downloads': total_downloads,
     })
+
 
 def partners_view(request):
     """View for partner universities page"""

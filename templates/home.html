@@ -7,13 +7,13 @@
       <!-- Left Content -->
       <div class="space-y-8">
         <h1 class="text-4xl md:text-6xl font-bold leading-tight">
-          Level up with the largest AI & ML community
+          Improving Healthcare Delivery in Africa using the power of data, AI and Data Science
         </h1>
         <p class="text-xl opacity-90">
-          Join over 23M+ machine learners to share, stress test, and stay
-          up-to-date on all the latest ML techniques and technologies. Discover
-          a huge repository of community-published models, data & code for your
-          next project.
+          This repository contains anonymized medical images of Africans acquired from Africa.  
+          All data are anonymized and provided for research only. 
+          Note that all data in this repository are provided under privacyfirst (https://privacyfirst.nl/en/) 
+          and CC BY-NC-ND 4.0 (https://creativecommons.org/licenses/by-nc-nd/4.0/)
         </p>
 
         {% if not user.is_authenticated %}
@@ -73,26 +73,29 @@
 <section class="py-20">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <h2 class="text-3xl font-bold text-center mb-16 text-secondary">
-      Who's on DATICAN?
+      Who is DATICAN?
     </h2>
     <div class="grid md:grid-cols-3 gap-8">
       <div class="text-center p-6">
-        <h3 class="text-2xl font-bold mb-4 text-primary">Learners</h3>
+        <h3 class="text-2xl font-bold mb-4 text-primary">Collaborators</h3>
         <p class="text-gray-600 mb-4">
-          Dive into Kaggle courses, competitions & forums.
+          Data Science and Medical Image Analysis for Improved Healthcare Delivery in Nigeria (DATICAN) is a consortium of medical experts and computer scientists from the Lagos State University, University of Ibadan, Redeemer’s University and University of Chicago. The focus of DATICAN is to build capacity in data science and medical image analysis with application in medical image analysis. DATICAN is funded by NIH as part of UE5 grant scheme called DS-I Africa.
+Four universities are members of DATICAN. These are:
+
         </p>
         <!-- <a href="#" class="text-accent hover:underline">See more →</a> -->
       </div>
       <div class="text-center p-6">
-        <h3 class="text-2xl font-bold mb-4 text-primary">Developers</h3>
+        <h3 class="text-2xl font-bold mb-4 text-primary">Goals</h3>
         <p class="text-gray-600 mb-4">
-          Leverage DATICAN's models, notebooks & datasets.
+          DATICAN aims to produce medical Data Scientists who are well equipped to conduct medical research tilted towards improving health care delivery in Nigeria. DATICAN comprises of experts in Data Science, Medical practitioners, Physicists, Mathematicians, Computer scientists and other allied fields. For more information about DATICAN,
         </p>
+        <a href="https://www.datican.org" class="text-accent hover:underline">Please visit our website →</a>
       </div>
       <div class="text-center p-6">
-        <h3 class="text-2xl font-bold mb-4 text-primary">Researchers</h3>
+        <h3 class="text-2xl font-bold mb-4 text-primary">Funders</h3>
         <p class="text-gray-600 mb-4">
-          Advance ML with our pre-trained model hub & competitions.
+          DATICAN is funded by NIH (https://www.nih.gov/) through DSI Africa scheme. We also got additional funding from the center for global health, university of Chicago, USA.
         </p>
       </div>
     </div>
@@ -160,56 +163,85 @@
     </div>
 
    <!-- 4-Column Grid -->
-<div class="grid md:grid-cols-4 gap-6">
-  {% for dataset in featured_datasets %}
-  <a href="{% url 'dataset_detail' dataset.id %}" class="block">
-    <div class="p-4 border rounded-lg hover:shadow-lg transition h-full flex flex-col">
-      <!-- Top Row: Title + Image -->
-      <div class="flex items-start justify-between mb-3">
-        <!-- Title (takes remaining space) -->
-        <div class="flex-1 mr-4">
-          <h3 class="text-lg font-semibold text-primary line-clamp-2">
-            {{ dataset.title }}
-          </h3>
-          <p class="text-gray-600 text-sm mt-1">{{ dataset.body_part }} • {{ dataset.modality }}</p>
+    <div class="grid md:grid-cols-4 gap-6">
+      {% for dataset in featured_datasets %}
+      <a href="{% url 'dataset_detail' dataset.id %}" class="block">
+        <div class="p-4 border rounded-lg hover:shadow-lg transition h-full flex flex-col">
+          <!-- Top Row: Title + Image -->
+          <div class="flex items-start justify-between mb-3">
+            <!-- Title (takes remaining space) -->
+            <div class="flex-1 mr-4">
+              <h3 class="text-lg font-semibold text-primary line-clamp-2">
+                {{ dataset.title }}
+              </h3>
+              <p class="text-gray-600 text-sm mt-1">{{ dataset.body_part }} • {{ dataset.modality }}</p>
+            </div>
+            
+            <!-- Image (fixed width) -->
+            {% if dataset.primary_thumbnail %}
+            <img
+              src="{{ dataset.primary_thumbnail.image.url }}"
+              alt="{{ dataset.title }}"
+              class="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+            />
+            {% else %}
+            <div
+              class="w-16 h-16 bg-gray-200 flex items-center justify-center rounded-lg text-xs text-gray-500 flex-shrink-0"
+            >
+              No image
+            </div>
+            {% endif %}
+          </div>
+          
+          <!-- Middle Row: Description -->
+          <div class="mb-3 flex-grow">
+            <p class="text-gray-600 text-sm line-clamp-2">
+              {{ dataset.description|default:"No description available" }}
+            </p>
+          </div>
+          
+          <!-- Bottom Row: Size, Downloads, and Usability -->
+          <div class="grid grid-cols-3 gap-2 mt-auto pt-3 border-t border-gray-100 text-xs">
+            <!-- File Size -->
+            <div class="flex flex-col items-center p-1 rounded bg-gray-50">
+              <div class="flex items-center text-gray-600 mb-1">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7c-2 0-3 1-3 3z" />
+                </svg>
+                <span class="font-medium text-gray-700">Size</span>
+              </div>
+              <span class="font-semibold text-primary">{{ dataset.size_display }}</span>
+            </div>
+            
+            <!-- Downloads -->
+            <div class="flex flex-col items-center p-1 rounded bg-gray-50">
+              <div class="flex items-center text-gray-600 mb-1">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span class="font-medium text-gray-700">DLs</span>
+              </div>
+              <span class="font-semibold text-primary">{{ dataset.download_display }}</span>
+            </div>
+            
+            <!-- Usability -->
+            <div class="flex flex-col items-center p-1 rounded bg-gray-50">
+              <div class="flex items-center text-gray-600 mb-1">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                </svg>
+                <span class="font-medium text-gray-700">Usability</span>
+              </div>
+              <span class="font-semibold {% if dataset.rating >= 8 %}text-green-600{% elif dataset.rating >= 5 %}text-yellow-600{% else %}text-gray-600{% endif %}">
+                {{ dataset.usability_display }}
+              </span>
+            </div>
+          </div>
         </div>
-        
-        <!-- Image (fixed width) -->
-        {% if dataset.primary_thumbnail %}
-        <img
-          src="{{ dataset.primary_thumbnail.image.url }}"
-          alt="{{ dataset.title }}"
-          class="w-16 h-16 rounded-lg object-cover flex-shrink-0"
-        />
-        {% else %}
-        <div
-          class="w-16 h-16 bg-gray-200 flex items-center justify-center rounded-lg text-xs text-gray-500 flex-shrink-0"
-        >
-          No image
-        </div>
-        {% endif %}
-      </div>
-      
-      <!-- Middle Row: Description -->
-      <div class="mb-3 flex-grow">
-        <p class="text-gray-600 text-sm line-clamp-2">
-          {{ dataset.description|default:"No description available" }}
-        </p>
-      </div>
-      
-      <!-- Bottom Row: Rating and Size -->
-      <div class="flex justify-between items-center mt-auto pt-3 border-t border-gray-100">
-        <span
-          class="{% if dataset.rating >= 9 %}bg-green-100 text-green-800{% elif dataset.rating >= 7 %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-800{% endif %} text-xs px-2 py-1 rounded"
-        >
-          {{ dataset.rating|floatformat:1 }}
-        </span>
-        <p class="text-gray-500 text-sm">{{ dataset.size }}</p>
-      </div>
+      </a>
+      {% endfor %}
     </div>
-  </a>
-  {% endfor %}
-</div>
+
   </div>
 </section>
 {% endblock %}
