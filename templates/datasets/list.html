@@ -190,7 +190,6 @@
 
 {% block content %}
 
-
 <div class="p-4 md:p-6 mobile-content-padding">
   <!-- Desktop Sticky Search Bar -->
   <div class="hidden md:block sticky-search py-4 bg-white px-4 sm:px-6">
@@ -355,82 +354,114 @@
       </p>
     </div>
 
-    <!-- Dataset Categories Tabs -->
+    <!-- Dataset Categories Tabs - UPDATED -->
     <div class="mb-6 md:mb-8 overflow-x-auto">
       <div class="flex space-x-1 border-b pb-1 min-w-max md:min-w-0">
-        <!-- All datasets -->
-        <a href="{% url 'dataset_list' %}{% if url_params_no_page %}?{{ url_params_no_page.urlencode }}{% endif %}" 
+        <!-- All datasets - clears body part -->
+        <a href="{% url 'dataset_list' %}{% if url_params_no_body_part %}?{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if not request.GET.body_part %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           All datasets
         </a>
         
         <!-- Body part tabs -->
-        <a href="?body_part=brain{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+        <a href="?body_part=brain{% if url_params_no_body_part %}&{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'brain' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Brain
         </a>
         
-        <a href="?body_part=breast{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+        <a href="?body_part=breast{% if url_params_no_body_part %}&{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'breast' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Breast
         </a>
         
-        <a href="?body_part=chest{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+        <a href="?body_part=chest{% if url_params_no_body_part %}&{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'chest' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Chest
         </a>
         
-        <a href="?body_part=teeth{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+        <a href="?body_part=teeth{% if url_params_no_body_part %}&{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'teeth' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Teeth
         </a>
         
-        <a href="?body_part=spine{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+        <a href="?body_part=spine{% if url_params_no_body_part %}&{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'spine' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Spine
         </a>
         
-        <a href="?body_part=pelvis{% if url_params_no_page %}&{{ url_params_no_page.urlencode }}{% endif %}" 
+        <a href="?body_part=pelvis{% if url_params_no_body_part %}&{{ url_params_no_body_part.urlencode }}{% endif %}" 
            class="px-3 py-2 text-sm md:text-base md:px-4 border-b-2 whitespace-nowrap {% if request.GET.body_part == 'pelvis' %}border-primary text-primary{% else %}border-transparent text-gray-500 hover:text-gray-700{% endif %}">
           Pelvis
         </a>
       </div>
     </div>
 
-  <!-- Active Filters Display - SIMPLE VERSION -->
-{% if request.GET.modality or request.GET.body_part %}
-<div class="mb-4 p-3 bg-blue-50 rounded-lg">
-  <div class="flex items-center justify-between">
-    <div class="flex flex-wrap items-center gap-2">
-      <span class="text-sm font-medium text-gray-700">Active filters:</span>
-      
-      {% if request.GET.body_part %}
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary text-white">
-          Body Part: {{ request.GET.body_part|title }}
-          <a href="{% url 'dataset_list' %}{% if url_params_no_body_part %}?{{ url_params_no_body_part.urlencode }}{% endif %}" 
-             class="ml-2 hover:text-gray-200">
-            ×
+    <!-- Active Filters Display - UPDATED -->
+    {% if request.GET.modality or request.GET.body_part or request.GET.format or request.GET.min_rating or request.GET.upload_date %}
+    <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+      <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-sm font-medium text-gray-700">Active filters:</span>
+          
+          {% if request.GET.body_part %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-primary text-white">
+            Body Part: {{ request.GET.body_part|title }}
+            <a href="{% url 'dataset_list' %}{% if url_params_no_body_part %}?{{ url_params_no_body_part.urlencode }}{% endif %}" 
+               class="ml-2 hover:text-gray-200" onclick="event.stopPropagation();">
+              ×
+            </a>
+          </span>
+          {% endif %}
+          
+          {% if request.GET.modality %}
+            {% for mod in request.GET.modality %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+              Modality: {{ mod|upper }}
+              <a href="?{% for key, value in request.GET.items %}{% if key != 'modality' or key == 'modality' and value != mod %}{{ key }}={{ value }}&{% endif %}{% endfor %}" 
+                 class="ml-2 hover:text-blue-600">
+                ×
+              </a>
+            </span>
+            {% endfor %}
+          {% endif %}
+          
+          {% if request.GET.format %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+            Format: {{ request.GET.format|upper }}
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'format' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" 
+               class="ml-2 hover:text-green-600">
+              ×
+            </a>
+          </span>
+          {% endif %}
+          
+          {% if request.GET.min_rating %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+            Min Rating: {{ request.GET.min_rating }}+
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'min_rating' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" 
+               class="ml-2 hover:text-purple-600">
+              ×
+            </a>
+          </span>
+          {% endif %}
+          
+          {% if request.GET.upload_date and request.GET.upload_date != 'all' %}
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
+            Uploaded: {{ request.GET.upload_date|title }}
+            <a href="?{% for key, value in request.GET.items %}{% if key != 'upload_date' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" 
+               class="ml-2 hover:text-yellow-600">
+              ×
+            </a>
+          </span>
+          {% endif %}
+          
+          <a href="{% url 'dataset_list' %}" class="text-sm text-primary hover:text-primary-dark font-medium">
+            Clear all
           </a>
-        </span>
-      {% endif %}
-      
-      {% if request.GET.modality %}
-        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-          Modality: {{ request.GET.modality|upper }}
-          <a href="{% url 'dataset_list' %}{% if url_params_no_body_part %}?{{ url_params_no_body_part.urlencode }}{% endif %}" 
-             class="ml-2 hover:text-blue-600">
-            ×
-          </a>
-        </span>
-      {% endif %}
-      
-      <a href="{% url 'dataset_list' %}" class="text-sm text-primary hover:text-primary-dark font-medium">
-        Clear all
-      </a>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-{% endif %}
+    {% endif %}
 
     <!-- Dataset Grid - Responsive -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -520,7 +551,7 @@
         </div>
         
         <div class="space-y-6">
-          <!-- Modality Filter Only -->
+          <!-- Modality Filter -->
           <div>
             <h4 class="font-medium text-gray-700 mb-3">Modality</h4>
             <div class="grid grid-cols-2 gap-3">
@@ -537,6 +568,48 @@
               </label>
               {% endfor %}
             </div>
+          </div>
+          
+          <!-- Format Filter -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-3">Format</h4>
+            <div class="grid grid-cols-2 gap-3">
+              {% for value, label in format_choices %}
+              <label class="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                <input 
+                  type="checkbox" 
+                  name="format" 
+                  value="{{ value }}"
+                  {% if value in current_filters.format %}checked{% endif %}
+                  class="rounded text-primary focus:ring-primary h-4 w-4"
+                >
+                <span class="text-sm font-medium">{{ label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          
+          <!-- Min Rating Filter -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-3">Minimum Rating</h4>
+            <select name="min_rating" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+              <option value="0" {% if current_filters.min_rating == '0' %}selected{% endif %}>Any rating</option>
+              <option value="5" {% if current_filters.min_rating == '5' %}selected{% endif %}>5+ stars</option>
+              <option value="7" {% if current_filters.min_rating == '7' %}selected{% endif %}>7+ stars</option>
+              <option value="9" {% if current_filters.min_rating == '9' %}selected{% endif %}>9+ stars</option>
+            </select>
+          </div>
+          
+          <!-- Upload Date Filter -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-3">Upload Date</h4>
+            <select name="upload_date" class="w-full p-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+              <option value="all" {% if current_filters.upload_date == 'all' %}selected{% endif %}>All time</option>
+              <option value="today" {% if current_filters.upload_date == 'today' %}selected{% endif %}>Today</option>
+              <option value="week" {% if current_filters.upload_date == 'week' %}selected{% endif %}>This week</option>
+              <option value="month" {% if current_filters.upload_date == 'month' %}selected{% endif %}>This month</option>
+              <option value="year" {% if current_filters.upload_date == 'year' %}selected{% endif %}>This year</option>
+            </select>
           </div>
           
           <!-- Action Buttons -->
@@ -625,9 +698,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Get current GET parameters
     const currentParams = new URLSearchParams(window.location.search);
     
-    // Add hidden inputs for all parameters except 'modality' and 'page'
+    // Add hidden inputs for all parameters except 'modality', 'format', 'min_rating', 'upload_date', and 'page'
     for (const [key, value] of currentParams) {
-      if (key !== 'modality' && key !== 'page') {
+      if (!['modality', 'format', 'min_rating', 'upload_date', 'page'].includes(key)) {
         const hiddenInput = document.createElement('input');
         hiddenInput.type = 'hidden';
         hiddenInput.name = key;
@@ -671,6 +744,22 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   }
+  
+  // Handle body part tab switching - prevent clicking same tab
+  document.querySelectorAll('.border-b-2 a').forEach(tab => {
+    tab.addEventListener('click', function(e) {
+      const href = this.getAttribute('href');
+      const bodyPartMatch = href.match(/body_part=([^&]+)/);
+      
+      if (bodyPartMatch) {
+        const newBodyPart = bodyPartMatch[1];
+        const currentBodyPart = new URLSearchParams(window.location.search).get('body_part');
+        
+        // If clicking the same tab that's already active, let the navigation proceed
+        // The view will handle it by keeping the filter (or you could make it clear)
+      }
+    });
+  });
 });
 
 // Filter Modal Functions
