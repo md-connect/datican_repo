@@ -194,7 +194,7 @@ def dataset_list(request):
     
     # Get available years for filter (optional, if you want to keep this)
     available_years = Dataset.objects.dates('upload_date', 'year').order_by('-upload_date__year')
-    
+    total_size_display = dataset.get_file_size_display()
     # Prepare URL parameters for templates
     url_params = request.GET.copy()
     
@@ -227,6 +227,7 @@ def dataset_list(request):
     context = {
         'datasets': page_obj,
         'available_years': available_years,
+        'total_size_display': total_size_display,
         'current_filters': {
             'modality': modality,
             'format': format,
