@@ -63,7 +63,18 @@
       <!-- User Actions -->
       <div class="flex items-center space-x-4">
         <div class="hidden md:flex items-center space-x-4">
-          <input type="text" placeholder="Search..." class="px-3 py-1 rounded-lg text-sm w-48">
+          <!-- FIXED: Search form with border -->
+          <form action="{% url 'dataset_list' %}" method="get" class="relative">
+            <input 
+              type="text" 
+              name="q"
+              placeholder="Search datasets..." 
+              class="px-4 py-1.5 pl-9 rounded-lg text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent w-48"
+            />
+            <svg class="absolute left-3 top-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </form>
 
           {% if user.is_authenticated %}
           <div class="relative group" x-data="{ profileOpen: false }">
@@ -117,26 +128,72 @@
     <!-- Mobile Menu -->
     <div class="md:hidden" x-show="isOpen" @click.away="isOpen = false" x-cloak>
       <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
+        <!-- Mobile Search -->
+        <form action="{% url 'dataset_list' %}" method="get" class="relative mb-3">
+          <input 
+            type="text" 
+            name="q"
+            placeholder="Search datasets..." 
+            class="w-full px-4 py-2 pl-9 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+          <svg class="absolute left-3 top-2.5 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </form>
+        
         <a href="{% url 'dataset_list' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Datasets</a>
         <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Models</a>
-        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">About Us</a>
-        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Courses</a>
-        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Discussions</a>
-        {% if user.is_authenticated %}
-        <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">My Profile</a>
-        <a href="{% url 'change_password' %}" class="block px-4 py-2 hover:bg-gray-100">Change Password</a>
-        <form action="{% url 'account_logout' %}" method="POST" class="block">
-          {% csrf_token %}
-          <button type="submit" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">
-            Logout
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+        
+        <!-- Mobile About Us Dropdown -->
+        <div x-data="{ mobileAboutOpen: false }">
+          <button @click="mobileAboutOpen = !mobileAboutOpen" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent flex justify-between items-center">
+            About Us
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
             </svg>
           </button>
-        </form>
+          <div x-show="mobileAboutOpen" class="pl-6">
+            <a href="#" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Our Mission</a>
+            <a href="{% url 'team' %}" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Our Team</a>
+            <a href="{% url 'partners' %}" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Partners</a>
+          </div>
+        </div>
+        
+        <!-- Mobile Donation Dropdown -->
+        <div x-data="{ mobileDonationOpen: false }">
+          <button @click="mobileDonationOpen = !mobileDonationOpen" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent flex justify-between items-center">
+            Donation
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div x-show="mobileDonationOpen" class="pl-6">
+            <a href="#" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Donate Datasets</a>
+            <a href="#" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Donate Cash</a>
+          </div>
+        </div>
+        
+        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Contact</a>
+        
+        {% if user.is_authenticated %}
+        <div class="border-t border-gray-200 pt-2 mt-2">
+          <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">My Profile</a>
+          <a href="{% url 'change_password' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Change Password</a>
+          <form action="{% url 'account_logout' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent flex items-center">
+              Logout
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          </form>
+        </div>
         {% else %}
-        <a href="{% url 'login' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Sign In</a>
-        <a href="{% url 'signup' %}" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-accent hover:bg-red-600">Register</a>
+        <div class="border-t border-gray-200 pt-2 mt-2 space-y-2">
+          <a href="{% url 'login' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Sign In</a>
+          <a href="{% url 'signup' %}" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-accent hover:bg-red-600 text-center">Register</a>
+        </div>
         {% endif %}
       </div>
     </div>
