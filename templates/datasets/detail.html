@@ -905,22 +905,24 @@
                       <td>{{ forloop.counter }}</td>
                       {% for col in preview_columns %}
                       <td>
-                        {% with value=row|get_item:col %}
-                          <div class="group relative max-w-xs truncate" title="{{ value|default:'null' }}">
-                            {% if value == None or value == '' or value == 'nan' %}
-                              <span class="text-gray-400 italic">null</span>
-                            {% else %}
-                              <span>{{ value|truncatechars:30 }}</span>
-                              {% if value|stringformat:"s"|length > 30 %}
-                                <div class="absolute left-0 top-full mt-1 w-64 p-2 bg-white border rounded-lg shadow-lg z-50 hidden group-hover:block">
-                                  <div class="text-xs font-medium text-gray-900 mb-1">Full value:</div>
-                                  <div class="text-xs text-gray-600 whitespace-pre-wrap break-words">{{ value }}</div>
+                        {% for key, val in row.items %}
+                            {% if key == col %}
+                                <div class="group relative max-w-xs truncate" title="{{ val|default:'null' }}">
+                                    {% if val == None or val == '' or val == 'nan' %}
+                                        <span class="text-gray-400 italic">null</span>
+                                    {% else %}
+                                        <span>{{ val|truncatechars:30 }}</span>
+                                        {% if val|stringformat:"s"|length > 30 %}
+                                            <div class="absolute left-0 top-full mt-1 w-64 p-2 bg-white border rounded-lg shadow-lg z-50 hidden group-hover:block">
+                                                <div class="text-xs font-medium text-gray-900 mb-1">Full value:</div>
+                                                <div class="text-xs text-gray-600 whitespace-pre-wrap break-words">{{ val }}</div>
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
                                 </div>
-                              {% endif %}
                             {% endif %}
-                          </div>
-                        {% endwith %}
-                      </td>
+                        {% endfor %}
+                    </td>
                       {% endfor %}
                     </tr>
                     {% endfor %}
