@@ -194,7 +194,7 @@ def dataset_list(request):
     
     # Get available years for filter (optional, if you want to keep this)
     available_years = Dataset.objects.dates('upload_date', 'year').order_by('-upload_date__year')
-    total_size_display = datasets.get_file_size_display()
+    
     # Prepare URL parameters for templates
     url_params = request.GET.copy()
     
@@ -224,10 +224,13 @@ def dataset_list(request):
             # Store the URL
             modality_removal_urls[modality] = f"?{params.urlencode()}" if params else ""
     
+    # Calculate total counts for all datasets (for display)
+    total_datasets_count = Dataset.objects.count()
+    total_downloads_all = Dataset.objects.aggregate(total=Sum('download_count'))['total'] or 0
+    
     context = {
         'datasets': page_obj,
         'available_years': available_years,
-        'total_size_display': total_size_display,
         'current_filters': {
             'modality': modality,
             'format': format,
@@ -248,6 +251,9 @@ def dataset_list(request):
         # Pass the choices for the filter template
         'modality_choices': Dataset.MODALITY_CHOICES,
         'format_choices': Dataset.FORMAT_CHOICES,
+        # Add total stats
+        'total_datasets_count': total_datasets_count,
+        'total_downloads_all': total_downloads_all,
     }
     
     return render(request, 'datasets/list.html', context)
@@ -449,7 +455,6 @@ def dataset_detail(request, pk):
     
     return render(request, 'datasets/detail.html', context)
 
-
 def get_preview_data(dataset, max_rows=100):
     """Extract preview data from CSV/Excel/JSON file with minimal memory usage"""
     import tempfile
@@ -531,7 +536,6 @@ def get_preview_data(dataset, max_rows=100):
                 os.unlink(tmp_path)
             except:
                 pass
-
 
 @require_GET
 def dataset_preview_api(request, pk):
@@ -634,7 +638,6 @@ def dataset_preview_api(request, pk):
             except:
                 pass
 
-
 def get_total_rows(file_obj):
     """Get total number of rows in file (supports B2)"""
     import tempfile
@@ -685,9 +688,6 @@ def get_total_rows(file_obj):
                 os.unlink(file_path)
             except:
                 pass
-                
-
-# ==================== RATING, COLLECTION, REPORT VIEWS ====================
 
 @login_required
 @require_POST
@@ -716,7 +716,6 @@ def rate_dataset(request, pk):
         messages.error(request, 'Please enter a valid rating.')
     
     return redirect('dataset_detail', pk=pk)
-
 
 @login_required
 def save_to_collection(request, pk):
@@ -752,7 +751,6 @@ def save_to_collection(request, pk):
     
     return redirect('dataset_detail', pk=pk)
 
-
 @login_required
 @require_POST
 def report_dataset(request, pk):
@@ -770,7 +768,6 @@ def report_dataset(request, pk):
         messages.error(request, 'Please provide valid report details.')
     
     return redirect('dataset_detail', pk=pk)
-
 
 @login_required
 def toggle_collection(request, pk):
@@ -797,9 +794,6 @@ def toggle_collection(request, pk):
     except UserCollection.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Collection not found'})
 
-
-# ==================== DATA REQUEST VIEWS ====================
-
 @login_required
 def download_request_form(request):
     # Path to your form template
@@ -808,7 +802,6 @@ def download_request_form(request):
         return FileResponse(open(form_path, 'rb'), as_attachment=True, filename='Data_Request_Form.docx')
     messages.error(request, 'The request form template is not currently available.')
     return redirect('dataset_list')
-
 
 @login_required
 def dataset_request(request, pk):
@@ -927,7 +920,6 @@ def dataset_request(request, pk):
     return render(request, 'datasets/request_form.html', {
         'dataset': dataset
     })
-
 
 @login_required
 def request_status(request, pk):
@@ -1058,9 +1050,6 @@ def request_status(request, pk):
         'legacy_filename': dataset.dataset_path.split('/')[-1] if dataset.dataset_path else None,
     })
 
-
-# ==================== MANAGER REVIEW VIEWS ====================
-
 @login_required
 @data_manager_required
 def manager_review_request(request, pk): 
@@ -1155,7 +1144,6 @@ def manager_review_request(request, pk):
         'data_request': data_request,
         'rejection_reasons': DataRequest.REASON_CHOICES,
     })
-
 
 @login_required
 @data_manager_required

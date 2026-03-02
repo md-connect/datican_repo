@@ -488,7 +488,7 @@
             </h3>
             <div class="flex flex-wrap items-center text-xs md:text-sm text-gray-600 mb-2 md:mb-3 gap-1 md:gap-2">
               <span class="bg-gray-100 px-2 py-0.5 rounded">📅 {{ dataset.update_date|date:"Y-m-d" }}</span>
-              <span class="bg-gray-100 px-2 py-0.5 rounded">💾 {{ total_size_display|default:"N/A" }}MB</span>
+              <span class="bg-gray-100 px-2 py-0.5 rounded">💾 {{ dataset.get_file_size_display|default:"N/A" }}MB</span>
             </div>
             <p class="text-xs md:text-sm text-gray-600 mb-3 md:mb-4 line-clamp-2">
               {{ dataset.description|truncatechars:80|default:"No description available" }}
@@ -497,7 +497,7 @@
               <span class="bg-green-100 text-green-800 px-2 py-0.5 md:px-2 md:py-1 rounded text-xs md:text-sm">
                 Usability {{ dataset.usability_score|default:"10/10" }}
               </span>
-              <span class="text-gray-500 truncate ml-2">⬇️ {{ total_size_display|default:"N/A" }}</span>
+              <span class="text-gray-500 truncate ml-2">⬇️ {{ dataset.download_count|default:"N/A" }}</span>
             </div>
           </div>
         </div>
