@@ -24,11 +24,20 @@
     height: 100%;
     border: 0;
   }
+  /* Fix for sticky header */
+  .sticky-dataset-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    width: 100%;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Desktop Sticky Header -->
+<!-- Desktop Sticky Header - Fixed with proper sticky positioning -->
 <div class="hidden md:block sticky-dataset-header">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <div class="flex items-center justify-between">
@@ -126,8 +135,10 @@
   </div>
 </div>
 
+<!-- Main Content with mobile padding fix -->
 <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-7xl mx-auto">
+  <!-- Added pt-16 for mobile spacing and md:pt-0 to remove on desktop -->
+  <div class="max-w-7xl mx-auto pt-16 md:pt-0">
     <!-- Header -->
     <div class="text-center mb-12">
       <h1 class="text-4xl font-bold text-primary mb-4">Contact Us</h1>
@@ -184,8 +195,7 @@
       
       <!-- Wide Map with precise coordinates -->
       <div class="map-container">
-        <iframe src="https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d4015.9983028940756!2d3.1998659999999997!3d6.473612!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zNsKwMjgnMjUuMCJOIDPCsDExJzU5LjUiRQ!5e1!3m2!1sen!2sng!4v1772562249156!5m2!1sen!2sng" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Lagos State University Faculty of Computing & Information Technology Map"></iframe>
-        <!-- <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4016.0559855445726!2d3.2003007!3d6.4663553!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8696500590b1%3A0xf27b47e41fad6dab!2sLagos%20State%20University!5e1!3m2!1sen!2sng!4v1772562062696!5m2!1sen!2sng" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Lagos State University Map"></iframe> -->
+        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4016.0559855445726!2d3.2003007!3d6.4663553!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8696500590b1%3A0xf27b47e41fad6dab!2sLagos%20State%20University!5e1!3m2!1sen!2sng!4v1772562062696!5m2!1sen!2sng" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Lagos State University Map"></iframe>
       </div>
       
       <!-- Location details with precise coordinates -->
@@ -197,14 +207,13 @@
           </svg>
           Lagos State University Main Campus, Ojo, Lagos, Nigeria
         </p>
-        
       </div>
     </div>
 
     <!-- Additional Contact Info -->
     <div class="mt-8 text-center">
       <p class="text-sm text-gray-500">
-        Response time: We aim to respond to all inquiries within 2-3 business days.
+        Response time: We aim to respond soonest.
       </p>
     </div>
   </div>
