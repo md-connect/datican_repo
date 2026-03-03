@@ -918,7 +918,7 @@ def dataset_request(request, pk):
             # Always send to both manager and director emails from settings
             EmailService.send_staff_notification(data_request, settings.MANAGER_EMAIL, 'manager')
             time.sleep(0.6) 
-            EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
+            EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'manager')
                         
             # Render success page
             return render(request, 'datasets/request_submitted.html', {
@@ -1104,7 +1104,7 @@ def manager_review_request(request, pk):
             
             # Send notifications
             if data_request.director:
-                EmailService.send_staff_notification(data_request, data_request.director, 'director')
+                EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
             
             EmailService.send_status_update_email(data_request, 'pending', request.user)
             
@@ -1482,7 +1482,7 @@ def admin_review_request(request, pk):
             
             # Notify director if assigned
             if data_request.director:
-                EmailService.send_staff_notification(data_request, data_request.director, 'director')
+                EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
             
         elif action == 'reject':
             data_request.status = 'rejected'
@@ -2631,13 +2631,13 @@ def resend_notification(request, request_id):
     message = ""
     
     if data_request.status == 'pending' and data_request.manager:
-        success = EmailService.send_staff_notification(data_request, data_request.manager, 'manager')
+        success = EmailService.send_staff_notification(data_request, settings.MANAGER_EMAIL, 'manager')
         message = 'Manager notification resent.'
     elif data_request.status == 'approved':
         success = EmailService.send_approval_email(data_request)
         message = 'Approval email resent.'
     elif data_request.status == 'director_review' and data_request.director:
-        success = EmailService.send_staff_notification(data_request, data_request.director, 'director')
+        success = EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
         message = 'Director notification resent.'
     
     if success:
@@ -2680,7 +2680,7 @@ def resend_email(request, pk, email_type):
         message = 'Approval email resent.'
     elif email_type == 'notification':
         if data_request.manager:
-            success = EmailService.send_staff_notification(data_request, data_request.manager, 'manager')
+            success = EmailService.send_staff_notification(data_request, settings.MANAGER_EMAIL, 'manager')
             message = 'Manager notification resent.'
     
     if success:
