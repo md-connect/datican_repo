@@ -391,7 +391,8 @@ def donation_page(request):
     
     return render(request, 'core/donation.html', {
         'form': form,
-        'title': 'Support DATICAN'
+        'title': 'Support DATICAN',
+        'support_email': 'support@datican.org'
     })
 
 def donation_success(request):
