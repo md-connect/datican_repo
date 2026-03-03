@@ -562,6 +562,9 @@
 // This script runs AFTER all HTML is loaded
 console.log('Page loaded, setting up event listeners...');
 
+// Constants
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
+
 // Set up Proceed button
 const proceedBtn = document.getElementById('proceedToForm');
 if (proceedBtn) {
@@ -610,15 +613,33 @@ if (typeof lucide !== 'undefined') {
   lucide.createIcons();
 }
 
-// File upload display functions
+// ===== ENHANCED FILE UPLOAD FUNCTIONS WITH VALIDATION =====
+
 function updateFormFileName(input) {
   const uploadContent = document.getElementById('formUploadContent');
   const filePreview = document.getElementById('formFilePreview');
   const fileName = document.getElementById('formFileName');
   const fileSize = document.getElementById('formFileSize');
   
+  // Remove any existing error message
+  removeExistingError('form_submission');
+  
   if (input.files.length > 0) {
     const file = input.files[0];
+    
+    // Validate file size (2MB max)
+    if (file.size > MAX_FILE_SIZE) {
+      showFileError('form_submission', `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`);
+      input.value = ''; // Clear the input
+      return;
+    }
+    
+    // Validate file type (PDF only)
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      showFileError('form_submission', 'Invalid file type. Please upload a PDF file.');
+      input.value = ''; // Clear the input
+      return;
+    }
     
     // Hide upload prompt, show file preview
     uploadContent.style.display = 'none';
@@ -632,6 +653,9 @@ function updateFormFileName(input) {
     if (file.type === 'application/pdf') {
       showPdfPreview(file, 'formFilePreview');
     }
+    
+    // Mark field as valid
+    markFieldAsValid('form_submission');
   }
 }
 
@@ -641,8 +665,28 @@ function updateEthicalFileName(input) {
   const fileName = document.getElementById('ethicalFileName');
   const fileSize = document.getElementById('ethicalFileSize');
   
+  // Remove any existing error message
+  removeExistingError('ethical_approval_proof');
+  
   if (input.files.length > 0) {
     const file = input.files[0];
+    
+    // Validate file size (2MB max)
+    if (file.size > MAX_FILE_SIZE) {
+      showFileError('ethical_approval_proof', `File too large: ${formatBytes(file.size)}. Maximum size is 2MB.`);
+      input.value = ''; // Clear the input
+      return;
+    }
+    
+    // Validate file type (PDF, JPG, PNG)
+    const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+    const fileExt = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    
+    if (!validExtensions.includes(fileExt)) {
+      showFileError('ethical_approval_proof', 'Invalid file type. Please upload PDF, JPG, or PNG.');
+      input.value = ''; // Clear the input
+      return;
+    }
     
     // Hide upload prompt, show file preview
     uploadContent.style.display = 'none';
@@ -655,11 +699,73 @@ function updateEthicalFileName(input) {
     // Show image preview if it's an image
     if (file.type.startsWith('image/')) {
       showImagePreview(file, 'ethicalFilePreview');
+    } else if (file.type === 'application/pdf') {
+      showPdfPreview(file, 'ethicalFilePreview');
+    }
+    
+    // Mark field as valid
+    markFieldAsValid('ethical_approval_proof');
+  }
+}
+
+// Helper function to show file errors
+function showFileError(inputId, message) {
+  const input = document.getElementById(inputId);
+  const parent = input.closest('div'); // Get the parent container
+  
+  // Remove any existing error
+  removeExistingError(inputId);
+  
+  // Create error element
+  const errorDiv = document.createElement('div');
+  errorDiv.id = inputId + 'Error';
+  errorDiv.className = 'text-sm text-red-600 mt-2';
+  errorDiv.textContent = message;
+  
+  // Insert after the file input container
+  const container = input.closest('.border-2');
+  container.parentNode.insertBefore(errorDiv, container.nextSibling);
+  
+  // Highlight the border
+  container.classList.add('border-red-500');
+  
+  // Hide any preview if visible
+  const uploadContent = document.getElementById(inputId === 'form_submission' ? 'formUploadContent' : 'ethicalUploadContent');
+  const filePreview = document.getElementById(inputId === 'form_submission' ? 'formFilePreview' : 'ethicalFilePreview');
+  
+  uploadContent.style.display = 'flex';
+  filePreview.classList.add('hidden');
+}
+
+function removeExistingError(inputId) {
+  const existingError = document.getElementById(inputId + 'Error');
+  if (existingError) {
+    existingError.remove();
+  }
+  
+  // Remove red border
+  const input = document.getElementById(inputId);
+  if (input) {
+    const container = input.closest('.border-2');
+    if (container) {
+      container.classList.remove('border-red-500');
     }
   }
 }
 
-// Remove file functions
+// Mark field as valid (add green border)
+function markFieldAsValid(inputId) {
+  const input = document.getElementById(inputId);
+  if (input) {
+    const container = input.closest('.border-2');
+    if (container) {
+      container.classList.remove('border-red-500');
+      container.classList.add('border-green-500');
+    }
+  }
+}
+
+// Remove file functions (updated)
 function removeFormFile(event) {
   event.stopPropagation();
   
@@ -673,6 +779,19 @@ function removeFormFile(event) {
   // Show upload prompt, hide file preview
   uploadContent.style.display = 'flex';
   filePreview.classList.add('hidden');
+  
+  // Remove any preview
+  const existingPreview = filePreview.querySelector('iframe');
+  if (existingPreview) existingPreview.remove();
+  
+  // Remove error if exists
+  removeExistingError('form_submission');
+  
+  // Remove green border
+  const container = input.closest('.border-2');
+  if (container) {
+    container.classList.remove('border-green-500');
+  }
 }
 
 function removeEthicalFile(event) {
@@ -688,6 +807,19 @@ function removeEthicalFile(event) {
   // Show upload prompt, hide file preview
   uploadContent.style.display = 'flex';
   filePreview.classList.add('hidden');
+  
+  // Remove any preview
+  const existingPreview = filePreview.querySelector('iframe, img');
+  if (existingPreview) existingPreview.remove();
+  
+  // Remove error if exists
+  removeExistingError('ethical_approval_proof');
+  
+  // Remove green border
+  const container = input.closest('.border-2');
+  if (container) {
+    container.classList.remove('border-green-500');
+  }
 }
 
 // Show PDF preview
@@ -733,5 +865,78 @@ function formatBytes(bytes, decimals = 2) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+// ===== TEXT FIELD VALIDATION =====
+
+// Add real-time validation to required fields
+document.addEventListener('DOMContentLoaded', function() {
+  const requiredFields = ['institution', 'phone_number', 'project_title', 'project_description'];
+  
+  requiredFields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      // Remove the 'required' attribute to prevent browser validation
+      field.removeAttribute('required');
+      
+      // Add validation on input
+      field.addEventListener('input', function() {
+        validateTextField(this);
+      });
+      
+      field.addEventListener('blur', function() {
+        validateTextField(this);
+      });
+      
+      // Initial validation if field has value
+      if (field.value.trim()) {
+        validateTextField(field);
+      }
+    }
+  });
+});
+
+function validateTextField(field) {
+  const value = field.value.trim();
+  const fieldId = field.id;
+  const errorId = fieldId + 'TextError';
+  
+  // Remove existing error
+  const existingError = document.getElementById(errorId);
+  if (existingError) {
+    existingError.remove();
+  }
+  
+  if (value === '') {
+    // Add red border
+    field.classList.add('border-red-500');
+    field.classList.remove('border-green-500');
+    
+    // Add error message
+    const errorDiv = document.createElement('p');
+    errorDiv.id = errorId;
+    errorDiv.className = 'text-xs text-red-600 mt-1';
+    errorDiv.textContent = 'This field is required';
+    field.parentNode.appendChild(errorDiv);
+    
+    return false;
+  } else {
+    // Add green border
+    field.classList.remove('border-red-500');
+    field.classList.add('border-green-500');
+    return true;
+  }
+}
+
+// Optional: Update the max file size text in the UI
+document.addEventListener('DOMContentLoaded', function() {
+  // Update the max file size text from 25MB to 2MB
+  const sizeTexts = document.querySelectorAll('.text-xs.text-gray-500');
+  sizeTexts.forEach(el => {
+    if (el.textContent.includes('25MB')) {
+      el.textContent = el.textContent.replace('25MB', '2MB');
+    }
+  });
+});
 </script>
+
 {% endblock %}
