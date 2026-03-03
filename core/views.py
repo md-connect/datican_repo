@@ -20,7 +20,6 @@ import requests
 from urllib.parse import urlencode
 from allauth.account.views import LoginView
 from django.urls import reverse
-from django.contrib import messages
 from django.utils.http import url_has_allowed_host_and_scheme
 from allauth.account.views import SignupView
 from allauth.account.views import ConfirmEmailView 

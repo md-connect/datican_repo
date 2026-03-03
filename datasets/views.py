@@ -913,26 +913,10 @@ def dataset_request(request, pk):
             # Send acknowledgment email using EmailService
             EmailService.send_acknowledgment_email(data_request)
             
-            # Find and assign a data manager
-            managers = User.objects.filter(role='data_manager', is_active=True)
-            if managers.exists():
-                data_request.manager = managers.first()
-                data_request.save()
-                
-                # Send notification to manager
-                EmailService.send_staff_notification(data_request, data_request.manager, 'manager')
-            else:
-                # If no manager found, send to admin as fallback
-                admin_users = CustomUser.objects.filter(is_staff=True, is_active=True)
-                for admin_user in admin_users:
-                    send_mail(
-                        "URGENT: No Data Manager Available",
-                        f"A new data request (#{data_request.id}) was submitted but no data manager is available to review it.",
-                        settings.DEFAULT_FROM_EMAIL,
-                        [admin_user.email],
-                        fail_silently=True,
-                    )
-            
+            # Always send to both manager and director emails from settings
+            EmailService.send_staff_notification(data_request, settings.MANAGER_EMAIL, 'manager')
+            EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
+                        
             # Render success page
             return render(request, 'datasets/request_submitted.html', {
                 'dataset': dataset,
