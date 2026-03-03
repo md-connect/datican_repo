@@ -264,6 +264,9 @@ def dataset_detail(request, pk):
         Dataset.objects.prefetch_related('thumbnails', 'files'), 
         pk=pk
     )
+
+    dataset.view_count += 1
+    dataset.save(update_fields=['view_count'])
     
     # Get all thumbnails and find primary
     thumbnails = list(dataset.thumbnails.all())

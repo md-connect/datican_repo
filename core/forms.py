@@ -305,7 +305,7 @@ class DonationForm(forms.ModelForm):
             'email': 'Email Address *',
             'phone_number': 'Phone Number *',
             'address': 'Address (Optional)',
-            'message': 'How would you like to help? *',
+            'message': 'Describe how you would like to help *',
         }
     
     def clean_donation_type(self):

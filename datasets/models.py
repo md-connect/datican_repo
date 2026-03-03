@@ -391,6 +391,7 @@ class Dataset(models.Model):
     
     # Keep file_type for backward compatibility
     file_type = models.CharField(max_length=100, null=True, blank=True)
+    view_count = models.PositiveIntegerField(default=0, help_text="Number of times this dataset has been viewed")
 
     # Helper methods for file management
     def get_all_files(self):
