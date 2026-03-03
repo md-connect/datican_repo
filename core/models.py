@@ -7,6 +7,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import EmailValidator
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -109,3 +111,50 @@ class TeamMember(models.Model):
     @property
     def full_name(self):
         return f"{self.get_title_display()} {self.first_name} {self.last_name}"
+
+class Donation(models.Model):
+    DONATION_TYPE_CHOICES = [
+        ('financial', 'Financial Donation'),
+        ('data', 'Data Donation'),
+    ]
+    
+    # Personal Information
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.EmailField(validators=[EmailValidator()])
+    phone_number = models.CharField(max_length=20)
+    address = models.TextField(blank=True, null=True, help_text="Optional")
+    
+    # Donation Type
+    donation_type = models.JSONField(default=list, help_text="Selected donation types")
+    
+    # Message
+    message = models.TextField(help_text="Description of how you'd like to help")
+    
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True, null=True)
+    
+    # Status
+    is_contacted = models.BooleanField(default=False)
+    contacted_at = models.DateTimeField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True, help_text="Internal notes")
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Donation"
+        verbose_name_plural = "Donations"
+    
+    def __str__(self):
+        return f"Donation from {self.first_name} {self.last_name} - {self.created_at.strftime('%Y-%m-%d')}"
+    
+    def get_donation_types_display(self):
+        if not self.donation_type:
+            return "Not specified"
+        types = []
+        for dt in self.donation_type:
+            for choice in self.DONATION_TYPE_CHOICES:
+                if choice[0] == dt:
+                    types.append(choice[1])
+        return ", ".join(types)

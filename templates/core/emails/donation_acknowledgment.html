@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width">
+<title>Thank You - DATICAN Repository</title>
+<style>
+  table { border-collapse: collapse; }
+  img { border: 0; }
+  a { text-decoration: none; }
+  @media only screen and (max-width:600px) {
+    .container { width:100% !important; }
+    .padding { padding:24px !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background:#F8FAFC; font-family:Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#F8FAFC">
+    <tr>
+      <td align="center" style="padding:20px;">
+        <table width="620" class="container" cellpadding="0" cellspacing="0"
+               style="background:#FFFFFF; border-radius:16px; overflow:hidden;">
+          
+          <!-- Header with Logo -->
+          <tr>
+            <td align="center" bgcolor="#0F172A" style="padding:40px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="80" align="left" valign="middle">
+                    <img src="https://repo.datican.org/static/images/datican_repo.png"
+                         alt="DATICAN" width="64" style="display:block;">
+                  </td>
+                  <td align="left" valign="middle" style="padding-left:16px;">
+                    <div style="font-size:22px; font-weight:bold; color:#FFFFFF;">
+                      DATICAN Repository
+                    </div>
+                    <div style="font-size:26px; font-weight:bold; color:#FFFFFF; margin-top:8px;">
+                      Thank You for Your Support!
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td class="padding" style="padding:40px 32px; color:#020617;">
+              <p style="font-size:18px; font-weight:bold; margin:0 0 16px;">
+                Dear {{ donation.first_name }} {{ donation.last_name }},
+              </p>
+              
+              <p style="font-size:16px; color:#475569; line-height:1.7; margin:0 0 24px;">
+                Thank you for your interest in supporting the DATICAN Repository. We greatly appreciate your willingness to contribute to our mission of advancing medical research through accessible data.
+              </p>
+              
+              <table width="100%" cellpadding="0" cellspacing="0"
+                     style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:12px; margin:24px 0;">
+                <tr>
+                  <td style="padding:24px 32px;">
+                    <div style="font-size:18px; font-weight:bold; color:#0F172A; margin-bottom:16px;">
+                      Your Submission Details
+                    </div>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="font-size:12px; color:#64748B; padding:4px 0; width:120px;">Donation Type:</td>
+                        <td style="font-size:14px; color:#0F172A; padding:4px 0;">
+                          {% for dt in donation.donation_type %}
+                            {% if dt == 'financial' %}Financial Donation{% endif %}
+                            {% if dt == 'data' %}Data Donation{% endif %}
+                            {% if not forloop.last %}, {% endif %}
+                          {% endfor %}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:12px; color:#64748B; padding:4px 0;">Message:</td>
+                        <td style="font-size:14px; color:#0F172A; padding:4px 0;">{{ donation.message }}</td>
+                      </tr>
+                      <tr>
+                        <td style="font-size:12px; color:#64748B; padding:4px 0;">Submitted:</td>
+                        <td style="font-size:14px; color:#0F172A; padding:4px 0;">{{ donation.created_at|date:"F d, Y H:i" }}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="font-size:16px; color:#475569; line-height:1.7; margin:24px 0;">
+                One of our team members will contact you shortly to discuss how you can best support our mission. We typically respond within 2-3 business days.
+              </p>
+              
+              <div style="background:#ECFDF3; border-left:4px solid #10b981; padding:20px; border-radius:8px; margin:24px 0;">
+                <p style="margin:0; font-size:15px; color:#065F46;">
+                  <strong>Next Steps:</strong> A staff member will reach out to you via email or phone to discuss the details of your generous offer.
+                </p>
+              </div>
+              
+              <p style="font-size:16px; color:#475569; line-height:1.7;">
+                If you have any immediate questions, please don't hesitate to contact us at 
+                <a href="mailto:{{ support_email }}" style="color:#E11D48;">{{ support_email }}</a>.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td bgcolor="#020617" style="padding:36px 32px; text-align:center; color:#94A3B8;">
+              <div style="font-weight:bold; color:#FFFFFF; margin-bottom:8px;">
+                DATICAN Repository
+              </div>
+              <p style="font-size:14px; margin:0 0 20px;">
+                Improving Healthcare Delivery in Africa using the power of data, AI and Data Science
+              </p>
+              <p style="font-size:14px; margin:0;">
+                <a href="{{ site_url }}" style="color:#CBD5F5;">Visit Portal</a> ·
+                <a href="mailto:{{ support_email }}" style="color:#CBD5F5;">Contact Support</a>
+              </p>
+              <p style="font-size:12px; margin-top:24px;">
+                © {% now "Y" %} DATICAN Repository · All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

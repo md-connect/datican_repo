@@ -7,6 +7,8 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('partners/', views.partners_view, name='partners'),
     path('team/', views.team_view, name='team'),
+    path('donate/', views.donation_page, name='donation'),
+    path('donate/success/', views.donation_success, name='donation_success'),
     
     path('login/', CustomLoginView.as_view(), name='login'),
     path('signup/', CustomSignupView.as_view(), name='signup'),
@@ -32,4 +34,5 @@ urlpatterns = [
     path('profile/password/', views.change_password, name='change_password'),
     path('logout/', LogoutView.as_view(next_page='/'), name='account_logout'),
     path('accounts/3rdparty/signup/', views.social_login_callback, name='social_callback'),
+    
 ]

@@ -7,6 +7,7 @@ from .models import UserProfile
 from django.contrib.auth.forms import PasswordChangeForm, SetPasswordForm
 from django.contrib.auth import password_validation
 from allauth.account.forms import SignupForm
+from .models import Donation
 
 User = get_user_model()
 
@@ -271,3 +272,44 @@ class CustomSetPasswordForm(SetPasswordForm):
             'placeholder': 'Confirm new password'
         }),
     )
+
+
+class DonationForm(forms.ModelForm):
+    # Override the donation_type field to use checkboxes
+    donation_type = forms.MultipleChoiceField(
+        choices=Donation.DONATION_TYPE_CHOICES,
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'donation-checkbox'}),
+        required=True,
+        error_messages={'required': 'Please select at least one donation type'}
+    )
+    
+    # Make address optional
+    address = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 2, 'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent'})
+    )
+    
+    class Meta:
+        model = Donation
+        fields = ['first_name', 'last_name', 'email', 'phone_number', 'address', 'donation_type', 'message']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent'}),
+            'last_name': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent'}),
+            'email': forms.EmailInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent'}),
+            'phone_number': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent', 'placeholder': '+234800000000'}),
+            'message': forms.Textarea(attrs={'rows': 5, 'class': 'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent', 'placeholder': 'Please describe how you would like to help...'}),
+        }
+        labels = {
+            'first_name': 'First Name *',
+            'last_name': 'Last Name *',
+            'email': 'Email Address *',
+            'phone_number': 'Phone Number *',
+            'address': 'Address (Optional)',
+            'message': 'How would you like to help? *',
+        }
+    
+    def clean_donation_type(self):
+        data = self.cleaned_data['donation_type']
+        if not data:
+            raise forms.ValidationError("Please select at least one donation type")
+        return data

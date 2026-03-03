@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Support DATICAN - Make a Donation{% endblock %}
+
+{% block extra_head %}
+<style>
+  .donation-checkbox {
+    accent-color: #E11D48;
+  }
+  .form-section {
+    transition: all 0.3s ease;
+  }
+  .form-section:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-primary mb-4">Support DATICAN</h1>
+      <div class="w-24 h-1 bg-accent mx-auto rounded-full mb-6"></div>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        Your support helps us continue providing high-quality medical datasets to researchers worldwide.
+        Whether through financial contributions or data donations, every bit helps advance medical research.
+      </p>
+    </div>
+
+    <!-- Options Cards -->
+    <div class="grid md:grid-cols-2 gap-6 mb-12">
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition">
+        <div class="text-4xl mb-4">💰</div>
+        <h3 class="text-xl font-semibold text-primary mb-2">Financial Donation</h3>
+        <p class="text-gray-600 mb-4">
+          Support our mission with a financial contribution. Your donation helps us maintain infrastructure, 
+          curate datasets, and provide free access to researchers.
+        </p>
+        <div class="flex items-center text-sm text-accent">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+          </svg>
+          <span>Tax-deductible where applicable</span>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition">
+        <div class="text-4xl mb-4">📊</div>
+        <h3 class="text-xl font-semibold text-primary mb-2">Data Donation</h3>
+        <p class="text-gray-600 mb-4">
+          Contribute anonymized medical datasets to our repository. Your data will be curated, documented, 
+          and made available to researchers following ethical guidelines.
+        </p>
+        <div class="flex items-center text-sm text-accent">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span>Strict anonymization protocols</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Display Messages -->
+    {% if messages %}
+      {% for message in messages %}
+        <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200{% else %}bg-red-100 text-red-800 border border-red-200{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <!-- Donation Form -->
+    <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200 form-section">
+      <h2 class="text-2xl font-bold text-primary mb-6">Tell Us How You'd Like to Help</h2>
+      
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- Personal Information -->
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label for="{{ form.first_name.id_for_label }}" class="block text-sm font-medium text-primary mb-2">
+              {{ form.first_name.label }}
+            </label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <p class="text-red-600 text-xs mt-1">{{ form.first_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+          
+          <div>
+            <label for="{{ form.last_name.id_for_label }}" class="block text-sm font-medium text-primary mb-2">
+              {{ form.last_name.label }}
+            </label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <p class="text-red-600 text-xs mt-1">{{ form.last_name.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-primary mb-2">
+              {{ form.email.label }}
+            </label>
+            {{ form.email }}
+            {% if form.email.errors %}
+              <p class="text-red-600 text-xs mt-1">{{ form.email.errors.0 }}</p>
+            {% endif %}
+          </div>
+          
+          <div>
+            <label for="{{ form.phone_number.id_for_label }}" class="block text-sm font-medium text-primary mb-2">
+              {{ form.phone_number.label }}
+            </label>
+            {{ form.phone_number }}
+            {% if form.phone_number.errors %}
+              <p class="text-red-600 text-xs mt-1">{{ form.phone_number.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Address (Optional) -->
+        <div>
+          <label for="{{ form.address.id_for_label }}" class="block text-sm font-medium text-primary mb-2">
+            {{ form.address.label }}
+          </label>
+          {{ form.address }}
+          {% if form.address.errors %}
+            <p class="text-red-600 text-xs mt-1">{{ form.address.errors.0 }}</p>
+          {% endif %}
+          <p class="text-xs text-gray-500 mt-1">Optional - for acknowledgment letters if applicable</p>
+        </div>
+
+        <!-- Donation Type Checkboxes -->
+        <div>
+          <label class="block text-sm font-medium text-primary mb-3">
+            How would you like to help? <span class="text-red-500">*</span>
+          </label>
+          <div class="space-y-2">
+            {% for value, label in form.fields.donation_type.choices %}
+              <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                <input type="checkbox" name="donation_type" value="{{ value }}" 
+                       class="donation-checkbox h-5 w-5 text-accent rounded border-gray-300 focus:ring-accent"
+                       {% if value in form.donation_type.value %}checked{% endif %}>
+                <span class="text-gray-700">{{ label }}</span>
+              </label>
+            {% endfor %}
+          </div>
+          {% if form.donation_type.errors %}
+            <p class="text-red-600 text-xs mt-2">{{ form.donation_type.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Message -->
+        <div>
+          <label for="{{ form.message.id_for_label }}" class="block text-sm font-medium text-primary mb-2">
+            {{ form.message.label }}
+          </label>
+          {{ form.message }}
+          {% if form.message.errors %}
+            <p class="text-red-600 text-xs mt-1">{{ form.message.errors.0 }}</p>
+          {% endif %}
+          <p class="text-xs text-gray-500 mt-1">Tell us about your interest in supporting DATICAN</p>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-6 border-t border-gray-200">
+          <button type="submit" class="w-full bg-accent text-white py-3 px-6 rounded-lg hover:bg-accent/90 transition-colors font-medium flex items-center justify-center gap-2 text-lg">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0l-4 4m4-4v12" />
+            </svg>
+            Submit Interest
+          </button>
+          <p class="text-xs text-gray-500 text-center mt-4">
+            We'll contact you within 2-3 business days to discuss your contribution.
+          </p>
+        </div>
+      </form>
+    </div>
+
+    <!-- Contact Info -->
+    <div class="mt-8 text-center text-sm text-gray-500">
+      <p>Have questions? Contact us at <a href="mailto:{{ support_email }}" class="text-accent hover:underline">{{ support_email }}</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

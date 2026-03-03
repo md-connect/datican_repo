@@ -14,7 +14,6 @@ from django.db.models import Prefetch
 from .models import UserProfile
 from django.contrib.auth import update_session_auth_hash
 from django.conf import settings
-from django.shortcuts import redirect
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 import requests
@@ -26,6 +25,9 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from allauth.account.views import SignupView
 from allauth.account.views import ConfirmEmailView 
 from .models import TeamMember
+from .forms import DonationForm
+from .models import Donation
+from .utils import send_donation_acknowledgment, send_donation_notification_to_staff
 
 
 class CustomSignupView(SignupView):
@@ -361,3 +363,37 @@ def password_change_done(request):
     """Password change success page"""
     messages.success(request, 'Your password has been changed successfully!')
     return redirect('profile')
+
+def donation_page(request):
+    """View for donation/contact page"""
+    if request.method == 'POST':
+        form = DonationForm(request.POST)
+        if form.is_valid():
+            # Save the donation
+            donation = form.save(commit=False)
+            
+            # Capture IP and user agent
+            donation.ip_address = request.META.get('REMOTE_ADDR')
+            donation.user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            donation.save()
+            
+            # Send emails
+            send_donation_acknowledgment(donation)
+            send_donation_notification_to_staff(donation)
+            
+            messages.success(request, 'Thank you for your interest in supporting DATICAN! A member of our team will contact you shortly.')
+            return redirect('donation_success')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = DonationForm()
+    
+    return render(request, 'core/donation.html', {
+        'form': form,
+        'title': 'Support DATICAN'
+    })
+
+def donation_success(request):
+    """Success page after donation submission"""
+    return render(request, 'core/donation_success.html')

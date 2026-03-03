@@ -35,28 +35,7 @@
             <a href="{% url 'partners' %}" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Partners</a>
           </div>
         </div>
-
-        <div class="relative" x-data="{ donationOpen: false, timeout: null }">
-          <button
-            @mouseenter="clearTimeout(timeout); donationOpen = true"
-            @mouseleave="timeout = setTimeout(() => donationOpen = false, 200)"
-            class="text-dark hover:text-accent transition-colors font-medium"
-          >
-            Donation ▾
-          </button>
-          
-          <div
-            x-show="donationOpen"
-            @mouseenter="clearTimeout(timeout)"
-            @mouseleave="timeout = setTimeout(() => donationOpen = false, 200)"
-            class="absolute top-full left-0 w-48 bg-white shadow-lg rounded-lg py-2 mt-1 z-50"
-            x-cloak
-          >
-            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Donate Datasets</a>
-            <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Financial Support</a>
-          </div>
-        </div>
-
+        <a href="{% url 'donation' %}" class="text-dark hover:text-accent transition-colors font-medium">Donate</a>
         <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Contact</a>
       </div>
 

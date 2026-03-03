@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Thank You - DATICAN Donation{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-b from-green-50 to-white py-16 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto">
+    <!-- Success Card -->
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+      <!-- Success Header -->
+      <div class="bg-green-600 px-6 py-12 text-center">
+        <div class="flex justify-center mb-4">
+          <div class="bg-white rounded-full p-3">
+            <svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </div>
+        <h1 class="text-4xl font-bold text-white mb-2">Thank You!</h1>
+        <p class="text-green-100 text-lg">Your interest in supporting DATICAN has been received</p>
+      </div>
+      
+      <!-- Success Body -->
+      <div class="px-6 py-8 md:px-10">
+        <div class="text-center mb-8">
+          <p class="text-xl text-gray-800 mb-4">
+            We truly appreciate your willingness to contribute to medical research.
+          </p>
+          <p class="text-gray-600">
+            A confirmation email has been sent to your email address. One of our team members will contact you within 2-3 business days to discuss the next steps.
+          </p>
+        </div>
+        
+        <!-- What Happens Next -->
+        <div class="bg-gray-50 rounded-xl p-6 mb-8">
+          <h2 class="text-lg font-semibold text-primary mb-4 flex items-center">
+            <svg class="w-5 h-5 text-accent mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+            What Happens Next?
+          </h2>
+          <div class="space-y-4">
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <span class="text-green-600 font-semibold">1</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-800">Review Your Submission</p>
+                <p class="text-sm text-gray-600">Our team will review the details you've provided</p>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <span class="text-green-600 font-semibold">2</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-800">Contact You</p>
+                <p class="text-sm text-gray-600">We'll reach out via email or phone to discuss your contribution</p>
+              </div>
+            </div>
+            <div class="flex items-start">
+              <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <span class="text-green-600 font-semibold">3</span>
+              </div>
+              <div>
+                <p class="font-medium text-gray-800">Arrange the Details</p>
+                <p class="text-sm text-gray-600">We'll work with you to finalize the donation process</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="/" class="inline-flex items-center justify-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Return to Home
+          </a>
+          <a href="{% url 'core:donation' %}" class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-accent hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-colors">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Make Another Submission
+          </a>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+        <p class="text-sm text-gray-500 text-center">
+          Have questions? Contact us at 
+          <a href="mailto:{{ support_email }}" class="text-accent hover:underline">{{ support_email }}</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
