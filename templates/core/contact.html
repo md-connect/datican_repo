@@ -5,6 +5,13 @@
 
 {% block extra_head %}
 <style>
+  /* Prevent horizontal scroll on all devices */
+  html, body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+  }
+  
   .contact-card {
     transition: all 0.3s ease;
   }
@@ -33,6 +40,40 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     width: 100%;
   }
+  
+  /* Ensure all containers respect viewport width */
+  .max-w-7xl, .max-w-4xl, .max-w-2xl, .max-w-3xl, .max-w-5xl, .max-w-6xl, .max-w-full {
+    max-width: 100% !important;
+    overflow-x: hidden;
+  }
+  
+  /* Fix for flex containers that might cause overflow */
+  .flex, .grid {
+    min-width: 0;
+  }
+  
+  /* Ensure text doesn't cause overflow */
+  .truncate {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  /* Fix for cards on mobile */
+  .contact-card {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  /* Ensure email links don't cause overflow */
+  .contact-card a {
+    word-break: break-all;
+    overflow-wrap: break-word;
+  }
 </style>
 {% endblock %}
 
@@ -42,16 +83,16 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <div class="flex items-center justify-between">
       <!-- Breadcrumb -->
-      <nav class="flex items-center text-sm text-gray-600">
-        <a href="{% url 'donation' %}" class="hover:text-primary">Support</a>
+      <nav class="flex items-center text-sm text-gray-600 min-w-0">
+        <a href="{% url 'donation' %}" class="hover:text-primary whitespace-nowrap">Support</a>
         <svg class="w-4 h-4 mx-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
         </svg>
-        <span class="text-primary font-medium truncate max-w-md">Contact Us</span>
+        <span class="text-primary font-medium truncate">Contact Us</span>
       </nav>
       
       <!-- Authentication Circle -->
-      <div class="flex items-center space-x-4 ml-4">
+      <div class="flex items-center space-x-4 ml-4 flex-shrink-0">
         {% if user.is_authenticated %}
           <div class="relative" x-data="{ profileOpen: false }">
             <button 
@@ -126,8 +167,8 @@
           </div>
         {% else %}
           <div class="flex items-center space-x-3">
-            <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium transition-colors">Sign In</a>
-            <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium transition-colors">Register</a>
+            <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium transition-colors whitespace-nowrap">Sign In</a>
+            <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium transition-colors whitespace-nowrap">Register</a>
           </div>
         {% endif %}
       </div>
@@ -136,53 +177,53 @@
 </div>
 
 <!-- Main Content with mobile padding fix -->
-<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 overflow-hidden">
   <!-- Added pt-16 for mobile spacing and md:pt-0 to remove on desktop -->
-  <div class="max-w-7xl mx-auto pt-16 md:pt-0">
+  <div class="max-w-7xl mx-auto w-full pt-16 md:pt-0">
     <!-- Header -->
-    <div class="text-center mb-12">
+    <div class="text-center mb-12 px-4 sm:px-0">
       <h1 class="text-4xl font-bold text-primary mb-4">Contact Us</h1>
       <div class="w-24 h-1 bg-accent mx-auto rounded-full mb-6"></div>
-      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto px-4">
         Get in touch with the DATICAN team. We're here to answer your questions about donations, datasets, or collaboration opportunities.
       </p>
     </div>
 
     <!-- Contact Cards -->
-    <div class="grid md:grid-cols-2 gap-8 mb-12">
+    <div class="grid md:grid-cols-2 gap-8 mb-12 px-4 sm:px-0">
       <!-- Director's Email Card -->
-      <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200 contact-card">
+      <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 border border-gray-200 contact-card">
         <div class="flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6 mx-auto">
           <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
         </div>
         <h2 class="text-2xl font-bold text-primary text-center mb-2">Director</h2>
-        <p class="text-gray-600 text-center mb-4">For high-level inquiries and partnerships</p>
+        <p class="text-gray-600 text-center mb-4 px-2">For high-level inquiries and partnerships</p>
         <div class="flex items-center justify-center gap-2 bg-gray-50 p-4 rounded-lg">
-          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 text-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          <a href="mailto:Director.datican@gmail.com" class="text-lg text-primary hover:text-accent font-medium transition-colors">
+          <a href="mailto:Director.datican@gmail.com" class="text-base md:text-lg text-primary hover:text-accent font-medium transition-colors break-all">
             Director.datican@gmail.com
           </a>
         </div>
       </div>
 
       <!-- Info Email Card -->
-      <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200 contact-card">
+      <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 border border-gray-200 contact-card">
         <div class="flex items-center justify-center w-16 h-16 bg-accent/10 rounded-full mb-6 mx-auto">
           <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
         <h2 class="text-2xl font-bold text-primary text-center mb-2">General Inquiries</h2>
-        <p class="text-gray-600 text-center mb-4">For donations, datasets, and general questions</p>
+        <p class="text-gray-600 text-center mb-4 px-2">For donations, datasets, and general questions</p>
         <div class="flex items-center justify-center gap-2 bg-gray-50 p-4 rounded-lg">
-          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5 text-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          <a href="mailto:Info.datican@gmail.com" class="text-lg text-primary hover:text-accent font-medium transition-colors">
+          <a href="mailto:Info.datican@gmail.com" class="text-base md:text-lg text-primary hover:text-accent font-medium transition-colors break-all">
             Info.datican@gmail.com
           </a>
         </div>
@@ -190,7 +231,7 @@
     </div>
 
     <!-- Wide Map Section -->
-    <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200">
+    <div class="bg-white rounded-xl shadow-sm p-6 md:p-8 border border-gray-200 mx-4 sm:mx-0">
       <h2 class="text-2xl font-bold text-primary mb-6 text-center">Our Location - Lagos State University (LASU)</h2>
       
       <!-- Wide Map with precise coordinates -->
@@ -199,19 +240,19 @@
       </div>
       
       <!-- Location details with precise coordinates -->
-      <div class="flex flex-col items-center mt-4 space-y-2">
+      <div class="flex flex-col items-center mt-4 space-y-2 px-4">
         <p class="text-center text-gray-600 text-sm flex items-center gap-1">
-          <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 text-accent flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          Lagos State University Main Campus, Ojo, Lagos, Nigeria
+          <span class="break-words">Lagos State University Main Campus, Ojo, Lagos, Nigeria</span>
         </p>
       </div>
     </div>
 
     <!-- Additional Contact Info -->
-    <div class="mt-8 text-center">
+    <div class="mt-8 text-center px-4">
       <p class="text-sm text-gray-500">
         Response time: We aim to respond soonest.
       </p>
