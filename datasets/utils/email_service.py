@@ -81,6 +81,7 @@ class EmailService:
             'dataset': request.dataset,
             'site_name': settings.SITE_NAME,
             'support_email': settings.SUPPORT_EMAIL,
+            'site_url': settings.SITE_URL,
             'user_display_name': EmailService._get_user_display_name(request.user),
         }
         return EmailService._send_email(
