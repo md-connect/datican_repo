@@ -36,7 +36,7 @@
           </div>
         </div>
         <a href="{% url 'donation' %}" class="text-dark hover:text-accent transition-colors font-medium">Donate</a>
-        <a href="#" class="text-dark hover:text-accent transition-colors font-medium">Contact</a>
+        <a href="{% url 'contact' %}" class="text-dark hover:text-accent transition-colors font-medium">Contact Us</a>
       </div>
 
       <!-- User Actions -->
@@ -121,7 +121,7 @@
         </form>
         
         <a href="{% url 'dataset_list' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Datasets</a>
-        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Models</a>
+        <!-- <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Models</a> -->
         
         <!-- Mobile About Us Dropdown -->
         <div x-data="{ mobileAboutOpen: false }">
@@ -137,23 +137,10 @@
             <a href="{% url 'partners' %}" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Partners</a>
           </div>
         </div>
-        
-        <!-- Mobile Donation Dropdown -->
-        <div x-data="{ mobileDonationOpen: false }">
-          <button @click="mobileDonationOpen = !mobileDonationOpen" class="w-full text-left px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent flex justify-between items-center">
-            Donation
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          <div x-show="mobileDonationOpen" class="pl-6">
-            <a href="#" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Donate Datasets</a>
-            <a href="#" class="block px-3 py-2 text-sm text-gray-600 hover:text-accent">Financial Support</a>
-          </div>
-        </div>
-        
-        <a href="#" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Contact</a>
-        
+
+        <a href="{% url 'donation' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Donate</a>
+        <a href="{% url 'contact' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">Contact Us</a>
+
         {% if user.is_authenticated %}
         <div class="border-t border-gray-200 pt-2 mt-2">
           <a href="{% url 'profile' %}" class="block px-3 py-2 rounded-md text-base font-medium text-dark hover:text-accent">My Profile</a>
