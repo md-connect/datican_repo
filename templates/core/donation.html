@@ -14,11 +14,20 @@
   .form-section:hover {
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
   }
+  /* Fix for sticky header */
+  .sticky-dataset-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background-color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    width: 100%;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Desktop Sticky Header -->
+<!-- Desktop Sticky Header - Fixed with proper sticky positioning -->
 <div class="hidden md:block sticky-dataset-header">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
     <div class="flex items-center justify-between">
@@ -116,8 +125,10 @@
   </div>
 </div>
 
+<!-- Main Content with mobile padding fix -->
 <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-  <div class="max-w-4xl mx-auto">
+  <!-- Added pt-16 for mobile spacing and md:pt-0 to remove on desktop -->
+  <div class="max-w-4xl mx-auto pt-16 md:pt-0">
     <!-- Header -->
     <div class="text-center mb-12">
       <h1 class="text-4xl font-bold text-primary mb-4">Support DATICAN</h1>
