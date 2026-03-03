@@ -5,6 +5,8 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 import logging
+from django.core.mail import get_connection
+from django.core.mail import EmailMultiAlternatives
 
 logger = logging.getLogger(__name__)
 
@@ -166,56 +168,28 @@ class EmailService:
     @staticmethod
     def send_batch_notifications(data_request, recipients):
         """
-        Send multiple notifications in a single batch API call
+        Send multiple notifications using django-anymail with Resend
         """
-        from resend import Emails
+        emails = []
         
-        # Prepare batch of emails
-        batch_emails = []
+        # Prepare emails using Django's EmailMultiAlternatives
+        for recipient_email, subject, template, context in recipients:
+            html_content = render_to_string(template, context)
+            text_content = strip_tags(html_content)
+            
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[recipient_email],
+            )
+            email.attach_alternative(html_content, "text/html")
+            emails.append(email)
         
-        # Add acknowledgment email
-        batch_emails.append({
-            'from': settings.DEFAULT_FROM_EMAIL,
-            'to': [data_request.user.email],
-            'subject': f"{data_request.dataset} Data Request Received",
-            'html': render_to_string('emails/requests/acknowledgment.html', {
-                'user': data_request.user,
-                'request': data_request,
-            })
-        })
-        
-        # Add manager notification
-        batch_emails.append({
-            'from': settings.DEFAULT_FROM_EMAIL,
-            'to': [settings.MANAGER_EMAIL],
-            'subject': f"New {data_request.dataset} Data Request for Review",
-            'html': render_to_string('emails/requests/notification_to_staff.html', {
-                'request': data_request,
-                'role': 'manager',
-                'review_url': f"{settings.SITE_URL}/manager/review/{data_request.id}/",
-            })
-        })
-        
-        # Add director notification
-        batch_emails.append({
-            'from': settings.DEFAULT_FROM_EMAIL,
-            'to': [settings.DIRECTOR_EMAIL],
-            'subject': f"{data_request.dataset} Data Request Ready for Final Approval",
-            'html': render_to_string('emails/requests/notification_to_staff.html', {
-                'request': data_request,
-                'role': 'director',
-                'review_url': f"{settings.SITE_URL}/director/review/{data_request.id}/",
-            })
-        })
-        
-        # Send all in one API call
-        try:
-            Emails.send_batch(emails=batch_emails)
-            logger.info(f"Batch notification sent for request #{data_request.id}")
-            return True
-        except Exception as e:
-            logger.error(f"Batch notification failed: {e}")
-            return False
+        # Send all emails in one connection (may still be rate limited)
+        connection = get_connection()
+        return connection.send_messages(emails)
+
 
 @staticmethod
 def send_download_confirmation(data_request, dataset):
