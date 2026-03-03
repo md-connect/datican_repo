@@ -164,45 +164,58 @@ class EmailService:
     # Staff Emails
     # =========================
     @staticmethod
-    def send_staff_notification(request, recipient, role='manager'):
+    def send_batch_notifications(data_request, recipients):
         """
-        Send notification to staff member
-        recipient can be a User object or an email string
+        Send multiple notifications in a single batch API call
         """
-        # Check if recipient is a User object or email string
-        if hasattr(recipient, 'email'):
-            # It's a User object
-            recipient_email = recipient.email
-            recipient_display = EmailService._get_user_display_name(recipient)
-        else:
-            # It's an email string
-            recipient_email = recipient
-            recipient_display = recipient_email.split('@')[0]  # Use part before @ as name
+        from resend import Emails
         
-        if role == 'manager':
-            subject = f"New {request.dataset} Data Request for Review"
-            review_url = settings.SITE_URL + reverse('manager_review', args=[request.id])
-        else:
-            subject = f"{request.dataset} Data Request Ready for Final Approval"
-            review_url = settings.SITE_URL + reverse('director_review', args=[request.id])
+        # Prepare batch of emails
+        batch_emails = []
         
-        context = {
-            'staff_member': recipient_display,  # Now just a string name
-            'request': request,
-            'review_url': review_url,
-            'site_name': settings.SITE_NAME,
-            'staff_display_name': recipient_display,
-            'user_display_name': EmailService._get_user_display_name(request.user),
-            'requester_email': request.user.email,
-        }
+        # Add acknowledgment email
+        batch_emails.append({
+            'from': settings.DEFAULT_FROM_EMAIL,
+            'to': [data_request.user.email],
+            'subject': f"{data_request.dataset} Data Request Received",
+            'html': render_to_string('emails/requests/acknowledgment.html', {
+                'user': data_request.user,
+                'request': data_request,
+            })
+        })
         
-        return EmailService._send_email(
-            subject, 
-            recipient_email,  # Now using email string
-            'emails/requests/notification_to_staff.html', 
-            context
-        )
-
+        # Add manager notification
+        batch_emails.append({
+            'from': settings.DEFAULT_FROM_EMAIL,
+            'to': [settings.MANAGER_EMAIL],
+            'subject': f"New {data_request.dataset} Data Request for Review",
+            'html': render_to_string('emails/requests/notification_to_staff.html', {
+                'request': data_request,
+                'role': 'manager',
+                'review_url': f"{settings.SITE_URL}/manager/review/{data_request.id}/",
+            })
+        })
+        
+        # Add director notification
+        batch_emails.append({
+            'from': settings.DEFAULT_FROM_EMAIL,
+            'to': [settings.DIRECTOR_EMAIL],
+            'subject': f"{data_request.dataset} Data Request Ready for Final Approval",
+            'html': render_to_string('emails/requests/notification_to_staff.html', {
+                'request': data_request,
+                'role': 'director',
+                'review_url': f"{settings.SITE_URL}/director/review/{data_request.id}/",
+            })
+        })
+        
+        # Send all in one API call
+        try:
+            Emails.send_batch(emails=batch_emails)
+            logger.info(f"Batch notification sent for request #{data_request.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Batch notification failed: {e}")
+            return False
 
 @staticmethod
 def send_download_confirmation(data_request, dataset):

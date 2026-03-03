@@ -909,14 +909,13 @@ def dataset_request(request, pk):
                 ethical_approval_proof=ethical_approval_proof,
             )
             data_request.save()
-            
-            # Send acknowledgment email using EmailService
-            EmailService.send_acknowledgment_email(data_request)
-            
-            # Always send to both manager and director emails from settings
-            EmailService.send_staff_notification(data_request, settings.MANAGER_EMAIL, 'manager')
-            EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
-                        
+
+            # Send Acknowledgment and Notifications in a single batch call
+            EmailService.send_batch_notifications(data_request, [
+                settings.MANAGER_EMAIL,
+                settings.DIRECTOR_EMAIL
+            ])
+
             # Render success page
             return render(request, 'datasets/request_submitted.html', {
                 'dataset': dataset,
