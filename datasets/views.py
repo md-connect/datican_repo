@@ -28,6 +28,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import DataRequest
 from django.db.models import Count, Q
 import logging
+import time
+
 
 logger = logging.getLogger(__name__)
 
@@ -909,13 +911,15 @@ def dataset_request(request, pk):
                 ethical_approval_proof=ethical_approval_proof,
             )
             data_request.save()
-
-            # Send Acknowledgment and Notifications in a single batch call
-            EmailService.send_batch_notifications(data_request, [
-                settings.MANAGER_EMAIL,
-                settings.DIRECTOR_EMAIL
-            ])
-
+            
+            # Send acknowledgment email using EmailService
+            EmailService.send_acknowledgment_email(data_request)
+            time.sleep(0.6)
+            # Always send to both manager and director emails from settings
+            EmailService.send_staff_notification(data_request, settings.MANAGER_EMAIL, 'manager')
+            time.sleep(0.6) 
+            EmailService.send_staff_notification(data_request, settings.DIRECTOR_EMAIL, 'director')
+                        
             # Render success page
             return render(request, 'datasets/request_submitted.html', {
                 'dataset': dataset,

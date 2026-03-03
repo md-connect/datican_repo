@@ -5,8 +5,6 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 import logging
-from django.core.mail import get_connection
-from django.core.mail import EmailMultiAlternatives
 
 logger = logging.getLogger(__name__)
 
@@ -166,30 +164,44 @@ class EmailService:
     # Staff Emails
     # =========================
     @staticmethod
-    def send_batch_notifications(data_request, recipients):
+    def send_staff_notification(request, recipient, role='manager'):
         """
-        Send multiple notifications using django-anymail with Resend
+        Send notification to staff member
+        recipient can be a User object or an email string
         """
-        emails = []
+        # Check if recipient is a User object or email string
+        if hasattr(recipient, 'email'):
+            # It's a User object
+            recipient_email = recipient.email
+            recipient_display = EmailService._get_user_display_name(recipient)
+        else:
+            # It's an email string
+            recipient_email = recipient
+            recipient_display = recipient_email.split('@')[0]  # Use part before @ as name
         
-        # Prepare emails using Django's EmailMultiAlternatives
-        for recipient_email, subject, template, context in recipients:
-            html_content = render_to_string(template, context)
-            text_content = strip_tags(html_content)
-            
-            email = EmailMultiAlternatives(
-                subject=subject,
-                body=text_content,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                to=[recipient_email],
-            )
-            email.attach_alternative(html_content, "text/html")
-            emails.append(email)
+        if role == 'manager':
+            subject = f"New {request.dataset} Data Request for Review"
+            review_url = settings.SITE_URL + reverse('manager_review', args=[request.id])
+        else:
+            subject = f"{request.dataset} Data Request Ready for Final Approval"
+            review_url = settings.SITE_URL + reverse('director_review', args=[request.id])
         
-        # Send all emails in one connection (may still be rate limited)
-        connection = get_connection()
-        return connection.send_messages(emails)
-
+        context = {
+            'staff_member': recipient_display,  # Now just a string name
+            'request': request,
+            'review_url': review_url,
+            'site_name': settings.SITE_NAME,
+            'staff_display_name': recipient_display,
+            'user_display_name': EmailService._get_user_display_name(request.user),
+            'requester_email': request.user.email,
+        }
+        
+        return EmailService._send_email(
+            subject, 
+            recipient_email,  # Now using email string
+            'emails/requests/notification_to_staff.html', 
+            context
+        )
 
 @staticmethod
 def send_download_confirmation(data_request, dataset):
