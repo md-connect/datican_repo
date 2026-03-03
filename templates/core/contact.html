@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contact Us - DATICAN Repository{% endblock %}
+
+{% block extra_head %}
+<style>
+  .contact-card {
+    transition: all 0.3s ease;
+  }
+  .contact-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  }
+  .map-container {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1rem;
+  }
+  .map-container iframe {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+    border: 0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Desktop Sticky Header -->
+<div class="hidden md:block sticky-dataset-header">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+    <div class="flex items-center justify-between">
+      <!-- Breadcrumb -->
+      <nav class="flex items-center text-sm text-gray-600">
+        <a href="{% url 'donation' %}" class="hover:text-primary">Support</a>
+        <svg class="w-4 h-4 mx-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-primary font-medium truncate max-w-md">Contact Us</span>
+      </nav>
+      
+      <!-- Authentication Circle -->
+      <div class="flex items-center space-x-4 ml-4">
+        {% if user.is_authenticated %}
+          <div class="relative" x-data="{ profileOpen: false }">
+            <button 
+              type="button"
+              class="focus:outline-none"
+              @click="profileOpen = !profileOpen"
+              @mouseenter="profileOpen = true"
+              @mouseleave="setTimeout(() => { if (!profileOpen) profileOpen = false }, 100)"
+            >
+              {% if user.profile.avatar %}
+                <img
+                  src="{{ user.profile.avatar.url }}"
+                  class="auth-circle h-10 w-10 cursor-pointer border-2 border-transparent hover:border-primary rounded-full"
+                  alt="Profile"
+                />
+              {% else %}
+                <!-- User icon SVG -->
+                <div class="user-icon h-10 w-10 cursor-pointer hover:opacity-90 text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-full h-full">
+                    <path fill-rule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              {% endif %}
+            </button>
+            
+            <!-- Profile Dropdown -->
+            <div
+              x-show="profileOpen"
+              x-cloak
+              x-transition:enter="transition ease-out duration-200"
+              x-transition:enter-start="opacity-0 transform scale-95"
+              x-transition:enter-end="opacity-100 transform scale-100"
+              x-transition:leave="transition ease-in duration-150"
+              x-transition:leave-start="opacity-100 transform scale-100"
+              x-transition:leave-end="opacity-0 transform scale-95"
+              class="absolute right-0 mt-2 min-w-[220px] bg-white shadow-xl rounded-lg py-3 z-50 border border-gray-200"
+              style="display: none;"
+              @mouseenter="profileOpen = true"
+              @mouseleave="profileOpen = false"
+              @click.away="profileOpen = false"
+            >
+              <a href="{% url 'profile' %}" class="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                  </svg>
+                  <span class="font-small">My Profile</span>
+                </div>
+              </a>
+              
+              <a href="{% url 'account_change_password' %}" class="block px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                  </svg>
+                  <span class="font-small">Change Password</span>
+                </div>
+              </a>
+              
+              <form action="{% url 'account_logout' %}" method="POST" class="block">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-left px-5 py-3 text-gray-800 hover:bg-gray-50 transition-colors">
+                  <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span class="font-small">Logout</span>
+                  </div>
+                </button>
+              </form>
+            </div>
+          </div>
+        {% else %}
+          <div class="flex items-center space-x-3">
+            <a href="{% url 'login' %}" class="text-dark hover:text-accent font-medium transition-colors">Sign In</a>
+            <a href="{% url 'signup' %}" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-red-600 font-medium transition-colors">Register</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-primary mb-4">Contact Us</h1>
+      <div class="w-24 h-1 bg-accent mx-auto rounded-full mb-6"></div>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        Get in touch with the DATICAN team. We're here to answer your questions about donations, datasets, or collaboration opportunities.
+      </p>
+    </div>
+
+    <!-- Contact Cards -->
+    <div class="grid md:grid-cols-2 gap-8 mb-12">
+      <!-- Director's Email Card -->
+      <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200 contact-card">
+        <div class="flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-6 mx-auto">
+          <svg class="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-primary text-center mb-2">Director</h2>
+        <p class="text-gray-600 text-center mb-4">For high-level inquiries and partnerships</p>
+        <div class="flex items-center justify-center gap-2 bg-gray-50 p-4 rounded-lg">
+          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <a href="mailto:director.datican@gmail.com" class="text-lg text-primary hover:text-accent font-medium transition-colors">
+            Director.datican@gmail.com
+          </a>
+        </div>
+      </div>
+
+      <!-- Info Email Card -->
+      <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200 contact-card">
+        <div class="flex items-center justify-center w-16 h-16 bg-accent/10 rounded-full mb-6 mx-auto">
+          <svg class="w-8 h-8 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-primary text-center mb-2">General Inquiries</h2>
+        <p class="text-gray-600 text-center mb-4">For donations, datasets, and general questions</p>
+        <div class="flex items-center justify-center gap-2 bg-gray-50 p-4 rounded-lg">
+          <svg class="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <a href="mailto:info.datican@gmail.com" class="text-lg text-primary hover:text-accent font-medium transition-colors">
+            Info.datican@gmail.com
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Physical Address & Map Section -->
+    <div class="bg-white rounded-xl shadow-sm p-8 border border-gray-200">
+      <h2 class="text-2xl font-bold text-primary mb-6 text-center">Our Location</h2>
+      
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Address Details -->
+        <!-- <div class="space-y-6">
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-primary mb-2">Lagos State University (LASU)</h3>
+              <p class="text-gray-600 leading-relaxed">
+                Main Campus, KM 15, Badagry Expressway,<br>
+                Ojo, PMB 0001,<br>
+                LASU Post Office,<br>
+                Lagos State, Nigeria [citation:6]
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-4">
+            <div class="flex-shrink-0 w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-semibold text-primary mb-2">GPS Coordinates</h3>
+              <p class="text-gray-600">
+                Latitude: 6°28'1.20"N<br>
+                Longitude: 3°10'58.80"E [citation:9]
+              </p>
+            </div>
+          </div>
+
+          <div class="bg-primary/5 p-4 rounded-lg">
+            <p class="text-sm text-gray-600 italic">
+              DATICAN Repository is hosted at Lagos State University, leveraging institutional resources and partnerships to advance medical research through accessible data.
+            </p>
+          </div>
+        </div>
+             -->
+        <!-- Map -->
+        <div class="map-container h-full min-h-[400px]">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3964.443124052836!2d3.18101597450125!3d6.465299123785174!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b86b1b2f7b1e9%3A0x5e5e4c7f5b5b5b5b!2sLagos%20State%20University!5e0!3m2!1sen!2sng!4v1700000000000!5m2!1sen!2sng"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Lagos State University Map"
+            class="w-full h-full rounded-xl"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Contact Info -->
+    <div class="mt-8 text-center">
+      <p class="text-sm text-gray-500">
+        Response time: We aim to respond to all inquiries within 2-3 business days.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -9,6 +9,7 @@ urlpatterns = [
     path('team/', views.team_view, name='team'),
     path('donate/', views.donation_page, name='donation'),
     path('donate/success/', views.donation_success, name='donation_success'),
+    path('contact/', views.contact_page, name='contact'), 
     
     path('login/', CustomLoginView.as_view(), name='login'),
     path('signup/', CustomSignupView.as_view(), name='signup'),

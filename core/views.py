@@ -400,3 +400,9 @@ def donation_success(request):
     return render(request, 'core/donation_success.html', {
         "support_email": "support@datican.org"
     })
+
+def contact_page(request):
+    """View for contact page"""
+    return render(request, 'core/contact.html', {
+        'title': 'Contact Us - DATICAN'
+    })
