@@ -202,18 +202,10 @@ def home(request):
         
         # Add download count
         dataset.download_display = dataset.download_count
-        
-        # Add usability score (you can customize this logic)
-        # Using rating as usability score for now
-        rating = 10
-        dataset.usability_display = f"{rating}/10"
-
-    dataset_count = Dataset.objects.count()
-    
+       
 
     return render(request, 'home.html', {
         'featured_datasets': featured_datasets,
-        'dataset_count': dataset_count,
     })
 
 
