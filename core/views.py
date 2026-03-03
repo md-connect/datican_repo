@@ -396,4 +396,6 @@ def donation_page(request):
 
 def donation_success(request):
     """Success page after donation submission"""
-    return render(request, 'core/donation_success.html')
+    return render(request, 'core/donation_success.html', {
+        "support_email": "support@datican.org"
+    })
