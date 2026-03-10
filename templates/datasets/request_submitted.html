@@ -146,10 +146,10 @@
           <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
             <h3 class="text-sm font-medium text-gray-700 mb-2">Request Details:</h3>
             <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
+              <!-- <div class="flex justify-between">
                 <span class="text-gray-600">Request ID:</span>
                 <span class="font-medium">{{ data_request.id }}</span>
-              </div>
+              </div> -->
               <div class="flex justify-between">
                 <span class="text-gray-600">Submitted:</span>
                 <span class="font-medium">{{ data_request.request_date|date:"F j, Y H:i" }}</span>
@@ -157,6 +157,14 @@
               <div class="flex justify-between">
                 <span class="text-gray-600">Dataset:</span>
                 <span class="font-medium">{{ dataset.title|truncatechars:40 }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Modality:</span>
+                <span class="font-medium">{{ dataset.modality }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Format:</span>
+                <span class="font-medium">{{ dataset.format }}</span>
               </div>
             </div>
           </div>
