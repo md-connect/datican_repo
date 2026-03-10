@@ -1,50 +1,43 @@
 #!/bin/bash
-# upload_to_b2.sh - Safe upload to B2 (no accidental duplicate versions)
+# upload_to_b2.sh - Reliable multi-dataset upload to B2 using rclone
+# Usage:
+#   ./upload_to_b2.sh <remote-folder1> <local-file1> [<remote-folder2> <local-file2> ...]
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 <local_file> [--force]"
+# === CONFIGURATION ===
+# Name of the rclone remote you configured for B2
+RCLONE_REMOTE="datican-b2"
+
+# === CHECK INPUT ===
+if [ $# -lt 2 ] || [ $(($# % 2)) -ne 0 ]; then
+    echo "Usage: $0 <remote-folder1> <local-file1> [<remote-folder2> <local-file2> ...]"
     exit 1
 fi
 
-LOCAL_FILE=$1
-FORCE=$2
+# === FUNCTION TO UPLOAD ONE FILE ===
+upload_file() {
+    local remote_folder="$1"
+    local local_file="$2"
 
-if [ ! -f "$LOCAL_FILE" ]; then
-    echo "❌ File does not exist: $LOCAL_FILE"
-    exit 1
-fi
+    if [ ! -f "$local_file" ]; then
+        echo "❌ Local file not found: $local_file"
+        return 1
+    fi
 
-FILENAME=$(basename "$LOCAL_FILE")
-B2_PATH="datasets/teeth-xray-2/$FILENAME"
-BUCKET="datican-repo"
+    remote_path="datican-repo/datasets/$remote_folder/$(basename "$local_file")"
+    echo "📦 Uploading $local_file → $remote_path"
 
-echo "📦 Preparing upload: $LOCAL_FILE"
-echo "Target: $B2_PATH"
+    rclone copy "$local_file" "$RCLONE_REMOTE:$remote_path" -P --verbose
+    if [ $? -eq 0 ]; then
+        echo "✅ Upload completed: $local_file → $remote_path"
+    else
+        echo "❌ Upload failed: $local_file → $remote_path"
+    fi
+}
 
-# Check if file already exists in B2
-EXISTS=$(b2 ls "b2://$BUCKET/datasets/teeth-xray-2" | grep -w "$FILENAME")
-
-if [ -n "$EXISTS" ] && [ "$FORCE" != "--force" ]; then
-    echo "⚠️ File already exists in B2."
-    echo "Skipping upload to prevent duplicate version."
-    echo "Use --force to overwrite."
-    exit 0
-fi
-
-echo "🚀 Uploading..."
-
-b2 file upload --threads 10 "$BUCKET" "$LOCAL_FILE" "$B2_PATH"
-
-if [ $? -eq 0 ]; then
-    echo ""
-    echo "✅ Upload complete!"
-    echo ""
-    echo "📋 Copy this path to Django Admin:"
-    echo "   $B2_PATH"
-    echo ""
-    echo "🔗 Temporary signed URL (valid 1 hour):"
-    b2 file url --with-auth --duration 3600 "b2://$BUCKET/$B2_PATH"
-else
-    echo "❌ Upload failed"
-    exit 1
-fi
+# === LOOP OVER ARGUMENT PAIRS ===
+while [ $# -gt 0 ]; do
+    REMOTE_FOLDER="$1"
+    LOCAL_FILE="$2"
+    upload_file "$REMOTE_FOLDER" "$LOCAL_FILE"
+    shift 2
+done
