@@ -378,7 +378,7 @@ def dataset_detail(request, pk):
             file_path = dataset.preview_file.path
             # Read Excel file
             if file_path.endswith(('.xlsx', '.xls')):
-                df = pd.read_excel(file_path, nrows=10)  # Read only first 10 rows
+                df = pd.read_excel(file_path)  # Read only first 10 rows
                 preview_columns = df.columns.tolist()
                 preview_rows = df.to_dict('records')
                 has_preview = True
@@ -397,7 +397,7 @@ def dataset_detail(request, pk):
                     'preview_file': dataset.file,
                     'preview_type': 'csv' if dataset.file.name.lower().endswith('.csv') else 'json'
                 })()
-                preview_data = get_preview_data(temp_dataset, max_rows=10)
+                preview_data = get_preview_data(temp_dataset)
                 if preview_data:
                     preview_columns = preview_data.get('columns', [])
                     preview_rows = preview_data.get('rows', [])

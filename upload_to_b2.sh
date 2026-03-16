@@ -1,10 +1,4 @@
-#!/bin/bash
-# upload_to_b2.sh - Reliable multi-dataset upload to B2 using rclone
-# Usage:
-#   ./upload_to_b2.sh <remote-folder1> <local-file1> [<remote-folder2> <local-file2> ...]
 
-# === CONFIGURATION ===
-# Name of the rclone remote you configured for B2
 RCLONE_REMOTE="datican-b2"
 
 # === CHECK INPUT ===
@@ -23,6 +17,7 @@ upload_file() {
         return 1
     fi
 
+    # Only use the basename; don't include full local path
     remote_path="datican-repo/datasets/$remote_folder/$(basename "$local_file")"
     echo "📦 Uploading $local_file → $remote_path"
 
